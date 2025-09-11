@@ -169,3 +169,4 @@ const Medications = () => {
 };
 
 export default Medications;
+
