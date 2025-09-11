@@ -125,16 +125,16 @@ const AdequacyTest = ({ adequacyResults, onUpdate }: AdequacyTestProps) => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>Patient Name</Label>
                 <Input
                   value={data.patientName}
                   onChange={(e) => updateTestData(testKey, 'patientName', e.target.value)}
                   placeholder="Enter patient name"
                 />
-              </div>
+              </div> */}
               <div className="space-y-2">
-                <Label>Test Date</Label>
+                <Label>Date of Test</Label>
                 <Input
                   type="date"
                   value={data.date}
@@ -240,7 +240,7 @@ const AdequacyTest = ({ adequacyResults, onUpdate }: AdequacyTestProps) => {
                         Renal Kt/V + Peritoneal Kt/V
                       </p>
                       <Badge 
-                        variant={parseFloat(data.totalKtV) >= 1.7 ? "default" : "destructive"}
+                        //variant={parseFloat(data.totalKtV) >= 1.7 ? "default" : "destructive"}
                         className="text-sm"
                       >
                         {data.totalKtV || "Not calculated"}
@@ -289,7 +289,7 @@ const AdequacyTest = ({ adequacyResults, onUpdate }: AdequacyTestProps) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Adequacy Test Results (Usually done 3 times a year)</CardTitle>
+          <CardTitle>Adequacy Test Results</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTest} onValueChange={setActiveTest}>

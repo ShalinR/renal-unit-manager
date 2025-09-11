@@ -1,56 +1,50 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Clock, 
-  Droplets, 
-  Activity, 
-  Heart, 
-  Thermometer, 
-  Weight, 
-  FileText, 
-  Download,
-  ArrowLeft,
-  AlertCircle,
-  CheckCircle2
-} from "lucide-react";
-import { format } from "date-fns";
+import { FileText, Download, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
-interface PDData {
-  timeOfExchange: string;
-  dialysateType: string;
-  inflowVolume: number;
-  outflowVolume: number;
-  netUF: number;
-  effluentAppearance: string;
-  bloodPressure: string;
-  pulse: number;
-  weight: number;
-  temperature: number;
-  symptoms: string;
-  urineOutput: number;
-  fluidIntake: number;
-  preGlucose?: number;
-  postGlucose?: number;
-  medications: string;
-  exitSiteCondition: string[];
+interface CAPDData {
+  counsellingDate: string;
+  catheterInsertionDate: string;
+  insertionDoneBy: string;
+  insertionPlace: string;
+  firstFlushing: string;
+  secondFlushing: string;
+  thirdFlushing: string;
+  initiationDate: string;
+  petResults: {
+    first: { date: string; data: any };
+    second: { date: string; data: any };
+    third: { date: string; data: any };
+  };
+  adequacyResults: {
+    first: { date: string; data: any };
+    second: { date: string; data: any };
+    third: { date: string; data: any };
+  };
+  peritonitisHistory: any[];
+  exitSiteInfections: any[];
+  tunnelInfections: any[];
 }
 
 interface DataPreviewProps {
-  data: PDData | null;
+  capdData: CAPDData | null;
   onBack: () => void;
 }
+//const [capdSummary, setCapdSummary] = useState<CAPDData | null>(null);
 
-const DataPreview = ({ data, onBack }: DataPreviewProps) => {
-  if (!data) {
+const DataPreview = ({ capdData, onBack }: DataPreviewProps) => {
+  if (!capdData) {
     return (
       <div className="max-w-4xl mx-auto text-center space-y-4">
         <div className="inline-flex items-center justify-center w-12 h-12 bg-muted rounded-full mb-4">
           <FileText className="w-6 h-6 text-muted-foreground" />
         </div>
-        <h2 className="text-3xl font-bold">No Data Available</h2>
-        <p className="text-muted-foreground">Please submit monitoring data first to view the preview.</p>
+        <h2 className="text-3xl font-bold">No CAPD Data Available</h2>
+        <p className="text-muted-foreground">
+          Please fill in CAPD Summary to view the preview.
+        </p>
         <Button onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Go Back
@@ -59,269 +53,153 @@ const DataPreview = ({ data, onBack }: DataPreviewProps) => {
     );
   }
 
-  const formatExchangeTime = (timeString: string) => {
+  // Safe access helpers for optional nested metrics
+  const get = (obj: any, path: string, fallback: any = "—") => {
     try {
-      const date = new Date(timeString);
-      return format(date, "PPpp");
+      return path.split(".").reduce((o, k) => (o?.[k]), obj) ?? fallback;
     } catch {
-      return timeString;
+      return fallback;
     }
   };
-
-  const getEffluentStatus = (appearance: string) => {
-    switch (appearance) {
-      case "clear":
-        return { variant: "default" as const, icon: CheckCircle2, color: "text-success" };
-      case "slightly-cloudy":
-        return { variant: "secondary" as const, icon: AlertCircle, color: "text-warning" };
-      case "cloudy":
-      case "bloody":
-      case "fibrinous":
-        return { variant: "destructive" as const, icon: AlertCircle, color: "text-destructive" };
-      default:
-        return { variant: "outline" as const, icon: AlertCircle, color: "text-muted-foreground" };
-    }
-  };
-
-  const effluentStatus = getEffluentStatus(data.effluentAppearance);
-  const StatusIcon = effluentStatus.icon;
-
-  const fluidBalance = data.fluidIntake - data.urineOutput - Math.abs(data.netUF);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
       <div className="text-center space-y-2">
         <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full mb-4">
           <FileText className="w-6 h-6 text-primary" />
         </div>
-        <h2 className="text-3xl font-bold">PD Data Summary</h2>
-        <p className="text-muted-foreground">Review of submitted monitoring data</p>
+        <h2 className="text-3xl font-bold">CAPD Summary Preview</h2>
+        <p className="text-muted-foreground">Comprehensive patient dialysis summary</p>
       </div>
 
+      {/* Actions */}
       <div className="flex justify-between items-center">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Form
+          Back to CAPD Summary
         </Button>
-        <Button>
+        {/* <Button>
           <Download className="w-4 h-4 mr-2" />
           Export Report
-        </Button>
+        </Button> */}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Exchange Summary */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              Exchange Summary
-            </CardTitle>
-            <CardDescription>
-              Recorded on {formatExchangeTime(data.timeOfExchange)}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Dialysate Type</p>
-                <p className="text-lg font-semibold">{data.dialysateType}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Net Ultrafiltration</p>
-                <p className={`text-lg font-semibold ${data.netUF > 0 ? 'text-success' : data.netUF < 0 ? 'text-warning' : ''}`}>
-                  {data.netUF > 0 ? '+' : ''}{data.netUF} mL
-                </p>
-              </div>
-            </div>
-            
-            <Separator />
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{data.inflowVolume}</p>
-                <p className="text-sm text-muted-foreground">Inflow (mL)</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{data.outflowVolume}</p>
-                <p className="text-sm text-muted-foreground">Outflow (mL)</p>
-              </div>
-              <div className="text-center">
-                <p className={`text-2xl font-bold ${data.netUF > 0 ? 'text-success' : 'text-muted-foreground'}`}>
-                  {Math.abs(data.netUF)}
-                </p>
-                <p className="text-sm text-muted-foreground">Net UF (mL)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Effluent</span>
-              <Badge variant={effluentStatus.variant} className="flex items-center gap-1">
-                <StatusIcon className={`w-3 h-3 ${effluentStatus.color}`} />
-                {data.effluentAppearance || 'Not specified'}
-              </Badge>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Exit Site</span>
-              <Badge variant={data.exitSiteCondition.includes('normal') ? 'default' : 'secondary'}>
-                {data.exitSiteCondition.length > 0 
-                  ? data.exitSiteCondition.join(', ') 
-                  : 'Not assessed'}
-              </Badge>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Temperature</span>
-              <span className={`font-semibold ${
-                data.temperature > 38 ? 'text-destructive' : 
-                data.temperature > 37.5 ? 'text-warning' : 'text-muted-foreground'
-              }`}>
-                {data.temperature}°C
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Vital Signs */}
+      {/* Basic Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart className="w-5 h-5" />
-            Vital Signs
-          </CardTitle>
+          <CardTitle>Basic Information</CardTitle>
+          <CardDescription>Key milestones & catheter information</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full mb-2">
-                <Heart className="w-5 h-5 text-primary" />
-              </div>
-              <p className="text-lg font-semibold">{data.bloodPressure || 'N/A'}</p>
-              <p className="text-sm text-muted-foreground">Blood Pressure</p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full mb-2">
-                <Activity className="w-5 h-5 text-primary" />
-              </div>
-              <p className="text-lg font-semibold">{data.pulse || 'N/A'}</p>
-              <p className="text-sm text-muted-foreground">Pulse (bpm)</p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full mb-2">
-                <Weight className="w-5 h-5 text-primary" />
-              </div>
-              <p className="text-lg font-semibold">{data.weight || 'N/A'}</p>
-              <p className="text-sm text-muted-foreground">Weight (kg)</p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full mb-2">
-                <Thermometer className="w-5 h-5 text-primary" />
-              </div>
-              <p className="text-lg font-semibold">{data.temperature || 'N/A'}</p>
-              <p className="text-sm text-muted-foreground">Temperature (°C)</p>
-            </div>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Counselling Date</p>
+            <p className="font-semibold">{capdData.counsellingDate || "—"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Initiation Date</p>
+            <p className="font-semibold">{capdData.initiationDate || "—"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Catheter Insertion Date</p>
+            <p className="font-semibold">{capdData.catheterInsertionDate || "—"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Insertion By</p>
+            <p className="font-semibold">{capdData.insertionDoneBy || "—"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Insertion Place</p>
+            <p className="font-semibold">{capdData.insertionPlace || "—"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Flushing (1st / 2nd / 3rd)</p>
+            <p className="font-semibold">
+              {(capdData.firstFlushing || "—")} / {(capdData.secondFlushing || "—")} / {(capdData.thirdFlushing || "—")}
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Fluid Balance */}
+      {/* PET Tests */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Droplets className="w-5 h-5" />
-            24-Hour Fluid Balance
-          </CardTitle>
+          <CardTitle>PET Tests</CardTitle>
+          <CardDescription>Dates and selected ratios (if recorded)</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{data.fluidIntake}</p>
-              <p className="text-sm text-muted-foreground">Fluid Intake (mL)</p>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(["first", "second", "third"] as const).map((key) => (
+            <div key={key} className="space-y-2 border rounded-lg p-3">
+              <p className="text-sm text-muted-foreground capitalize">{key} PET</p>
+              <p className="font-semibold">{get(capdData.petResults, `${key}.date`)}</p>
+              {/* If you stored calculated fields in .data, surface them */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">D/P Cr:</span>
+                <Badge variant="secondary">{get(capdData.petResults, `${key}.data.dpCreatinine`)}</Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">D/D0 Glu:</span>
+                <Badge variant="secondary">{get(capdData.petResults, `${key}.data.dd0Glucose`)}</Badge>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{data.urineOutput}</p>
-              <p className="text-sm text-muted-foreground">Urine Output (mL)</p>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Adequacy Tests */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Adequacy (Kt/V)</CardTitle>
+          <CardDescription>Dates and totals (if recorded)</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(["first", "second", "third"] as const).map((key) => (
+            <div key={key} className="space-y-2 border rounded-lg p-3">
+              <p className="text-sm text-muted-foreground capitalize">{key} Adequacy</p>
+              <p className="font-semibold">{get(capdData.adequacyResults, `${key}.date`)}</p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Total Kt/V:</span>
+                <Badge variant="secondary">{get(capdData.adequacyResults, `${key}.data.totalKtV`)}</Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Adequate:</span>
+                <Badge variant={get(capdData.adequacyResults, `${key}.data.isAdequate`) === true ? "default" : "outline"}>
+                  {get(capdData.adequacyResults, `${key}.data.isAdequate`) === true ? "Yes" :
+                   get(capdData.adequacyResults, `${key}.data.isAdequate`) === false ? "No" : "—"}
+                </Badge>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{Math.abs(data.netUF)}</p>
-              <p className="text-sm text-muted-foreground">UF Removed (mL)</p>
-            </div>
-            <div className="text-center">
-              <p className={`text-2xl font-bold ${
-                fluidBalance > 500 ? 'text-warning' : 
-                fluidBalance > 1000 ? 'text-destructive' : 'text-muted-foreground'
-              }`}>
-                {fluidBalance > 0 ? '+' : ''}{fluidBalance}
-              </p>
-              <p className="text-sm text-muted-foreground">Net Balance (mL)</p>
-            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Infection Tracking */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Infection Tracking</CardTitle>
+          <CardDescription>Counts of recorded episodes</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center">
+            <p className="text-2xl font-bold">{capdData.peritonitisHistory?.length ?? 0}</p>
+            <p className="text-sm text-muted-foreground">Peritonitis Episodes</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold">{capdData.exitSiteInfections?.length ?? 0}</p>
+            <p className="text-sm text-muted-foreground">Exit Site Infections</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold">{capdData.tunnelInfections?.length ?? 0}</p>
+            <p className="text-sm text-muted-foreground">Tunnel Infections</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Blood Glucose (if applicable) */}
-      {(data.preGlucose || data.postGlucose) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Blood Glucose Monitoring</CardTitle>
-            <CardDescription>Diabetic patient glucose readings</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-6">
-              {data.preGlucose && (
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{data.preGlucose}</p>
-                  <p className="text-sm text-muted-foreground">Pre-PD (mg/dL)</p>
-                </div>
-              )}
-              {data.postGlucose && (
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{data.postGlucose}</p>
-                  <p className="text-sm text-muted-foreground">Post-PD (mg/dL)</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Additional Information */}
-      {(data.medications || data.symptoms) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Additional Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {data.medications && (
-              <div>
-                <h4 className="font-medium mb-2">Medications Taken</h4>
-                <p className="text-muted-foreground bg-muted p-3 rounded-md">{data.medications}</p>
-              </div>
-            )}
-            {data.symptoms && (
-              <div>
-                <h4 className="font-medium mb-2">Symptoms / Notes</h4>
-                <p className="text-muted-foreground bg-muted p-3 rounded-md">{data.symptoms}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
+      {/* Footer actions */}
       <div className="flex justify-center gap-4 pt-6">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Edit Data
+          Edit CAPD Summary
         </Button>
         <Button>
           Save Record

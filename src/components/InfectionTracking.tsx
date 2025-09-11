@@ -212,7 +212,7 @@ const InfectionTracking = ({
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>CAPD Full Reports</Label>
+                          <Label>PD Full Reports</Label>
                           <Input
                             value={episode.capdFullReports}
                             onChange={(e) =>
@@ -229,7 +229,7 @@ const InfectionTracking = ({
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>CAPD Culture</Label>
+                          <Label>PD Culture</Label>
                           <Input
                             value={episode.capdCulture}
                             onChange={(e) =>
@@ -239,7 +239,7 @@ const InfectionTracking = ({
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Antibiotic Sensitivity</Label>
+                          <Label>Antibiotic sensitivity</Label>
                           <Input
                             value={episode.antibioticSensitivity}
                             onChange={(e) =>
@@ -322,7 +322,7 @@ const InfectionTracking = ({
                         </div>
                       </div>
 
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label>Assessment done by N/O</Label>
                         <Textarea
                           value={episode.assessmentByNO}
@@ -332,7 +332,7 @@ const InfectionTracking = ({
                           placeholder="Nursing officer assessment"
                           rows={3}
                         />
-                      </div>
+                      </div> */}
                     </CardContent>
                   </Card>
                 ))}
@@ -415,7 +415,7 @@ const InfectionTracking = ({
                       <div className="space-y-2">
                         <Label>Investigation</Label>
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                          <div className="space-y-2">
+                          {/* <div className="space-y-2">
                             <Label className="text-sm">CAPD Culture</Label>
                             <Input
                               value={episode.investigationCulture}
@@ -428,7 +428,7 @@ const InfectionTracking = ({
                               }
                               placeholder="Culture results"
                             />
-                          </div>
+                          </div> */}
                           <div className="space-y-2">
                             <Label className="text-sm">Exit Site Swab Culture</Label>
                             <Input
@@ -502,7 +502,7 @@ const InfectionTracking = ({
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                        {/* <div className="space-y-2">
                           <Label>Duration of Hospitalization</Label>
                           <Input
                             value={episode.hospitalizationDuration}
@@ -515,7 +515,7 @@ const InfectionTracking = ({
                             }
                             placeholder="Days hospitalized"
                           />
-                        </div>
+                        </div> */}
                         <div className="space-y-2">
                           <Label>Reason for Exit Site Infection</Label>
                           <Input
