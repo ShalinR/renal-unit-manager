@@ -41,7 +41,7 @@ interface CAPDData {
 
 const STORAGE_KEY = "capdSummary";
 
-const Index = () => {
+const Peritoneal = () => {
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
   const [capdData, setCapdData] = useState<CAPDData | null>(null);
 
@@ -192,19 +192,16 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Activity className="w-6 h-6 text-primary" />
-              <span className="text-lg font-semibold">PD Monitor</span>
-            </div>
+        {/* <div className="container mx-auto px-4 py-4"> */}
+          <div className="fixed top-4 right-4 z-50">
+           
             {activeView !== "dashboard" && (
               <Button variant="outline" onClick={() => setActiveView("dashboard")}>
                 Dashboard
               </Button>
             )}
           </div>
-        </div>
+        {/* </div> */}
       </header>
 
       <main className="container mx-auto px-4 py-8">{renderContent()}</main>
@@ -212,4 +209,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Peritoneal;
