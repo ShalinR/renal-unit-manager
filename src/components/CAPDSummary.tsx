@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity } from "lucide-react"; // ⬅️ removed TestTube here
 import PETTest from "./PETTest";
 import AdequacyTest from "./AdequacyTest";
-import InfectionTracking from "./InfectionTracking";
+import InfectionTracking, { TunnelEpisode } from "./InfectionTracking";
 
 interface CAPDSummaryProps {
   onSubmit: (data: CAPDData) => void;
@@ -30,9 +30,7 @@ interface CAPDData {
     second: { date: string; data: any };
     third: { date: string; data: any };
   };
-  peritonitisHistory: any[];
-  exitSiteInfections: any[];
-  tunnelInfections: any[];
+  
 }
 
 const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
@@ -55,9 +53,7 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
       second: { date: "", data: null },
       third: { date: "", data: null },
     },
-    peritonitisHistory: [],
-    exitSiteInfections: [],
-    tunnelInfections: [],
+    
   });
 
   const updateFormData = (field: string, value: any) => {
@@ -85,11 +81,10 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Tabs defaultValue="pet" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pet">PET Tests</TabsTrigger>
             <TabsTrigger value="adequacy">Adequacy Tests</TabsTrigger>
-            <TabsTrigger value="infections">Infections</TabsTrigger>
-            <TabsTrigger value="tunnel">Tunnel Infections</TabsTrigger>
+            
           </TabsList>
 
           {/* Always render PETTest; it has its own Add button */}
@@ -107,45 +102,9 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
             />
           </TabsContent>
 
-          <TabsContent value="infections">
-            <InfectionTracking
-              peritonitisHistory={formData.peritonitisHistory}
-              exitSiteInfections={formData.exitSiteInfections}
-              onUpdatePeritonitis={(history) =>
-                updateFormData("peritonitisHistory", history)
-              }
-              onUpdateExitSite={(infections) =>
-                updateFormData("exitSiteInfections", infections)
-              }
-            />
-          </TabsContent>
+          
 
-          <TabsContent value="tunnel">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tunnel Infection History</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label>Date</label>
-                    <input type="date" placeholder="Infection date" />
-                  </div>
-                  <div className="space-y-2">
-                    <label>Culture Report</label>
-                    <input placeholder="Culture results" />
-                  </div>
-                  <div className="space-y-2">
-                    <label>Treatment</label>
-                    <input placeholder="Treatment provided" />
-                  </div>
-                </div>
-                <Button type="button" variant="outline" className="w-full">
-                  Add Tunnel Infection Record
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          
         </Tabs>
 
         <div className="flex justify-end space-x-4">
