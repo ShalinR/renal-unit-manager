@@ -656,16 +656,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                   Save Assessment
                 </Button>
               </div>
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setActiveView("dashboard")}
-          >
-            Cancel
-          </Button>
-          <Button type="submit">Submit Assessment</Button>
-        </div>
+        
       </form>
     </div>
   );
