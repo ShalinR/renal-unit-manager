@@ -151,4 +151,3 @@ const WardManagement = () => {
 };
 
 export default WardManagement;
-

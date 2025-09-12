@@ -14,7 +14,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -36,7 +35,6 @@ import {
   User,
   LogOut,
   Settings,
-  UserPlus,
 } from "lucide-react";
 
 const menuItems = [
@@ -164,17 +162,6 @@ const Layout = ({ children }: LayoutProps) => {
                     />
                   </div>
                 </form>
-
-                {/* Quick Register Patient Button */}
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate('/register-patient')}
-                  className="flex items-center gap-2"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Register Patient</span>
-                </Button>
 
                 {/* User Dropdown */}
                 <DropdownMenu>

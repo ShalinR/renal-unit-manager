@@ -161,4 +161,3 @@ const Investigation = () => {
 };
 
 export default Investigation;
-

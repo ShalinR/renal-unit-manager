@@ -138,7 +138,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                          <div className="space-y-3">
+                          {/* <div className="space-y-3">
                             <Label>Level of Dependency</Label>
                             <RadioGroup
                               value={assessment.levelOfDependency}
@@ -157,7 +157,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                                 <Label htmlFor={`totally-dependent-${assessment.id}`}>Totally dependent</Label>
                               </div>
                             </RadioGroup>
-                          </div>
+                          </div> */}
 
                           <div className="space-y-2">
                             <Label>Exit Site Condition</Label>
@@ -295,8 +295,8 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                           <CardTitle className="text-lg">Technical Assessment</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <div className="space-y-3">
-                            <Label>Hand Washing Technique</Label>
+                          <div className="space-y-3">            
+                            <Label>Catheter Components in Order</Label>
                             <RadioGroup
                               value={assessment.handWashingTechnique ? "yes" : "no"}
                               onValueChange={(value) => updateAssessment(assessment.id, 'handWashingTechnique', value === "yes")}
@@ -313,7 +313,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                           </div>
 
                           <div className="space-y-3">
-                            <Label>Catheter Components in Order</Label>
+                            <Label>Hand Washing Technique</Label>
                             <RadioGroup
                               value={assessment.catheterComponents}
                               onValueChange={(value) => updateAssessment(assessment.id, 'catheterComponents', value)}
@@ -326,8 +326,29 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                                 <RadioGroupItem value="not-competent" id={`catheter-not-competent-${assessment.id}`} />
                                 <Label htmlFor={`catheter-not-competent-${assessment.id}`}>Not Competent</Label>
                               </div>
-                            </RadioGroup>
+                           </RadioGroup>
                           </div>
+                           
+                          <div className="space-y-3">
+                           <Label>CAPD Prescription</Label>
+                            <RadioGroup
+                              value={assessment.catheterComponents}
+                              onValueChange={(value) => updateAssessment(assessment.id, 'catheterComponents', value)}
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="com" id={`catheter-compet-${assessment.id}`} />
+                                <Label htmlFor={`catheter-competent-${assessment.id}`}>1.5x</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="not-compe" id={`catheter-not-compet-${assessment.id}`} />
+                                <Label htmlFor={`catheter-not-competent-${assessment.id}`}>2.5x</Label>
+                              </div>
+                           </RadioGroup>
+                          </div>
+                           
+
+
+                          
                         </CardContent>
                       </Card>
                     </CardContent>
