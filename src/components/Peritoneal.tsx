@@ -123,7 +123,7 @@ const Peritoneal = () => {
         />
 
         <div className="flex justify-end gap-3">
-          <Button variant="default" onClick={() => setActiveView("dashboard")}>Back</Button>
+          <Button  variant="default"  onClick={() => setActiveView("dashboard")}>Back</Button>
           <Button onClick={saveAll}>Save Complications</Button>
         </div>
       </div>

@@ -4,60 +4,79 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, User, Phone, Mail, MapPin } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { User, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PatientRegistrationProps {
   onComplete: () => void;
 }
 
+type FormData = {
+  
+  Technique: string;
+  Designation: string;
+
+ 
+  counsellingDate: string;        
+  initiationDate: string;         
+
+  
+  catheterInsertionDate: string;  
+  insertionDoneBy: string;
+  insertionPlace: string;
+
+  
+  firstFlushing: string;          
+  secondFlushing: string;         
+  thirdFlushing: string;          
+};
+
 const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    dateOfBirth: undefined as Date | undefined,
-    gender: "",
-    phone: "",
-    email: "",
-    address: "",
-    emergencyContact: "",
-    emergencyPhone: "",
-    medicalHistory: "",
-    currentMedications: "",
-    pdStartDate: undefined as Date | undefined,
-    doctorName: "",
-    hospitalId: ""
+
+  const [formData, setFormData] = useState<FormData>({
+    // existing
+    Technique: "",
+    Designation: "",
+
+    // basic info
+    counsellingDate: "",
+    initiationDate: "",
+
+    // catheter info
+    catheterInsertionDate: "",
+    insertionDoneBy: "",
+    insertionPlace: "",
+
+    // flushing
+    firstFlushing: "",
+    secondFlushing: "",
+    thirdFlushing: "",
   });
+
+  const updateFormData = (field: keyof FormData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required fields
-    if (!formData.firstName || !formData.lastName || !formData.dateOfBirth) {
+
+    // Minimal validation focusing on required core fields
+    if (!formData.insertionDoneBy || !formData.Designation || !formData.initiationDate) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
+        description: "Please fill in Insertion Done By, Designation, and Initiation Date.",
+        variant: "destructive",
       });
       return;
     }
 
-    toast({
-      title: "Registration Successful",
-      description: `Patient ${formData.firstName} ${formData.lastName} has been registered successfully.`,
-    });
-    
-    onComplete();
-  };
+    // Optional: persist locally so CAPDSummary/DataPreview can pick it up
+    try {
+      localStorage.setItem("patientRegistration", JSON.stringify(formData));
+    } catch {}
 
-  const updateFormData = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    onComplete();
   };
 
   return (
@@ -71,75 +90,79 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* BASIC INFO */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Personal Information
+              <Calendar className="w-5 h-5 text-primary" />
+              Basic Information
             </CardTitle>
-            <CardDescription>Basic patient details and contact information</CardDescription>
+            <CardDescription>Initial counselling and PD initiation dates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="counsellingDate">Counselling Date</Label>
                 <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => updateFormData("firstName", e.target.value)}
-                  placeholder="Enter first name"
-                  required
+                  id="counsellingDate"
+                  type="date"
+                  value={formData.counsellingDate}
+                  onChange={(e) => updateFormData("counsellingDate", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
+                <Label htmlFor="initiationDate">Initiation Date</Label>
                 <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => updateFormData("lastName", e.target.value)}
-                  placeholder="Enter last name"
+                  id="initiationDate"
+                  type="date"
+                  value={formData.initiationDate}
+                  onChange={(e) => updateFormData("initiationDate", e.target.value)}
                   required
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Date of Birth *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.dateOfBirth && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.dateOfBirth ? format(formData.dateOfBirth, "PPP") : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.dateOfBirth}
-                      onSelect={(date) => updateFormData("dateOfBirth", date)}
-                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+        <Card>
+          <CardHeader>
+            <CardTitle>Catheter Information & Staff</CardTitle>
+            <CardDescription>Who did the insertion, where, and the technique used</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="catheterInsertionDate">Insertion Date</Label>
+                <Input
+                  id="catheterInsertionDate"
+                  type="date"
+                  value={formData.catheterInsertionDate}
+                  onChange={(e) => updateFormData("catheterInsertionDate", e.target.value)}
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
-                <Select value={formData.gender} onValueChange={(value) => updateFormData("gender", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
+                <Label htmlFor="insertionDoneBy">Insertion Done By</Label>
+                <Input
+                          placeholder="Name of the person"
+                          value={formData.insertionDoneBy}
+                          onChange={(e) => updateFormData("insertionDoneBy", e.target.value)}
+                        />
+                 
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insertionPlace">Insertion Place</Label>
+                <Select
+                  value={formData.insertionPlace}
+                  onValueChange={(value) => updateFormData("insertionPlace", value)}
+                >
+                  <SelectTrigger id="insertionPlace">
+                    <SelectValue placeholder="Select insertionPlace" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="teaching-hospital">Teaching Hospital Peradeniya</SelectItem>
+                    <SelectItem value="kandy">Kandy Hostpital</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -148,151 +171,81 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    className="pl-10"
-                    value={formData.phone}
-                    onChange={(e) => updateFormData("phone", e.target.value)}
-                    placeholder="Enter phone number"
-                  />
-                </div>
+                <Label htmlFor="Designation">Designation</Label>
+                <Select
+                  value={formData.Designation}
+                  onValueChange={(value) => updateFormData("Designation", value)}
+                >
+                  <SelectTrigger id="Designation">
+                    <SelectValue placeholder="Select designation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="consultant">Consultant</SelectItem>
+                    <SelectItem value="senior-registrar">Senior Registrar</SelectItem>
+                    <SelectItem value="registrar">Registrar</SelectItem>
+                    <SelectItem value="medical-officer">Medical Officer</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    className="pl-10"
-                    value={formData.email}
-                    onChange={(e) => updateFormData("email", e.target.value)}
-                    placeholder="Enter email address"
-                  />
-                </div>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Textarea
-                  id="address"
-                  className="pl-10"
-                  value={formData.address}
-                  onChange={(e) => updateFormData("address", e.target.value)}
-                  placeholder="Enter full address"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="Technique">Technique</Label>
+                <Select
+                  value={formData.Technique}
+                  onValueChange={(value) => updateFormData("Technique", value)}
+                >
+                  <SelectTrigger id="Technique">
+                    <SelectValue placeholder="Select technique" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percutaneous">Percutaneous</SelectItem>
+                    <SelectItem value="laparoscopic">Laparoscopic</SelectItem>
+                    <SelectItem value="fluoroscopic">Fluoroscopic</SelectItem>
+                    <SelectItem value="open-surgery">Open Surgery</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* FLUSHING DATES */}
         <Card>
           <CardHeader>
-            <CardTitle>Emergency Contact</CardTitle>
-            <CardDescription>Emergency contact information</CardDescription>
+            <CardTitle>Flushing Dates</CardTitle>
+            <CardDescription>Record the 1st, 2nd, and 3rd flushing dates</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="emergencyContact">Emergency Contact Name</Label>
+                <Label htmlFor="firstFlushing">1st Flushing</Label>
                 <Input
-                  id="emergencyContact"
-                  value={formData.emergencyContact}
-                  onChange={(e) => updateFormData("emergencyContact", e.target.value)}
-                  placeholder="Enter contact name"
+                  id="firstFlushing"
+                  type="date"
+                  value={formData.firstFlushing}
+                  onChange={(e) => updateFormData("firstFlushing", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emergencyPhone">Emergency Contact Phone</Label>
+                <Label htmlFor="secondFlushing">2nd Flushing</Label>
                 <Input
-                  id="emergencyPhone"
-                  value={formData.emergencyPhone}
-                  onChange={(e) => updateFormData("emergencyPhone", e.target.value)}
-                  placeholder="Enter contact phone"
+                  id="secondFlushing"
+                  type="date"
+                  value={formData.secondFlushing}
+                  onChange={(e) => updateFormData("secondFlushing", e.target.value)}
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Medical Information</CardTitle>
-            <CardDescription>Medical history and current treatment details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="medicalHistory">Medical History</Label>
-              <Textarea
-                id="medicalHistory"
-                value={formData.medicalHistory}
-                onChange={(e) => updateFormData("medicalHistory", e.target.value)}
-                placeholder="Enter relevant medical history"
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="currentMedications">Current Medications</Label>
-              <Textarea
-                id="currentMedications"
-                value={formData.currentMedications}
-                onChange={(e) => updateFormData("currentMedications", e.target.value)}
-                placeholder="List current medications"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>PD Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.pdStartDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.pdStartDate ? format(formData.pdStartDate, "PPP") : "Select start date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.pdStartDate}
-                      onSelect={(date) => updateFormData("pdStartDate", date)}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="doctorName">Attending Physician</Label>
+                <Label htmlFor="thirdFlushing">3rd Flushing</Label>
                 <Input
-                  id="doctorName"
-                  value={formData.doctorName}
-                  onChange={(e) => updateFormData("doctorName", e.target.value)}
-                  placeholder="Enter doctor's name"
+                  id="thirdFlushing"
+                  type="date"
+                  value={formData.thirdFlushing}
+                  onChange={(e) => updateFormData("thirdFlushing", e.target.value)}
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hospitalId">Hospital/Clinic ID</Label>
-              <Input
-                id="hospitalId"
-                value={formData.hospitalId}
-                onChange={(e) => updateFormData("hospitalId", e.target.value)}
-                placeholder="Enter hospital or clinic ID"
-              />
             </div>
           </CardContent>
         </Card>
@@ -301,9 +254,7 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
           <Button type="button" variant="outline" onClick={onComplete}>
             Cancel
           </Button>
-          <Button type="submit">
-            Register Patient
-          </Button>
+          <Button type="submit">Register Patient</Button>
         </div>
       </form>
     </div>
