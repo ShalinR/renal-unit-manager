@@ -192,7 +192,7 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
               key={t.id}
               type="button"
               size="sm"
-              variant={t.id === activeId ? "default" : "outline"}
+              variant={t.id === activeId ? "default" : "default"}
               onClick={() => setActiveId(t.id)}
             >
               {t.label}

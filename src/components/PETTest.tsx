@@ -237,7 +237,7 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
               key={t.id}
               type="button"
               size="sm"
-              variant={t.id === activeId ? "default" : "outline"}
+              variant={t.id === activeId ? "default" : "default"}
               onClick={() => setActiveId(t.id)}
             >
               {t.label}
@@ -327,7 +327,7 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
               </table>
             </div>
 
-            <Button type="button" onClick={() => calculateRatios(active.id)} className="w-full" variant="outline">
+            <Button type="button" onClick={() => calculateRatios(active.id)} className="w-full" variant="default">
               <Calculator className="w-4 h-4 mr-2" />
               Calculate Ratios
             </Button>

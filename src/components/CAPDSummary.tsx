@@ -110,7 +110,7 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
         <div className="flex justify-end space-x-4">
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             onClick={() => {
               onSubmit(formData);
             }}
