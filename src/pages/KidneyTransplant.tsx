@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Stethoscope, UserCheck, Users, Heart, TrendingUp } from "lucide-react";
 import DonorAssessment from "../components/DonorAssessment";
 import RecipientAssessment from "../components/RecipientAssessment";
-import FollowUpForm from "../components/FollowUpForm";
-export type ActiveView = 'dashboard' | 'donor-assessment' | 'recipient-assessment' | 'kt' | 'follow-up';
-
+import FollowUpForm from "../components/FollowUp";
+import KTFormData  from "../components/KTSurgery";
+import { FileText } from "lucide-react";
+import KidneyTransplantSummary from "../components/KidneyTransplantSummary";
+export type ActiveView = 'dashboard' | 'donor-assessment' | 'recipient-assessment' | 'kt' | 'follow-up' | 'summary';
 interface DonorAssessmentForm {
   name: string;
   age: string;
@@ -352,6 +354,9 @@ interface RecipientAssessmentForm {
     immunologicalRisk: string;
   };
 }
+
+import { usePatientContext } from "../context/PatientContext";
+import React from 'react';
 
 const KidneyTransplant = () => {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -701,6 +706,16 @@ const KidneyTransplant = () => {
     },
   });
 
+  // Access the setPatientData function from the context
+  const { setPatientData } = usePatientContext();
+    const [summaryData, setSummaryData] = useState({
+    donor: null,
+    recipient: null,
+    followUp: null,
+    surgery: null,
+  });
+
+  
   // Helper: update nested objects safely
   const updateNestedField = (obj: any, path: string[], value: any): any => {
     if (path.length === 1) {
@@ -714,64 +729,77 @@ const KidneyTransplant = () => {
   };
 
   // Donor form handlers
-const handleDonorFormChange = (field: string, value: any) => {
-  setDonorForm(prev => {
-    // Handle nested paths with dot notation
-    if (field.includes('.')) {
-      const paths = field.split('.');
-      const newForm = { ...prev };
-      let current: any = newForm;
-      
-      for (let i = 0; i < paths.length - 1; i++) {
-        current = current[paths[i]];
+  const handleDonorFormChange = (field: string, value: any) => {
+    setDonorForm(prev => {
+      // Handle nested paths with dot notation
+      if (field.includes('.')) {
+        const paths = field.split('.');
+        const newForm = { ...prev };
+        let current: any = newForm;
+        
+        for (let i = 0; i < paths.length - 1; i++) {
+          current = current[paths[i]];
+        }
+        
+        current[paths[paths.length - 1]] = value;
+        return newForm;
       }
       
-      current[paths[paths.length - 1]] = value;
-      return newForm;
-    }
-    
-    // Handle top-level fields
-    return {
-      ...prev,
-      [field]: value
-    };
-  });
-};
-
-const handleDonorFormSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  try {
-    // Validate required fields
-    if (!donorForm.name || !donorForm.age || !donorForm.gender || !donorForm.nicNo) {
-      alert("Please fill in all required fields");
-      return;
-    }
-
-    // API call to submit donor data
-    const response = await fetch('/api/donor-assessment', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(donorForm),
+      // Handle top-level fields
+      return {
+        ...prev,
+        [field]: value
+      };
     });
+  };
 
-    if (response.ok) {
-      const result = await response.json();
-      console.log("Donor form submitted successfully:", result);
-      
-      // Reset form or navigate to next step
-      setActiveView('dashboard');
-      alert("Donor assessment submitted successfully!");
-    } else {
-      throw new Error('Failed to submit donor form');
+  const handleDonorFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Validate required fields
+      if (!donorForm.name || !donorForm.age || !donorForm.gender || !donorForm.nicNo) {
+        alert("Please fill in all required fields");
+        return;
+      }
+
+      // API call to submit donor data
+      const response = await fetch('/api/donor-assessment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(donorForm),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Donor form submitted successfully:", result);
+        
+        // Update PatientContext with Donor Assessment data
+        setPatientData(prev => ({
+          ...prev,
+          recipientAssessment: {
+            name: donorForm.name,
+            age: donorForm.age,
+            gender: donorForm.gender,
+            bloodGroup: donorForm.immunologicalDetails.bloodGroup.d + donorForm.immunologicalDetails.bloodGroup.r,
+          },
+          ktSurgery: prev.ktSurgery,
+          followUp: prev.followUp,
+        }));
+        
+        // Reset form or navigate to next step
+        setActiveView('dashboard');
+        alert("Donor assessment submitted successfully!");
+      } else {
+        throw new Error('Failed to submit donor form');
+      }
+    } catch (error) {
+      console.error("Error submitting donor form:", error);
+      alert("Error submitting donor assessment. Please try again.");
     }
-  } catch (error) {
-    console.error("Error submitting donor form:", error);
-    alert("Error submitting donor assessment. Please try again.");
-  }
-};
+  };
 
 
   // Recipient form handlers
@@ -779,163 +807,130 @@ const handleDonorFormSubmit = async (e: React.FormEvent) => {
     setRecipientForm(prev => updateNestedField(prev, field.split("."), value));
   };
 
-const handleRecipientFormSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  try {
-    // Validate required fields
-    if (!recipientForm.name || !recipientForm.age || !recipientForm.gender || !recipientForm.nicNo) {
-      alert("Please fill in all required fields");
-      return;
-    }
+  const handleRecipientFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Validate required fields
+      if (!recipientForm.name || !recipientForm.age || !recipientForm.gender || !recipientForm.nicNo) {
+        alert("Please fill in all required fields");
+        return;
+      }
 
-    // API call to submit recipient data
-    const response = await fetch('/api/recipient-assessment', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(recipientForm),
-    });
+      // API call to submit recipient data
+      const response = await fetch('/api/recipient-assessment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(recipientForm),
+      });
 
-    if (response.ok) {
-      const result = await response.json();
-      console.log("Recipient form submitted successfully:", result);
-      
-      // Reset form or navigate to next step
-      setActiveView('dashboard');
-      alert("Recipient assessment submitted successfully!");
-    } else {
-      throw new Error('Failed to submit recipient form');
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Recipient form submitted successfully:", result);
+
+        // Update PatientContext with Recipient Assessment data
+        setPatientData(prev => ({
+          ...prev,
+          recipientAssessment: {
+            name: recipientForm.name,
+            age: recipientForm.age,
+            gender: recipientForm.gender,
+            bloodGroup: recipientForm.immunologicalDetails.bloodGroup.d + recipientForm.immunologicalDetails.bloodGroup.r,
+          },
+          ktSurgery: prev.ktSurgery,
+          followUp: prev.followUp,
+        }));
+        
+        // Reset form or navigate to next step
+        setActiveView('dashboard');
+        alert("Recipient assessment submitted successfully!");
+      } else {
+        throw new Error('Failed to submit recipient form');
+      }
+    } catch (error) {
+      console.error("Error submitting recipient form:", error);
+      alert("Error submitting recipient assessment. Please try again.");
     }
-  } catch (error) {
-    console.error("Error submitting recipient form:", error);
-    alert("Error submitting recipient assessment. Please try again.");
-  }
-};
+  };
   return (
     <div>
       {activeView === "donor-assessment" && (
-      <DonorAssessment
-        donorForm={donorForm}
-        setDonorForm={setDonorForm}
-        setActiveView={setActiveView}
-        handleDonorFormChange={handleDonorFormChange}
-        handleDonorFormSubmit={handleDonorFormSubmit}
-      />
+        <DonorAssessment
+          donorForm={donorForm}
+          setDonorForm={setDonorForm}
+          setActiveView={setActiveView}
+          handleDonorFormChange={handleDonorFormChange}
+          handleDonorFormSubmit={handleDonorFormSubmit}
+        />
       )}
       {activeView === "recipient-assessment" && (
-      <RecipientAssessment
-        recipientForm={recipientForm}
-        setRecipientForm={setRecipientForm}
-        setActiveView={setActiveView}
-        handleRecipientFormChange={handleRecipientFormChange}
-        handleRecipientFormSubmit={handleRecipientFormSubmit}
-      />
-      )}
-      {activeView === "kt" && (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Kidney Transplant (KT)</h2>
-        <p className="text-muted-foreground">Transplant procedure management and documentation.</p>
-        <Card>
-        <CardHeader>
-          <CardTitle>Transplant Procedure</CardTitle>
-          <CardDescription>Document transplant surgery details</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Transplant procedure functionality will be implemented here.</p>
-        </CardContent>
-        </Card>
-      </div>
+        <RecipientAssessment
+          recipientForm={recipientForm}
+          setRecipientForm={setRecipientForm}
+          setActiveView={setActiveView}
+          handleRecipientFormChange={handleRecipientFormChange}
+          handleRecipientFormSubmit={handleRecipientFormSubmit}
+        />
       )}
       {activeView === "follow-up" && (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Follow Up</h2>
-        <p className="text-muted-foreground">Post-transplant monitoring and care management.</p>
-        <FollowUpForm setActiveView={setActiveView} />
-      </div>
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Follow Up</h2>
+          <FollowUpForm setActiveView={setActiveView} />
+        </div>
       )}
+      {activeView === "kt" && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Kidney Transplant & Surgery</h2>
+          <KTFormData setActiveView={setActiveView} />
+        </div>
+      )}
+      {activeView === "summary" && (
+      <KidneyTransplantSummary setActiveView={setActiveView} />
+)}
       {activeView === "dashboard" && (
-      <div className="space-y-8">
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-            <Stethoscope className="w-8 h-8 text-primary" />
+        <div className="space-y-8">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full mb-2">
+              <Stethoscope className="w-9 h-9 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold text-foreground">
+              Kidney Transplant
+            </h1>
           </div>
-          <h1 className="text-4xl font-bold text-foreground">
-            Kidney Transplant
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Kidney transplant program management and patient tracking
-          </p>
+
+          {/* centered container with 2x2 grid */}
+          <div className="max-w-7xl mx-auto px-4"> {/* Increased max-width to accommodate 5 items */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6"> {/* Changed to 5 columns */}
+    {[
+      { icon: UserCheck, title: "Donor Assessment", view: "donor-assessment" },
+      { icon: Users, title: "Recipient Assessment", view: "recipient-assessment" },
+      { icon: Heart, title: "Kidney Transplant Surgery", view: "kt" },
+      { icon: TrendingUp, title: "Follow Up", view: "follow-up" },
+      { icon: FileText, title: "Patient Summary", view: "summary" }
+    ].map((item) => (
+      <Card
+        key={item.title}
+        className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full"
+      > {/* Removed max-width constraints */}
+        <div className="flex flex-col items-center text-center">
+          <item.icon className="w-10 h-10 text-primary mb-2" />
+          <CardTitle className="text-xl font-medium mb-4">{item.title}</CardTitle>
         </div>
-        {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-primary" />
-                <CardTitle>Donor Assessment</CardTitle>
-              </div>
-              <CardDescription>
-                Register and assess kidney donors.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setActiveView("donor-assessment")} className="w-full">
-                Go to Donor Assessment
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <CardTitle>Recipient Assessment</CardTitle>
-              </div>
-              <CardDescription>
-                Register and assess transplant recipients.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setActiveView("recipient-assessment")} className="w-full">
-                Go to Recipient Assessment
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Heart className="w-5 h-5 text-primary" />
-                <CardTitle>KT</CardTitle>
-              </div>
-              <CardDescription>
-                Kidney transplant surgery details.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setActiveView("kt")} className="w-full">
-                Go to KT
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                <CardTitle>Follow Up</CardTitle>
-              </div>
-              <CardDescription>
-                Post-transplant follow-up and monitoring.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setActiveView("follow-up")} className="w-full">
-                Go to Follow Up
-              </Button>
-            </CardContent>
-          </Card>
+        <Button
+          onClick={() => setActiveView(item.view as ActiveView)}
+          className="px-6 py-2 text-base w-full"
+        > {/* Removed max-width constraint */}
+          Access
+        </Button>
+      </Card>
+    ))}
+  </div>
+</div>
+
+          
         </div>
-      </div>
       )}
     </div>
   );
