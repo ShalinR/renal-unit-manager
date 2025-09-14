@@ -626,7 +626,7 @@ const InfectionTracking = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Button type="button" variant="outline" className="mb-4" onClick={addTunnelEpisode}>
+                <Button type="button" variant="default" className="mb-4" onClick={addTunnelEpisode}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Tunnel Infection Record
                 </Button>

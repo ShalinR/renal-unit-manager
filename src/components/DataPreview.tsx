@@ -75,7 +75,7 @@ const DataPreview = ({ capdData, onBack }: DataPreviewProps) => {
 
       {/* Actions */}
       <div className="flex justify-between items-center">
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="default" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to CAPD Summary
         </Button>
@@ -197,7 +197,7 @@ const DataPreview = ({ capdData, onBack }: DataPreviewProps) => {
 
       {/* Footer actions */}
       <div className="flex justify-center gap-4 pt-6">
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="default" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Edit CAPD Summary
         </Button>
