@@ -168,7 +168,7 @@ const Peritoneal = () => {
                   <CardDescription>Register new patients in the system</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Register Patient</Button>
+                  <Button className="w-full bg-blue-500" variant="default">Enter Details</Button>
                 </CardContent>
               </Card>
 
@@ -182,7 +182,7 @@ const Peritoneal = () => {
                   <CardDescription>Complete patient dialysis summary with PET &amp; adequacy tests</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">CAPD Summary</Button>
+                  <Button className="w-full bg-blue-500" variant="default">Enter Details</Button>
                 </CardContent>
               </Card>
 
@@ -196,7 +196,7 @@ const Peritoneal = () => {
                   <CardDescription>Open the latest saved CAPD summary &amp; reports</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline" disabled={!capdData}>
+                  <Button className="w-full bg-blue-500" variant="default" disabled={!capdData}>
                     {capdData ? "Open Preview" : "No Saved Results"}
                   </Button>
                 </CardContent>
@@ -212,7 +212,7 @@ const Peritoneal = () => {
                   <CardDescription>Monthly patient progress and condition tracking</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Monthly Review</Button>
+                  <Button className="w-full bg-blue-500" variant="default">Monthly Review</Button>
                 </CardContent>
               </Card>
 
@@ -226,7 +226,7 @@ const Peritoneal = () => {
                   <CardDescription>Peritonitis, Exit-site & Tunnel infections</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Add Complication</Button>
+                  <Button className="w-full bg-blue-500" variant="default">Add Complication</Button>
                 </CardContent>
               </Card>
             </div>

@@ -176,7 +176,7 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TestTube className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Adequacy Test Results (Usually done 3 times a year)</h3>
+          <h3 className="text-lg font-semibold">Adequacy Test Results </h3>
         </div>
         <Button type="button" onClick={addTest}>
           <Plus className="w-4 h-4 mr-2" />
@@ -225,7 +225,7 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
             {/* Patient + Date */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Patient Name</Label>
+                <Label>Insertion Done by</Label>
                 <Input
                   value={active.payload.patientName}
                   onChange={(e) => updatePayload(active.id, "patientName", e.target.value)}
