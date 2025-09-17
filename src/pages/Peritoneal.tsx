@@ -168,7 +168,7 @@ const Peritoneal = () => {
                   <CardDescription>Register new patients in the system</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Register Patient</Button>
+                  <Button className="w-full bg-blue-500" variant="outline">Enter Details</Button>
                 </CardContent>
               </Card>
 
@@ -182,7 +182,7 @@ const Peritoneal = () => {
                   <CardDescription>Complete patient dialysis summary with PET &amp; adequacy tests</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">CAPD Summary</Button>
+                  <Button className="w-full bg-blue-500" variant="outline">Enter Details</Button>
                 </CardContent>
               </Card>
 
