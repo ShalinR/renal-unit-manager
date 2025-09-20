@@ -4,6 +4,7 @@
     username: rcu
     password: ChangeMe_Strong#2025
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: true
