@@ -1,0 +1,12 @@
+﻿spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/renal_care_unit?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: rcu
+    password: ChangeMe_Strong#2025
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
