@@ -346,7 +346,7 @@ const DonorAssessmentTabs: React.FC<DonorAssessmentProps> = ({
         coordination: false
       }
     },
-    immunological: {
+    immunologicalDetails: {
       bloodGroup: {
         d: '',
         r: ''
@@ -1120,13 +1120,13 @@ const DonorAssessmentTabs: React.FC<DonorAssessmentProps> = ({
                 <InputField 
                   name="immunological.bloodGroup.d"
                   label="D"
-                  value={formData.immunological?.bloodGroup?.d || ''}
+                  value={formData.immunologicalDetails?.bloodGroup?.d || ''}
                   placeholder="Enter D value" 
                 />
                 <InputField 
                   name="immunological.bloodGroup.r"
                   label="R"
-                  value={formData.immunological?.bloodGroup?.r || ''}
+                  value={formData.immunologicalDetails?.bloodGroup?.r || ''}
                   placeholder="Enter R value" 
                 />
               </div>
@@ -1137,13 +1137,13 @@ const DonorAssessmentTabs: React.FC<DonorAssessmentProps> = ({
                 <InputField 
                   name="immunological.crossMatch.tCell"
                   label="T Cell"
-                  value={formData.immunological?.crossMatch?.tCell || ''}
+                  value={formData.immunologicalDetails?.crossMatch?.tCell || ''}
                   placeholder="Enter T cell value" 
                 />
                 <InputField 
                   name="immunological.crossMatch.bCell"
                   label="B Cell"
-                  value={formData.immunological?.crossMatch?.bCell || ''}
+                  value={formData.immunologicalDetails?.crossMatch?.bCell || ''}
                   placeholder="Enter B cell value" 
                 />
               </div>
@@ -1171,7 +1171,7 @@ const DonorAssessmentTabs: React.FC<DonorAssessmentProps> = ({
                           <td key={hla} className="py-3 px-2">
                             <Input 
                               name={`immunological.hlaTyping.${type}.${hla}`}
-                              value={formData.immunological?.hlaTyping?.[type as keyof typeof formData.immunological.hlaTyping]?.[hla as keyof typeof formData.immunological.hlaTyping.donor] || ''}
+                              value={formData.immunologicalDetails?.hlaTyping?.[type as keyof typeof formData.immunologicalDetails.hlaTyping]?.[hla as keyof typeof formData.immunologicalDetails.hlaTyping.donor] || ''}
                               onChange={handleInputChange}
                               className="h-9 text-sm border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                               placeholder={hla.replace('hla', '')} 
@@ -1190,13 +1190,13 @@ const DonorAssessmentTabs: React.FC<DonorAssessmentProps> = ({
                 <InputField 
                   name="immunological.pra.pre"
                   label="Pre (%)"
-                  value={formData.immunological?.pra?.pre || ''}
+                  value={formData.immunologicalDetails?.pra?.pre || ''}
                   placeholder="Enter pre PRA percentage" 
                 />
                 <InputField 
                   name="immunological.pra.post"
                   label="Post (%)"
-                  value={formData.immunological?.pra?.post || ''}
+                  value={formData.immunologicalDetails?.pra?.post || ''}
                   placeholder="Enter post PRA percentage" 
                 />
               </div>
@@ -1208,7 +1208,7 @@ const DonorAssessmentTabs: React.FC<DonorAssessmentProps> = ({
                   <Label className="text-sm font-medium text-slate-700">DSA (Donor Specific Antibodies)</Label>
                   <Input 
                     name="immunological.dsa"
-                    value={formData.immunological?.dsa || ''}
+                    value={formData.immunologicalDetails?.dsa || ''}
                     onChange={handleInputChange}
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Enter DSA details" 
@@ -1218,10 +1218,10 @@ const DonorAssessmentTabs: React.FC<DonorAssessmentProps> = ({
                 <div className="space-y-3">
                   <Label className="text-sm font-medium text-slate-700">Immunological Risk</Label>
                   <RadioGroup
-                    value={formData.immunological?.risk || ''}
+                    value={formData.immunologicalDetails?.immunologicalRisk || ''}
                     onValueChange={(value) => {
                       const syntheticEvent = {
-                        target: { name: 'immunological.risk', value, type: 'radio' }
+                        target: { name: 'immunologicalDetails.immunologicalRisk', value, type: 'radio' }
                       } as React.ChangeEvent<HTMLInputElement>;
                       handleInputChange(syntheticEvent);
                     }}
