@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { ArrowLeft, Activity } from "lucide-react";
+import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText } from "lucide-react";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface KTFormData {
   name: string;
@@ -120,18 +127,18 @@ const initialForm: KTFormData = {
 };
 
 const FORM_STEPS = [
-  "Introduction",
-  "Medical History",
-  "Pre-KT Details",
-  "KT Related Info",
-  "Immunological",
-  "Immunosuppression",
-  "Prophylaxis",
-  "Pre-op",
-  "Immediate Post KT",
-  "Surgery Complications",
-  "Medication",
-  "Recommendations"
+  { label: "Patient Info", icon: User },
+  { label: "Medical History", icon: Activity },
+  { label: "Pre-KT Details", icon: Pill },
+  { label: "KT Related Info", icon: ClipboardList },
+  { label: "Immunological", icon: Shield },
+  { label: "Immunosuppression", icon: Pill },
+  { label: "Prophylaxis", icon: Pill },
+  { label: "Pre-op", icon: Activity },
+  { label: "Immediate Post KT", icon: FileText },
+  { label: "Surgery Complications", icon: FileText },
+  { label: "Medication", icon: Pill },
+  { label: "Recommendations", icon: FileText },
 ];
 
 const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
@@ -151,130 +158,162 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
-      <div>
-        <button
-          onClick={() => setActiveView("dashboard")}
-          className="flex items-center gap-2 mb-6 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          type="button"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
-      </div>
-      
-      {/* Stepper */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">{FORM_STEPS[step]}</h2>
-        <div className="flex items-center gap-1 mb-2">
-          {FORM_STEPS.map((_, idx) => (
-            <div 
-              key={idx} 
-              className={`h-2 flex-1 rounded-full ${step === idx ? "bg-blue-600" : idx < step ? "bg-blue-400" : "bg-gray-200"}`}
-            />
-          ))}
-        </div>
-        <p className="text-sm text-gray-500 text-center">
-          Step {step + 1} of {FORM_STEPS.length}
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-blue-900 mb-2">Kidney Transplant Surgery</h1>
+              <p className="text-blue-600">Complete the KT surgery assessment form</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveView("dashboard")}
+              className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Button>
+          </div>
 
-      <form className="space-y-8" onSubmit={handleSubmit}>
-        {/* Step 0: Introduction */}
-        {step === 0 && (
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Patient Information</h2>
-            <p className="text-gray-600 mb-6">Enter the patient's basic details</p>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={form.name} 
-                    onChange={e => handleChange("name", e.target.value)} 
-                    required 
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={form.contact} 
-                    onChange={e => handleChange("contact", e.target.value)} 
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
-                  <input
-                    type="date"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={form.dob} 
-                    onChange={e => handleChange("dob", e.target.value)} 
-                    required 
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Age at Referral (years) *</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={form.age} 
-                    onChange={e => handleChange("age", e.target.value)} 
-                    required 
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
-                  <div className="flex gap-4 mt-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="male"
-                        name="gender"
-                        value="Male"
-                        checked={form.gender === "Male"}
-                        onChange={e => handleChange("gender", e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <label htmlFor="male" className="text-sm text-gray-700 cursor-pointer">Male</label>
+          {/* Progress Stepper */}
+          <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-blue-900">Assessment Progress</h2>
+              <span className="text-sm text-blue-600">Step {step + 1} of {FORM_STEPS.length}</span>
+            </div>
+            <div className="w-full max-w-full overflow-x-auto pb-2">
+              <div className="flex items-center gap-3 min-w-[700px] md:min-w-0">
+                {FORM_STEPS.map((formStep, idx) => {
+                  const Icon = formStep.icon;
+                  const isActive = step === idx;
+                  const isCompleted = step > idx;
+                  return (
+                    <div key={formStep.label} className="flex-1 min-w-[120px]">
+                      <div className={
+                        `flex flex-col items-center p-3 rounded-lg transition-all duration-200
+                        ${isActive 
+                          ? "bg-blue-100 border-2 border-blue-500 text-blue-700" 
+                          : isCompleted
+                          ? "bg-blue-50 border border-blue-200 text-blue-600"
+                          : "bg-gray-50 border border-gray-200 text-gray-400"
+                        }`
+                      }>
+                        <Icon className={`w-5 h-5 mb-2 ${isActive ? "text-blue-600" : isCompleted ? "text-blue-500" : "text-gray-400"}`} />
+                        <span className={`text-xs font-medium text-center ${isActive ? "text-blue-700" : isCompleted ? "text-blue-600" : "text-gray-400"}`}>
+                          {formStep.label}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="female"
-                        name="gender"
-                        value="Female"
-                        checked={form.gender === "Female"}
-                        onChange={e => handleChange("gender", e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <label htmlFor="female" className="text-sm text-gray-700 cursor-pointer">Female</label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <textarea
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  value={form.address} 
-                  onChange={e => handleChange("address", e.target.value)} 
-                />
+                  );
+                })}
               </div>
             </div>
           </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Step 0: Patient Info */}
+        {step === 0 && (
+          <Card className="shadow-lg border-0 bg-white">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <User className="w-6 h-6" />
+                Patient Information
+              </CardTitle>
+              <CardDescription className="text-blue-100">
+                Enter the patient's basic details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="name" className="text-sm font-semibold text-gray-700 flex items-center">
+                    Full Name <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={e => handleChange("name", e.target.value)}
+                    placeholder="Enter full name"
+                    className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                    required
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="contact" className="text-sm font-semibold text-gray-700 flex items-center">
+                    Contact Number
+                  </Label>
+                  <Input
+                    id="contact"
+                    value={form.contact}
+                    onChange={e => handleChange("contact", e.target.value)}
+                    placeholder="Enter phone number"
+                    className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="dob" className="text-sm font-semibold text-gray-700 flex items-center">
+                    Date of Birth <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Input
+                    id="dob"
+                    type="date"
+                    value={form.dob}
+                    onChange={e => handleChange("dob", e.target.value)}
+                    className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                    required
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="age" className="text-sm font-semibold text-gray-700 flex items-center">
+                    Age at Referral (years) <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    min={0}
+                    value={form.age}
+                    onChange={e => handleChange("age", e.target.value)}
+                    className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                    required
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-gray-700 flex items-center">
+                    Gender <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <RadioGroup className="flex gap-8 pt-2" value={form.gender} onValueChange={value => handleChange("gender", value)}>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="Male" id="ktMale" className="border-2 border-blue-300" />
+                      <Label htmlFor="ktMale" className="text-gray-700 font-medium">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="Female" id="ktFemale" className="border-2 border-blue-300" />
+                      <Label htmlFor="ktFemale" className="text-gray-700 font-medium">Female</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="address" className="text-sm font-semibold text-gray-700 flex items-center">
+                  Address
+                </Label>
+                <Textarea
+                  id="address"
+                  value={form.address}
+                  onChange={e => handleChange("address", e.target.value)}
+                  placeholder="Enter complete address"
+                  rows={4}
+                  className="border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg resize-none"
+                />
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Step 1: Medical History */}
@@ -1094,82 +1133,107 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
         {/* Step 10: Medication */}
         {step === 10 && (
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Current Medications</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Current Medications</label>
-                <select 
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={form.currentMeds} 
-                  onChange={e => handleChange("currentMeds", e.target.value)}
-                >
-                  <option value="">Select medication</option>
-                  <option value="Tacrolimus">Tacrolimus</option>
-                  <option value="MMF">MMF</option>
-                  <option value="Prednisolone">Prednisolone</option>
-                  <option value="Everolimus">Everolimus</option>
-                  <option value="Cyclosporine">Cyclosporine</option>
-                  <option value="Other">Other</option>
-                </select>
+          <Card className="shadow-lg border-0 bg-white">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Pill className="w-6 h-6" />
+                Current Medications
+              </CardTitle>
+              <CardDescription className="text-blue-100">
+                Select and review current medications
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="currentMeds" className="block text-sm font-medium text-gray-700 mb-1">Select Current Medications</Label>
+                  <select 
+                    id="currentMeds"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={form.currentMeds} 
+                    onChange={e => handleChange("currentMeds", e.target.value)}
+                  >
+                    <option value="">Select medication</option>
+                    <option value="Tacrolimus">Tacrolimus</option>
+                    <option value="MMF">MMF</option>
+                    <option value="Prednisolone">Prednisolone</option>
+                    <option value="Everolimus">Everolimus</option>
+                    <option value="Cyclosporine">Cyclosporine</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Step 11: Recommendations */}
         {step === 11 && (
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Management Recommendations</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recommendations</label>
-                <textarea
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={5}
-                  value={form.recommendations} 
-                  onChange={e => handleChange("recommendations", e.target.value)} 
-                  placeholder="Enter recommendations for ongoing management..."
-                />
+          <Card className="shadow-lg border-0 bg-white mb-8">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <FileText className="w-6 h-6" />
+                Management Recommendations
+              </CardTitle>
+              <CardDescription className="text-blue-100">
+                Enter recommendations for ongoing management
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="recommendations" className="block text-sm font-medium text-gray-700 mb-1">Recommendations</Label>
+                  <Textarea
+                    id="recommendations"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={5}
+                    value={form.recommendations} 
+                    onChange={e => handleChange("recommendations", e.target.value)} 
+                    placeholder="Enter recommendations for ongoing management..."
+                  />
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8 pt-6 border-t">
-          <button 
-            type="button" 
-            onClick={prevStep} 
+        <div className="flex justify-between items-center pt-8 pb-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={prevStep}
             disabled={step === 0}
-            className="min-w-[100px] px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Previous
-          </button>
-          
-          <div className="text-sm text-gray-500">
-            Step {step + 1} of {FORM_STEPS.length}
+          </Button>
+
+          <div className="flex gap-4">
+            {step < FORM_STEPS.length - 1 ? (
+              <Button
+                type="button"
+                onClick={nextStep}
+                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              >
+                Next Step
+                <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+              </Button>
+            ) : (
+              <Button 
+                type="submit" 
+                className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Save All Details
+              </Button>
+            )}
           </div>
-          
-          {step < FORM_STEPS.length - 1 ? (
-            <button 
-              type="button" 
-              onClick={nextStep}
-              className="min-w-[100px] px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              Next
-            </button>
-          ) : (
-            <button 
-              type="submit" 
-              className="min-w-[150px] px-6 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-            >
-              Save All Details
-            </button>
-          )}
         </div>
       </form>
     </div>
+  </div>
   );
 };
 
