@@ -144,8 +144,7 @@ const Layout = ({ children }: LayoutProps) => {
           <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
             <div className="flex items-center justify-between px-6 py-4">
               <div className="flex items-center gap-4">
-                <SidebarTrigger className="p-2 hover:bg-slate-100 rounded-lg transition-colors" />
-                <div className="flex flex-col">
+            <SidebarTrigger className="p-2 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" />                <div className="flex flex-col">
                   <h1 className="text-xl font-semibold text-slate-800">
                     {menuItems.find((item) => item.url === location.pathname)
                       ?.title || "Renal Unit Dashboard"}

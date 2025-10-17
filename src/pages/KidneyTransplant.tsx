@@ -192,6 +192,7 @@ interface RecipientAssessmentForm {
   nicNo: string;
   contactDetails: string;
   emailAddress: string;
+  donorId: string;
   relationToRecipient: string;
   relationType: string;
   comorbidities: {
@@ -543,6 +544,7 @@ const KidneyTransplant = () => {
     nicNo: '',
     contactDetails: '',
     emailAddress: '',
+    donorId: '',
     relationToRecipient: '',
     relationType: '',
     comorbidities: {
@@ -872,6 +874,7 @@ const KidneyTransplant = () => {
           setActiveView={setActiveView}
           handleRecipientFormChange={handleRecipientFormChange}
           handleRecipientFormSubmit={handleRecipientFormSubmit}
+          donors={[]}
         />
       )}
       {activeView === "follow-up" && (
@@ -887,8 +890,8 @@ const KidneyTransplant = () => {
         </div>
       )}
       {activeView === "summary" && (
-      <KidneyTransplantSummary setActiveView={setActiveView} />
-)}
+        <KidneyTransplantSummary />
+      )}
       {activeView === "dashboard" && (
         <div className="space-y-8">
           <div className="text-center space-y-4">

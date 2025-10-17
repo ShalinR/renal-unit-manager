@@ -168,7 +168,7 @@ const Peritoneal = () => {
                   <CardDescription>Register new patients in the system</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Enter Details</Button>
+                  <Button className="w-full bg-blue-500" variant="default">Enter Details</Button>
                 </CardContent>
               </Card>
 
@@ -182,7 +182,7 @@ const Peritoneal = () => {
                   <CardDescription>Complete patient dialysis summary with PET &amp; adequacy tests</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Enter Details</Button>
+                  <Button className="w-full bg-blue-500" variant="default">Enter Details</Button>
                 </CardContent>
               </Card>
 
@@ -196,7 +196,7 @@ const Peritoneal = () => {
                   <CardDescription>Open the latest saved CAPD summary &amp; reports</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline" disabled={!capdData}>
+                  <Button className="w-full bg-blue-500" variant="default" disabled={!capdData}>
                     {capdData ? "Open Preview" : "No Saved Results"}
                   </Button>
                 </CardContent>
@@ -212,7 +212,7 @@ const Peritoneal = () => {
                   <CardDescription>Monthly patient progress and condition tracking</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Monthly Review</Button>
+                  <Button className="w-full bg-blue-500" variant="default">Monthly Review</Button>
                 </CardContent>
               </Card>
 
