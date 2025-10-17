@@ -152,28 +152,26 @@ const Peritoneal = () => {
           <div className="space-y-8">
             <div className="text-center space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-                <Activity className="w-8 h-8 text-primary" />
+                <Activity className="w-8 h-8 text-primary " />
               </div>
-              <h1 className="text-4xl font-bold text-foreground">Peritoneal Dialysis</h1>
+              <h1 className="text-4xl font-bold text-foreground dark:text-slate-200">Peritoneal Dialysis</h1>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               {/* Patient Registration */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveView("register")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("register")}>
                 <CardHeader className="text-center">
                   <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <UserPlus className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>Basic Information</CardTitle>
-                  <CardDescription>Register new patients in the system</CardDescription>
+                  </div><CardTitle>Basic Information</CardTitle><CardDescription>Register new patients in the system</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="default">Enter Details</Button>
+                  <Button className="w-full bg-blue-500" variant="outline">Register Patient</Button>
                 </CardContent>
               </Card>
 
               {/* CAPD Summary */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveView("capd-summary")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("capd-summary")}>
                 <CardHeader className="text-center">
                   <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <Clipboard className="w-6 h-6 text-primary" />
@@ -182,12 +180,12 @@ const Peritoneal = () => {
                   <CardDescription>Complete patient dialysis summary with PET &amp; adequacy tests</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="default">Enter Details</Button>
+                  <Button className="w-full bg-blue-500" variant="outline">CAPD Summary</Button>
                 </CardContent>
               </Card>
 
               {/* View Results */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveView("preview")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("preview")}>
                 <CardHeader className="text-center">
                   <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <FileText className="w-6 h-6 text-primary" />
@@ -196,14 +194,14 @@ const Peritoneal = () => {
                   <CardDescription>Open the latest saved CAPD summary &amp; reports</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="default" disabled={!capdData}>
+                  <Button className="w-full bg-blue-500" variant="outline" disabled={!capdData}>
                     {capdData ? "Open Preview" : "No Saved Results"}
                   </Button>
                 </CardContent>
               </Card>
 
               {/* Monthly Assessment */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveView("monthly-assessment")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("monthly-assessment")}>
                 <CardHeader className="text-center">
                   <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <TrendingUp className="w-6 h-6 text-primary" />
@@ -212,12 +210,12 @@ const Peritoneal = () => {
                   <CardDescription>Monthly patient progress and condition tracking</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="default">Monthly Review</Button>
+                  <Button className="w-full bg-blue-500" variant="outline">Monthly Review</Button>
                 </CardContent>
               </Card>
 
               {/* Complications */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveView("complications")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("complications")}>
                 <CardHeader className="text-center">
                   <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <AlertTriangle className="w-6 h-6 text-primary" />
@@ -236,8 +234,8 @@ const Peritoneal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-background dark:bg-slate-950">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10 dark:bg-slate-950/50 dark:border-slate-800">
         <div className="fixed top-4 right-4 z-50">
           {activeView !== "dashboard" && (
             <Button variant="default" onClick={() => setActiveView("dashboard")}>

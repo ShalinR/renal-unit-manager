@@ -885,7 +885,6 @@ const KidneyTransplant = () => {
       )}
       {activeView === "kt" && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Kidney Transplant & Surgery</h2>
           <KTFormData setActiveView={setActiveView} />
         </div>
       )}
