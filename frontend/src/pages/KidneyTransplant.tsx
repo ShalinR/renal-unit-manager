@@ -879,7 +879,7 @@ const KidneyTransplant = () => {
       )}
       {activeView === "follow-up" && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Follow Up</h2>
+          <h2 className="text-2xl font-bold text-slate-800">Patient Follow-Up</h2>
           <FollowUpForm setActiveView={setActiveView} />
         </div>
       )}

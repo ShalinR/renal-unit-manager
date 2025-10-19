@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText } from "lucide-react";
+import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText, UserCheck } from "lucide-react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +62,7 @@ export interface KTFormData {
   postKTComp6: string;
   currentMeds: string;
   recommendations: string;
+  filledBy: string;
 }
 
 import type { ActiveView } from "../pages/KidneyTransplant";
@@ -124,6 +125,7 @@ const initialForm: KTFormData = {
   postKTComp6: "",
   currentMeds: "",
   recommendations: "",
+  filledBy: "",
 };
 
 const FORM_STEPS = [
@@ -138,7 +140,8 @@ const FORM_STEPS = [
   { label: "Immediate Post KT", icon: FileText },
   { label: "Surgery Complications", icon: FileText },
   { label: "Medication", icon: Pill },
-  { label: "Recommendations", icon: FileText },
+  { label: "Confirmation", icon: UserCheck },
+  { label: "Recommendations", icon: FileText }
 ];
 
 const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
@@ -154,6 +157,11 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.filledBy) {
+      alert("Please enter who filled out the form in the Confirmation step.");
+      setStep(FORM_STEPS.findIndex(s => s.label === "Confirmation"));
+      return;
+    }
     alert("KT form submitted!");
   };
 
@@ -1167,8 +1175,69 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           </Card>
         )}
 
-        {/* Step 11: Recommendations */}
+        {/* Step 11: Confirmation */}
         {step === 11 && (
+          <Card className="shadow-lg border-0 bg-white">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <UserCheck className="w-6 h-6" />
+                Final Confirmation
+              </CardTitle>
+              <CardDescription className="text-blue-100">
+                Review and confirm all assessment details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-6">
+                  <div className="space-y-4">
+                    <Label htmlFor="filledBy" className="text-sm font-semibold text-gray-700 flex items-center">
+                      Assessment Completed By <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input
+                      id="filledBy"
+                      placeholder="Enter your name or staff ID"
+                      className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                      value={form.filledBy}
+                      onChange={(e) => handleChange("filledBy", e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex items-start space-x-3 p-4 bg-white rounded-lg border border-blue-200">
+                    <Checkbox id="ktFinalCheck" className="border-2 border-blue-300 mt-1" required />
+                    <div className="space-y-2">
+                      <Label htmlFor="ktFinalCheck" className="text-gray-700 font-medium leading-relaxed">
+                        I confirm that all information provided in this surgery assessment is accurate and complete to the best of my knowledge.
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        By checking this box, I acknowledge that this assessment will be used for medical decision-making and transplant evaluation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Summary Section */}
+                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Assessment Summary</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <p><span className="font-medium text-gray-700">Patient Name:</span> {form.name || 'Not provided'}</p>
+                      <p><span className="font-medium text-gray-700">Age:</span> {form.age || 'Not provided'}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p><span className="font-medium text-gray-700">Transplant Date:</span> {form.ktDate || 'Not specified'}</p>
+                      <p><span className="font-medium text-gray-700">Assessment Date:</span> {new Date().toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+            </CardContent>
+          </Card>
+        )}
+
+        
+
+        {/* Step 12: Recommendations */}
+        {step === 12 && (
           <Card className="shadow-lg border-0 bg-white mb-8">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-3 text-xl">
@@ -1224,6 +1293,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
               <Button 
                 type="submit" 
                 className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center gap-2"
+                disabled={!form.filledBy}
               >
                 <Save className="w-4 h-4" />
                 Save All Details
