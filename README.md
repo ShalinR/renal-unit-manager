@@ -55,4 +55,3 @@ The backend is built using **Spring Boot** with **MySQL/PostgreSQL** support, wh
 
 ---
 
-If you want, I can also **prepare a visually neat Markdown version with badges for Java, Spring Boot, React, and PostgreSQL** suitable for GitHub. Do you want me to do that?
