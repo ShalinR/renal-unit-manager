@@ -15,7 +15,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -45,6 +44,8 @@ import {
 } from "lucide-react";
 
 import { useTheme } from "@/hooks/useTheme";
+import GlobalSearch from "./GlobalSearch";
+
 const menuItems = [
   { title: "Patient Overview", url: "/patient-overview", icon: Users },
   { title: "Ward Management", url: "/ward-management", icon: Building2 },
@@ -62,29 +63,13 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
   const { cycleTheme, getThemeIcon } = useTheme();
-
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("overview");
-
-  const patients = [
-    { id: "1", name: "Sarath Wijesinghe" },
-    { id: "2", name: "Ranil Rajapaksha" },
-  ];
 
   const currentUser = {
     name: "Dr. Rajitha Abeysekara",
     email: "rajitha.abeysekara@hospital.com",
     role: "Nephrologist",
     avatar: null,
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const found = patients.find((p) => p.id === searchQuery.trim());
-    setSelectedPatient(found || null);
-    setActiveTab("overview");
   };
 
   const handleLogout = () => {
@@ -150,9 +135,11 @@ const Layout = ({ children }: LayoutProps) => {
                 onClick={cycleTheme}
                 className="rounded-full"
               >
-                {getThemeIcon() === 'sun' && <Sun className="h-[1.2rem] w-[1.2rem]" />}
-                {getThemeIcon() === 'moon' && <Moon className="h-[1.2rem] w-[1.2rem]" />}
-                {getThemeIcon() === 'system' && <Laptop className="h-[1.2rem] w-[1.2rem]" />}
+                {getThemeIcon() === "sun" && <Sun className="h-[1.2rem] w-[1.2rem]" />}
+                {getThemeIcon() === "moon" && <Moon className="h-[1.2rem] w-[1.2rem]" />}
+                {getThemeIcon() === "system" && (
+                  <Laptop className="h-[1.2rem] w-[1.2rem]" />
+                )}
                 <span className="sr-only">Toggle theme</span>
               </Button>
             </div>
@@ -165,60 +152,63 @@ const Layout = ({ children }: LayoutProps) => {
           <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm dark:bg-slate-950 dark:border-slate-800">
             <div className="flex items-center justify-between px-6 py-4">
               <div className="flex items-center gap-4">
-            <SidebarTrigger className="p-2 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" />                <div className="flex flex-col">
+                <SidebarTrigger className="p-2 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" />
+                <div className="flex flex-col">
                   <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
                     {menuItems.find((item) => item.url === location.pathname)
                       ?.title || "Renal Unit Dashboard"}
                   </h1>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {currentUser.role} • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {currentUser.role} •{" "}
+                    {new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
-                {/* Search Bar */}
-                <form
-                  onSubmit={handleSearch}
-                  className="relative hidden md:flex items-center gap-3"
-                >
-                  <div className="relative w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-                    <Input
-                      type="text"
-                      placeholder="Search Patient's ID"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 w-full rounded-lg border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:focus:ring-blue-500/50"
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors dark:bg-blue-700 dark:hover:bg-blue-800"
-                  >
-                    Search
-                  </Button>
-                </form>
+                <div className="hidden md:flex">
+                  <GlobalSearch />
+                </div>
 
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" onClick={cycleTheme}>
-                    {getThemeIcon() === 'sun' && <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />}
-                    {getThemeIcon() === 'moon' && <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />}
-                    {getThemeIcon() === 'system' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                    onClick={cycleTheme}
+                  >
+                    {getThemeIcon() === "sun" && (
+                      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    )}
+                    {getThemeIcon() === "moon" && (
+                      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                    )}
+                    {getThemeIcon() === "system" && (
                       <Laptop className="h-[1.2rem] w-[1.2rem]" />
                     )}
                     <span className="sr-only">Toggle theme</span>
                   </Button>
 
-                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 relative dark:text-slate-400 dark:hover:bg-slate-800">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 relative dark:text-slate-400 dark:hover:bg-slate-800"
+                  >
                     <Bell className="h-5 w-5" />
                     <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
                       3
                     </span>
                   </Button>
-                  
-                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                  >
                     <Calendar className="h-5 w-5" />
                   </Button>
 
@@ -301,25 +291,7 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Mobile Search Bar */}
             <div className="md:hidden p-4 border-t border-slate-100 bg-white">
-              <form onSubmit={handleSearch} className="relative flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-                  <Input
-                    type="text"
-                    placeholder="Search by Patient ID"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2 rounded-lg border-slate-200 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all text-sm"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
-                >
-                  Search
-                </Button>
-              </form>
+              <GlobalSearch />
             </div>
           </header>
 

@@ -1,11 +1,11 @@
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useState, useReducer, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Stethoscope, UserCheck, Users, Heart, TrendingUp } from "lucide-react";
 import DonorAssessment from "../components/DonorAssessment";
 import RecipientAssessment from "../components/RecipientAssessment";
 import FollowUpForm from "../components/FollowUp";
-import KTFormData  from "../components/KTSurgery";
+import KTFormData from "../components/KTSurgery";
 import { FileText } from "lucide-react";
 import KidneyTransplantSummary from "../components/KidneyTransplantSummary";
 export type ActiveView = 'dashboard' | 'donor-assessment' | 'recipient-assessment' | 'kt' | 'follow-up' | 'summary';
@@ -357,402 +357,237 @@ interface RecipientAssessmentForm {
 }
 
 import { usePatientContext } from "../context/PatientContext";
-import React from 'react';
+import React from "react";
+
+// Define initial state for forms to be used in the reducer
+const initialDonorFormState: DonorAssessmentForm = {
+  name: "",
+  age: "",
+  gender: "",
+  dateOfBirth: "",
+  occupation: "",
+  address: "",
+  nicNo: "",
+  contactDetails: "",
+  emailAddress: "",
+  relationToRecipient: "",
+  relationType: "",
+  comorbidities: {
+    dl: false,
+    dm: false,
+    psychiatricIllness: false,
+    htn: false,
+    ihd: false,
+  },
+  complains: "",
+  systemicInquiry: {
+    constitutional: { loa: false, low: false },
+    cvs: { chestPain: false, odema: false, sob: false },
+    respiratory: { cough: false, hemoptysis: false, wheezing: false },
+    git: { constipation: false, diarrhea: false, melena: false, prBleeding: false },
+    renal: { hematuria: false, frothyUrine: false },
+    neuro: { seizures: false, visualDisturbance: false, headache: false, limbWeakness: false },
+    gynecology: { pvBleeding: false, menopause: false, menorrhagia: false, lrmp: false },
+    sexualHistory: "",
+  },
+  drugHistory: "",
+  allergyHistory: { foods: false, drugs: false, p: false },
+  familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
+  substanceUse: { smoking: false, alcohol: false, other: "" },
+  socialHistory: { spouseDetails: "", childrenDetails: "", income: "", other: "" },
+  examination: {
+    height: "",
+    weight: "",
+    bmi: "",
+    pallor: false,
+    icterus: false,
+    oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
+    lymphNodes: { cervical: false, axillary: false, inguinal: false },
+    clubbing: false,
+    ankleOedema: false,
+    cvs: { bp: "", pr: "", murmurs: false },
+    respiratory: { rr: "", spo2: "", auscultation: false, crepts: false, ranchi: false, effusion: false },
+    abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
+    BrcostExamination: "",
+    neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
+  },
+  immunologicalDetails: {
+    bloodGroup: { d: "", r: "" },
+    crossMatch: { tCell: "", bCell: "" },
+    hlaTyping: {
+      donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+      recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+      conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+    },
+    pra: { pre: "", post: "" },
+    dsa: "",
+    immunologicalRisk: "",
+  },
+};
+
+const initialRecipientFormState: RecipientAssessmentForm = {
+  name: "",
+  age: "",
+  gender: "",
+  dateOfBirth: "",
+  occupation: "",
+  address: "",
+  nicNo: "",
+  contactDetails: "",
+  emailAddress: "",
+  donorId: "",
+  relationToRecipient: "",
+  relationType: "",
+  comorbidities: { dm: false, duration: "", psychiatricIllness: false, htn: false, ihd: false },
+  complains: "",
+  systemicInquiry: {
+    constitutional: { loa: false, low: false },
+    cvs: { chestPain: false, odema: false, sob: false },
+    respiratory: { cough: false, hemoptysis: false, wheezing: false },
+    git: { constipation: false, diarrhea: false, melena: false, prBleeding: false },
+    renal: { hematuria: false, frothyUrine: false },
+    neuro: { seizures: false, visualDisturbance: false, headache: false, limbWeakness: false },
+    gynecology: { pvBleeding: false, menopause: false, menorrhagia: false, lrmp: false },
+    sexualHistory: "",
+  },
+  drugHistory: "",
+  allergyHistory: { foods: false, drugs: false, p: false },
+  familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
+  substanceUse: { smoking: false, alcohol: false, other: "" },
+  socialHistory: { spouseDetails: "", childrenDetails: "", income: "", other: "" },
+  examination: {
+    height: "",
+    weight: "",
+    bmi: "",
+    pallor: false,
+    icterus: false,
+    oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
+    lymphNodes: { cervical: false, axillary: false, inguinal: false },
+    clubbing: false,
+    ankleOedema: false,
+    cvs: { bp: "", pr: "", murmurs: false },
+    respiratory: { rr: "", spo2: "", auscultation: false, crepts: false, ranchi: false, effusion: false },
+    abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
+    BrcostExamination: "",
+    neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
+  },
+  immunologicalDetails: {
+    bloodGroup: { d: "", r: "" },
+    crossMatch: { tCell: "", bCell: "" },
+    hlaTyping: {
+      donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+      recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+      conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+    },
+    pra: { pre: "", post: "" },
+    dsa: "",
+    immunologicalRisk: "",
+  },
+};
+
+// Reducer function to manage complex form state
+const formReducer = (state: any, action: { type: string; payload: any }) => {
+  switch (action.type) {
+    case "UPDATE_FIELD":
+      const { form, field, value } = action.payload;
+      const path = field.split(".");
+      const newState = { ...state };
+      let current = newState[form];
+      for (let i = 0; i < path.length - 1; i++) {
+        current = current[path[i]];
+      }
+      current[path[path.length - 1]] = value;
+      return newState;
+    case "SET_FORM_DATA":
+      return {
+        ...state,
+        [action.payload.form]: {
+          ...state[action.payload.form],
+          ...action.payload.data,
+        },
+      };
+    default:
+      return state;
+  }
+};
 
 const KidneyTransplant = () => {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
-  const [donorForm, setDonorForm] = useState<DonorAssessmentForm>({
-    name: '',
-    age: '',
-    gender: '',
-    dateOfBirth: '',
-    occupation: '',
-    address: '',
-    nicNo: '',
-    contactDetails: '',
-    emailAddress: '',
-    relationToRecipient: '',
-    relationType: '',
-    comorbidities: {
-      dl: false,
-      dm: false,
-      psychiatricIllness: false,
-      htn: false,
-      ihd: false,
-    },
-    complains: '',
-    systemicInquiry: {
-      constitutional: {
-        loa: false,
-        low: false,
-      },
-      cvs: {
-        chestPain: false,
-        odema: false,
-        sob: false,
-      },
-      respiratory: {
-        cough: false,
-        hemoptysis: false,
-        wheezing: false,
-      },
-      git: {
-        constipation: false,
-        diarrhea: false,
-        melena: false,
-        prBleeding: false,
-      },
-      renal: {
-        hematuria: false,
-        frothyUrine: false,
-      },
-      neuro: {
-        seizures: false,
-        visualDisturbance: false,
-        headache: false,
-        limbWeakness: false,
-      },
-      gynecology: {
-        pvBleeding: false,
-        menopause: false,
-        menorrhagia: false,
-        lrmp: false,
-      },
-      sexualHistory: '',
-    },
-    drugHistory: '',
-    allergyHistory: {
-      foods: false,
-      drugs: false,
-      p: false,
-    },
-    familyHistory: {
-      dm: '',
-      htn: '',
-      ihd: '',
-      stroke: '',
-      renal: '',
-    },
-    substanceUse: {
-      smoking: false,
-      alcohol: false,
-      other: '',
-    },
-    socialHistory: {
-      spouseDetails: '',
-      childrenDetails: '',
-      income: '',
-      other: '',
-    },
-    examination: {
-      height: '',
-      weight: '',
-      bmi: '',
-      pallor: false,
-      icterus: false,
-      oral: {
-        dentalCaries: false,
-        oralHygiene: false,
-        satisfactory: false,
-        unsatisfactory: false,
-      },
-      lymphNodes: {
-        cervical: false,
-        axillary: false,
-        inguinal: false,
-      },
-      clubbing: false,
-      ankleOedema: false,
-      cvs: {
-        bp: '',
-        pr: '',
-        murmurs: false,
-      },
-      respiratory: {
-        rr: '',
-        spo2: '',
-        auscultation: false,
-        crepts: false,
-        ranchi: false,
-        effusion: false,
-      },
-      abdomen: {
-        hepatomegaly: false,
-        splenomegaly: false,
-        renalMasses: false,
-        freeFluid: false,
-      },
-      BrcostExamination: '',
-      neurologicalExam: {
-        cranialNerves: false,
-        upperLimb: false,
-        lowerLimb: false,
-        coordination: false,
-      },
-    },
-    immunologicalDetails: {
-      bloodGroup: {
-        d: '',
-        r: '',
-      },
-      crossMatch: {
-        tCell: '',
-        bCell: '',
-      },
-      hlaTyping: {
-        donor: {
-          hlaA: '',
-          hlaB: '',
-          hlaC: '',
-          hlaDR: '',
-          hlaDP: '',
-          hlaDQ: '',
-        },
-        recipient: {
-          hlaA: '',
-          hlaB: '',
-          hlaC: '',
-          hlaDR: '',
-          hlaDP: '',
-          hlaDQ: '',
-        },
-        conclusion: {
-          hlaA: '',
-          hlaB: '',
-          hlaC: '',
-          hlaDR: '',
-          hlaDP: '',
-          hlaDQ: '',
-        },
-      },
-      pra: {
-        pre: '',
-        post: '',
-      },
-      dsa: '',
-      immunologicalRisk: '',
-    },
+  const [state, dispatch] = useReducer(formReducer, {
+    donorForm: initialDonorFormState,
+    recipientForm: initialRecipientFormState,
   });
 
-  const [recipientForm, setRecipientForm] = useState<RecipientAssessmentForm>({
-    name: '',
-    age: '',
-    gender: '',
-    dateOfBirth: '',
-    occupation: '',
-    address: '',
-    nicNo: '',
-    contactDetails: '',
-    emailAddress: '',
-    donorId: '',
-    relationToRecipient: '',
-    relationType: '',
-    comorbidities: {
-      dm: false,
-      duration: '',
-      psychiatricIllness: false,
-      htn: false,
-      ihd: false,
-    },
-    complains: '',
-    systemicInquiry: {
-      constitutional: {
-        loa: false,
-        low: false,
-      },
-      cvs: {
-        chestPain: false,
-        odema: false,
-        sob: false,
-      },
-      respiratory: {
-        cough: false,
-        hemoptysis: false,
-        wheezing: false,
-      },
-      git: {
-        constipation: false,
-        diarrhea: false,
-        melena: false,
-        prBleeding: false,
-      },
-      renal: {
-        hematuria: false,
-        frothyUrine: false,
-      },
-      neuro: {
-        seizures: false,
-        visualDisturbance: false,
-        headache: false,
-        limbWeakness: false,
-      },
-      gynecology: {
-        pvBleeding: false,
-        menopause: false,
-        menorrhagia: false,
-        lrmp: false,
-      },
-      sexualHistory: '',
-    },
-    drugHistory: '',
-    allergyHistory: {
-      foods: false,
-      drugs: false,
-      p: false,
-    },
-    familyHistory: {
-      dm: '',
-      htn: '',
-      ihd: '',
-      stroke: '',
-      renal: '',
-    },
-    substanceUse: {
-      smoking: false,
-      alcohol: false,
-      other: '',
-    },
-    socialHistory: {
-      spouseDetails: '',
-      childrenDetails: '',
-      income: '',
-      other: '',
-    },
-    examination: {
-      height: '',
-      weight: '',
-      bmi: '',
-      pallor: false,
-      icterus: false,
-      oral: {
-        dentalCaries: false,
-        oralHygiene: false,
-        satisfactory: false,
-        unsatisfactory: false,
-      },
-      lymphNodes: {
-        cervical: false,
-        axillary: false,
-        inguinal: false,
-      },
-      clubbing: false,
-      ankleOedema: false,
-      cvs: {
-        bp: '',
-        pr: '',
-        murmurs: false,
-      },
-      respiratory: {
-        rr: '',
-        spo2: '',
-        auscultation: false,
-        crepts: false,
-        ranchi: false,
-        effusion: false,
-      },
-      abdomen: {
-        hepatomegaly: false,
-        splenomegaly: false,
-        renalMasses: false,
-        freeFluid: false,
-      },
-      BrcostExamination: '',
-      neurologicalExam: {
-        cranialNerves: false,
-        upperLimb: false,
-        lowerLimb: false,
-        coordination: false,
-      },
-    },
-    immunologicalDetails: {
-      bloodGroup: {
-        d: '',
-        r: '',
-      },
-      crossMatch: {
-        tCell: '',
-        bCell: '',
-      },
-      hlaTyping: {
-        donor: {
-          hlaA: '',
-          hlaB: '',
-          hlaC: '',
-          hlaDR: '',
-          hlaDP: '',
-          hlaDQ: '',
-        },
-        recipient: {
-          hlaA: '',
-          hlaB: '',
-          hlaC: '',
-          hlaDR: '',
-          hlaDP: '',
-          hlaDQ: '',
-        },
-        conclusion: {
-          hlaA: '',
-          hlaB: '',
-          hlaC: '',
-          hlaDR: '',
-          hlaDP: '',
-          hlaDQ: '',
-        },
-      },
-      pra: {
-        pre: '',
-        post: '',
-      },
-      dsa: '',
-      immunologicalRisk: '',
-    },
-  });
+  const { donorForm, recipientForm } = state;
+
+  // This state will hold all data for the summary page
+  const [patientProfile, setPatientProfile] = useState(null);
+
 
   // Access the setPatientData function from the context
-  const { setPatientData } = usePatientContext();
-    const [summaryData, setSummaryData] = useState({
-    donor: null,
-    recipient: null,
-    followUp: null,
-    surgery: null,
-  });
+  const { patient, setPatientData, setPatient } = usePatientContext();
 
-  
-  // Helper: update nested objects safely
-  const updateNestedField = (obj: any, path: string[], value: any): any => {
-    if (path.length === 1) {
-      return { ...obj, [path[0]]: value };
+  // Fetch patient data when the component mounts or patient context changes
+  useEffect(() => {
+    // If navigation requested a specific open view, honor it
+    const navState: any = (window as any)?.history?.state?.usr || null;
+    if (navState?.open) {
+      setActiveView(navState.open);
     }
-    const [head, ...rest] = path;
-    return {
-      ...obj,
-      [head]: updateNestedField(obj[head] ?? {}, rest, value),
+    const fetchPatientProfile = async () => {
+      if (patient?.phn) {
+        try {
+          // Fetch transplant profile from backend
+          const response = await fetch(`/api/transplant/profile/${patient.phn}`);
+          if (!response.ok) {
+            throw new Error("Patient profile not found");
+          }
+          const data = await response.json();
+          setPatientProfile(data);
+
+          // Populate forms with fetched data
+          if (data.recipientAssessment) {
+            dispatch({ type: "SET_FORM_DATA", payload: { form: "recipientForm", data: data.recipientAssessment } });
+          }
+          if (data.donor) { // Assuming donor data is part of the profile
+            dispatch({ type: "SET_FORM_DATA", payload: { form: "donorForm", data: data.donor } });
+          }
+          // set patient demographics in context
+          if (data.patient) {
+            setPatient((prev:any) => ({ ...prev, ...data.patient }));
+          }
+          // You would also set KT Surgery and Follow-up data here
+
+        } catch (error) {
+          console.error("Failed to fetch patient profile:", error);
+          // Handle error, maybe show a notification
+        }
+      }
     };
-  };
+
+    if (patient?.phn) {
+      // Populate recipient form with patient data from context
+      const recipientData = {
+        name: patient.name || '',
+        age: patient.age ? String(patient.age) : '',
+        gender: patient.gender || '',
+        dateOfBirth: patient.dateOfBirth || '',
+        occupation: patient.occupation || '',
+        address: patient.address || '',
+        nicNo: patient.nic || '',
+        contactDetails: patient.contact || '',
+        emailAddress: patient.email || '',
+      };
+      dispatch({ type: 'SET_FORM_DATA', payload: { form: 'recipientForm', data: { ...recipientForm, ...recipientData } } });
+      
+      fetchPatientProfile();
+    }
+  }, [patient]);
+
 
   // Donor form handlers
   const handleDonorFormChange = (field: string, value: any) => {
-    setDonorForm(prev => {
-      // Handle nested paths with dot notation
-      if (field.includes('.')) {
-        const paths = field.split('.');
-        const newForm = { ...prev };
-        let current: any = newForm;
-        
-        for (let i = 0; i < paths.length - 1; i++) {
-          current = current[paths[i]];
-        }
-        
-        current[paths[paths.length - 1]] = value;
-        return newForm;
-      }
-      
-      // Handle top-level fields
-      return {
-        ...prev,
-        [field]: value
-      };
-    });
+    dispatch({ type: "UPDATE_FIELD", payload: { form: "donorForm", field, value } });
   };
 
   const handleDonorFormSubmit = async (e: React.FormEvent) => {
@@ -765,13 +600,18 @@ const KidneyTransplant = () => {
         return;
       }
 
+      const assessmentPayload = {
+        phn: patient.phn, // Assuming the patient context has the phn
+        data: donorForm,
+      };
+
       // API call to submit donor data
       const response = await fetch('/api/donor-assessment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(donorForm),
+        body: JSON.stringify(assessmentPayload),
       });
 
       if (response.ok) {
@@ -806,12 +646,12 @@ const KidneyTransplant = () => {
 
   // Recipient form handlers
   const handleRecipientFormChange = (field: string, value: any) => {
-    setRecipientForm(prev => updateNestedField(prev, field.split("."), value));
+    dispatch({ type: "UPDATE_FIELD", payload: { form: "recipientForm", field, value } });
   };
 
   const handleRecipientFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Validate required fields
       if (!recipientForm.name || !recipientForm.age || !recipientForm.gender || !recipientForm.nicNo) {
@@ -819,13 +659,18 @@ const KidneyTransplant = () => {
         return;
       }
 
+      const assessmentPayload = {
+        phn: patient.phn, // Assuming the patient context has the phn
+        data: recipientForm,
+      };
+
       // API call to submit recipient data
       const response = await fetch('/api/recipient-assessment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(recipientForm),
+        body: JSON.stringify(assessmentPayload),
       });
 
       if (response.ok) {
@@ -861,7 +706,7 @@ const KidneyTransplant = () => {
       {activeView === "donor-assessment" && (
         <DonorAssessment
           donorForm={donorForm}
-          setDonorForm={setDonorForm}
+          setDonorForm={(data) => dispatch({ type: "SET_FORM_DATA", payload: { form: "donorForm", data } })}
           setActiveView={setActiveView}
           handleDonorFormChange={handleDonorFormChange}
           handleDonorFormSubmit={handleDonorFormSubmit}
@@ -870,7 +715,7 @@ const KidneyTransplant = () => {
       {activeView === "recipient-assessment" && (
         <RecipientAssessment
           recipientForm={recipientForm}
-          setRecipientForm={setRecipientForm}
+          setRecipientForm={(data) => dispatch({ type: "SET_FORM_DATA", payload: { form: "recipientForm", data } })}
           setActiveView={setActiveView}
           handleRecipientFormChange={handleRecipientFormChange}
           handleRecipientFormSubmit={handleRecipientFormSubmit}
@@ -885,11 +730,11 @@ const KidneyTransplant = () => {
       )}
       {activeView === "kt" && (
         <div className="space-y-6">
-          <KTFormData setActiveView={setActiveView} />
+          <KTFormData setActiveView={setActiveView} patientPhn={patient?.phn} />
         </div>
       )}
       {activeView === "summary" && (
-        <KidneyTransplantSummary />
+        <KidneyTransplantSummary setActiveView={setActiveView} patientProfile={patientProfile} />
       )}
       {activeView === "dashboard" && (
         <div className="space-y-8">
@@ -901,6 +746,7 @@ const KidneyTransplant = () => {
               Kidney Transplant
             </h1>
           </div>
+
 
           {/* centered container with 2x2 grid */}
           <div className="max-w-7xl mx-auto px-4"> {/* Increased max-width to accommodate 5 items */}

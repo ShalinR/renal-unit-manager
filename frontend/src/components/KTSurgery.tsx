@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText, UserCheck } from "lucide-react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,9 +66,11 @@ export interface KTFormData {
 }
 
 import type { ActiveView } from "../pages/KidneyTransplant";
+import { usePatientContext } from "../context/PatientContext";
 
 interface KTFormProps {
   setActiveView: React.Dispatch<React.SetStateAction<ActiveView>>;
+  patientPhn?: string;
 }
 
 const initialForm: KTFormData = {
@@ -147,6 +149,23 @@ const FORM_STEPS = [
 const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const [form, setForm] = useState<KTFormData>(initialForm);
   const [step, setStep] = useState(0);
+  const { patient } = usePatientContext();
+
+  // Auto-populate patient information when patient data is loaded from search
+  useEffect(() => {
+    if (patient && patient.name) {
+      console.log("Auto-populating KT form with patient data:", patient);
+      setForm((prevForm) => ({
+        ...prevForm,
+        name: patient.name || "",
+        age: patient.age?.toString() || "",
+        gender: patient.gender || "",
+        dob: patient.dateOfBirth || "",
+        address: patient.address || "",
+        contact: patient.contact || "",
+      }));
+    }
+  }, [patient]);
 
   const handleChange = (field: keyof KTFormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -155,17 +174,52 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const nextStep = () => setStep((s) => Math.min(FORM_STEPS.length - 1, s + 1));
   const prevStep = () => setStep((s) => Math.max(0, s - 1));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { setPatientData } = usePatientContext();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.filledBy) {
       alert("Please enter who filled out the form in the Confirmation step.");
       setStep(FORM_STEPS.findIndex(s => s.label === "Confirmation"));
       return;
     }
-    alert("KT form submitted!");
-  };
 
+    try {
+      // Note: You'll need to pass patientPhn as a prop or get it from context
+      if (!patient?.phn) {
+        alert("Missing patient identifier (PHN). Please search for a patient first.");
+        return;
+      }
+
+      const response = await fetch(`/api/transplant/kt-surgery/${patient.phn}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) throw new Error("Failed to save KT surgery");
+
+      const saved = await response.json();
+
+      // Update patient context (ktSurgery summary fields)
+      setPatientData(prev => ({
+        ...prev,
+        ktSurgery: {
+          dateOfKT: saved.ktDate || form.ktDate || "",
+          ktType: saved.ktType || form.ktType || "",
+          donorRelationship: saved.donorRelationship || form.donorRelationship || "",
+        }
+      }));
+
+      alert("KT form submitted successfully!");
+      setActiveView("dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Error saving KT surgery. Please try again.");
+    }
+  };
   return (
+
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header Section */}
@@ -173,7 +227,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-blue-900 mb-2">Kidney Transplant Surgery</h1>
-              <p className="text-blue-600">Complete the KT surgery assessment form</p>
+              <p className="text-blue-600">
+                {patient && patient.name 
+                  ? `Patient: ${patient.name} (PHN: ${patient.phn})`
+                  : "Complete the KT surgery assessment form"
+                }
+              </p>
             </div>
             <Button
               variant="outline"
@@ -230,9 +289,17 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
               <CardTitle className="flex items-center gap-3 text-xl">
                 <User className="w-6 h-6" />
                 Patient Information
+                {patient && patient.name && (
+                  <span className="text-blue-200 text-sm ml-auto">
+                    Loaded from search
+                  </span>
+                )}
               </CardTitle>
               <CardDescription className="text-blue-100">
-                Enter the patient's basic details
+                {patient && patient.name 
+                  ? `Patient data loaded for: ${patient.name}`
+                  : "Search for a patient using the search bar above to auto-fill this section"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
@@ -291,22 +358,26 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     required
                   />
                 </div>
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700 flex items-center">
-                    Gender <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <RadioGroup className="flex gap-8 pt-2" value={form.gender} onValueChange={value => handleChange("gender", value)}>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="Male" id="ktMale" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktMale" className="text-gray-700 font-medium">Male</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="Female" id="ktFemale" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktFemale" className="text-gray-700 font-medium">Female</Label>
-                    </div>
-                  </RadioGroup>
                 </div>
-              </div>
+    <div className="space-y-3">
+  <Label className="text-sm font-semibold text-gray-700 flex items-center">
+    Gender <span className="text-red-500 ml-1">*</span>
+  </Label>
+  <RadioGroup className="flex gap-8 pt-2" value={form.gender} onValueChange={value => handleChange("gender", value)}>
+    <div className="flex items-center space-x-3">
+      <RadioGroupItem value="male" id="ktMale" className="border-2 border-blue-300" />
+      <Label htmlFor="ktMale" className="text-gray-700 font-medium">Male</Label>
+    </div>
+    <div className="flex items-center space-x-3">
+      <RadioGroupItem value="female" id="ktFemale" className="border-2 border-blue-300" />
+      <Label htmlFor="ktFemale" className="text-gray-700 font-medium">Female</Label>
+    </div>
+    <div className="flex items-center space-x-3">
+      <RadioGroupItem value="other" id="ktOther" className="border-2 border-blue-300" />
+      <Label htmlFor="ktOther" className="text-gray-700 font-medium">Other</Label>
+    </div>
+  </RadioGroup>
+</div>
               <div className="space-y-3">
                 <Label htmlFor="address" className="text-sm font-semibold text-gray-700 flex items-center">
                   Address
