@@ -1,0 +1,229 @@
+﻿import React, { useState } from "react";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+const WardManagement: React.FC = () => {
+  const [activeTab, setActiveTab] = useState("details");
+
+  const [progressNotes, setProgressNotes] = useState<
+    { doctor: string; note: string; date: string }[]
+  >([]);
+  const [medicalHistory, setMedicalHistory] = useState<string[]>([]);
+  const [allergicHistory, setAllergicHistory] = useState<string[]>([]);
+  const [investigations, setInvestigations] = useState<
+    { type: string; note: string }[]
+  >([]);
+
+  const [form, setForm] = useState({
+    doctor: "",
+    note: "",
+    history: "",
+    allergy: "",
+    investigationType: "",
+    investigationNote: "",
+  });
+
+  const handleSubmit = () => {
+    if (activeTab === "progress") {
+      if (form.doctor && form.note) {
+        setProgressNotes((prev) => [
+          ...prev,
+          { doctor: form.doctor, note: form.note, date: new Date().toLocaleString() },
+        ]);
+        setForm((f) => ({ ...f, doctor: "", note: "" }));
+      }
+    } else if (activeTab === "medical") {
+      if (form.history) {
+        setMedicalHistory((prev) => [...prev, form.history]);
+        setForm((f) => ({ ...f, history: "" }));
+      }
+    } else if (activeTab === "allergic") {
+      if (form.allergy) {
+        setAllergicHistory((prev) => [...prev, form.allergy]);
+        setForm((f) => ({ ...f, allergy: "" }));
+      }
+    } else if (activeTab === "investigation") {
+      if (form.investigationType && form.investigationNote) {
+        setInvestigations((prev) => [
+          ...prev,
+          { type: form.investigationType, note: form.investigationNote },
+        ]);
+        setForm((f) => ({ ...f, investigationType: "", investigationNote: "" }));
+      }
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold mb-6 text-slate-800 dark:text-white">
+        🏥 Ward Management
+      </h1>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="details">Patient Details</TabsTrigger>
+          <TabsTrigger value="progress">Progress Notes</TabsTrigger>
+          <TabsTrigger value="medical">Medical History</TabsTrigger>
+          <TabsTrigger value="allergic">Allergic History</TabsTrigger>
+          <TabsTrigger value="investigation">Investigations</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details">
+          <Card>
+            <CardHeader>Basic Patient Details</CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                This tab will display patient info once backend integration is added.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="progress">
+          <Card>
+            <CardHeader>Progress Notes</CardHeader>
+            <CardContent>
+              <div className="grid gap-2 mb-3">
+                <Input
+                  placeholder="Doctor's Name"
+                  value={form.doctor}
+                  onChange={(e) => setForm({ ...form, doctor: e.target.value })}
+                />
+                <Textarea
+                  placeholder="Enter Progress Note"
+                  value={form.note}
+                  onChange={(e) => setForm({ ...form, note: e.target.value })}
+                />
+              </div>
+              <Button onClick={handleSubmit}>Add Note</Button>
+
+              {progressNotes.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Previous Progress Notes</h3>
+                  {progressNotes.map((n, i) => (
+                    <div key={i} className="p-2 border-b border-slate-200">
+                      <p className="text-sm text-slate-800">
+                        <strong>{n.doctor}</strong> ({n.date})
+                      </p>
+                      <p className="text-slate-600">{n.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="medical">
+          <Card>
+            <CardHeader>Medical History</CardHeader>
+            <CardContent>
+              <div className="mb-3">
+                <Textarea
+                  placeholder="Enter Medical History"
+                  value={form.history}
+                  onChange={(e) => setForm({ ...form, history: e.target.value })}
+                />
+              </div>
+              <Button onClick={handleSubmit}>Add History</Button>
+
+              {medicalHistory.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Previous Records</h3>
+                  {medicalHistory.map((h, i) => (
+                    <p key={i} className="text-slate-700 border-b py-1">
+                      {h}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="allergic">
+          <Card>
+            <CardHeader>Allergic History</CardHeader>
+            <CardContent>
+              <div className="mb-3">
+                <Textarea
+                  placeholder="Enter Allergic History"
+                  value={form.allergy}
+                  onChange={(e) => setForm({ ...form, allergy: e.target.value })}
+                />
+              </div>
+              <Button onClick={handleSubmit}>Add Allergy</Button>
+
+              {allergicHistory.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Previous Allergies</h3>
+                  {allergicHistory.map((a, i) => (
+                    <p key={i} className="text-slate-700 border-b py-1">
+                      {a}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="investigation">
+          <Card>
+            <CardHeader>Investigations</CardHeader>
+            <CardContent>
+              <div className="grid gap-2 mb-3">
+                <select
+                  className="border p-2 rounded w-full bg-white dark:bg-slate-800"
+                  value={form.investigationType}
+                  onChange={(e) =>
+                    setForm({ ...form, investigationType: e.target.value })
+                  }
+                >
+                  <option value="">Select Investigation Type</option>
+                  <option>Bio Chemistry</option>
+                  <option>Micro Biology</option>
+                  <option>Histopathology</option>
+                  <option>Procedure</option>
+                  <option>Radiology</option>
+                </select>
+
+                <Textarea
+                  placeholder="Enter Investigation Note"
+                  value={form.investigationNote}
+                  onChange={(e) =>
+                    setForm({ ...form, investigationNote: e.target.value })
+                  }
+                />
+              </div>
+
+              <Button onClick={handleSubmit}>Add Record</Button>
+
+              {investigations.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Recorded Investigations</h3>
+                  {investigations.map((inv, i) => (
+                    <div key={i} className="p-2 border-b border-slate-200">
+                      <p className="font-medium">{inv.type}</p>
+                      <p className="text-slate-600 text-sm">{inv.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default WardManagement;

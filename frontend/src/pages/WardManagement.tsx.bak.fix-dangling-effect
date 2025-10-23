@@ -57,7 +57,7 @@ function calcAge(dobISO: string): number {
 }
 
 function useQueryPatient(): { loading: boolean; patient: Patient | null } {
-  const [search] = useSearchParams();
+  
   const [loading, setLoading] = useState(false);
   const bht = search.get("bht") || search.get("id");
 
@@ -94,7 +94,16 @@ function useQueryPatient(): { loading: boolean; patient: Patient | null } {
       setPatient(mock[bht] ?? null);
       setLoading(false);
     }, 300); // light UX delay
-    return () => clearTimeout(timer);
+    
+
+return (
+<>
+  {bht && (
+    <div className="mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm bg-white shadow-sm dark:bg-slate-900">
+      <span className="font-medium text-slate-700 dark:text-slate-200">BHT</span>
+      <span className="text-slate-500 dark:text-slate-400">•</span>
+      <span className="font-semibold text-blue-600 dark:text-blue-400">{bht}</span>
+    </div>
   }, [bht, mock]);
 
   return { loading, patient };
@@ -197,8 +206,17 @@ NOTE: This is a placeholder. We will generate a real PDF from backend data in a 
   };
 
   // === RENDER ===
-  return (
-    <div className="flex w-full">
+  
+
+return (
+<>
+  {bht && (
+    <div className="mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm bg-white shadow-sm dark:bg-slate-900">
+      <span className="font-medium text-slate-700 dark:text-slate-200">BHT</span>
+      <span className="text-slate-500 dark:text-slate-400">•</span>
+      <span className="font-semibold text-blue-600 dark:text-blue-400">{bht}</span>
+    </div>
+  )}<div className="flex w-full">
       {/* MAIN COLUMN */}
       <div className="flex-1 px-6 py-6">
         {/* Header Title (as per spec) */}
@@ -634,3 +652,5 @@ NOTE: This is a placeholder. We will generate a real PDF from backend data in a 
 };
 
 export default WardManagement;
+
+

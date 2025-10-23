@@ -1,12 +1,10 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Download, FileText, Image as ImageIcon, Info, Loader2, Plus, Search, X } from "lucide-react";
+import { useLocation, useSearchParams } from "react-router-dom";
+import { Download, FileText, Image as ImageIcon, Info, Loader2, Search } from "lucide-react";
 
 /**
  * Ward Management Interface
- * - Patient Details tab is DISPLAY-ONLY.
- * - Adds "Add New Patient" button (opens modal with full admission form).
- * - New patient is stored locally (UI only), URL navigates to ?bht=<BHT>, then renders read-only details.
+ * NOTE: Patient Details tab is DISPLAY-ONLY (no editable inputs).
  */
 
 type Sex = "Male" | "Female" | "Other";
@@ -73,7 +71,6 @@ type Admission = {
 const categories: Entry["category"][] = ["Bio-Chemistry","Micro Biology","Histopathology","Procedure","Radiology"];
 
 function calcAge(dobISO: string): number {
-  if (!dobISO) return 0;
   const dob = new Date(dobISO);
   const now = new Date();
   let age = now.getFullYear() - dob.getFullYear();
@@ -82,12 +79,12 @@ function calcAge(dobISO: string): number {
   return age;
 }
 
-/** Hook: query by BHT via URL (?bht= / ?id=) against mock only (created patients handled in component) */
-function useQueryPatientMock(): { loading: boolean; patient: Patient | null; bhtParam: string | null } {
+function useQueryPatient(): { loading: boolean; patient: Patient | null } {
   const [search] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const bht = search.get("bht") || search.get("id");
 
+  // Mock data (until backend is wired)
   const mock: Record<string, Patient> = useMemo(
     () => ({
       "BHT-1001": {
@@ -139,63 +136,59 @@ function useQueryPatientMock(): { loading: boolean; patient: Patient | null; bht
   useEffect(() => {
     if (!bht) { setPatient(null); return; }
     setLoading(true);
-    const t = setTimeout(() => { setPatient(mock[bht] ?? null); setLoading(false); }, 200);
+    const t = setTimeout(() => { setPatient(mock[bht] ?? null); setLoading(false); }, 300);
     return () => clearTimeout(t);
   }, [bht, mock]);
 
-  return { loading, patient, bhtParam: bht };
+  return { loading, patient };
 }
 
 const WardManagement: React.FC = () => {
-  const navigate = useNavigate();
-  const { loading, patient: mockPatient, bhtParam } = useQueryPatientMock();
+  const location = useLocation();
+  const { loading, patient } = useQueryPatient();
 
-  // Local store for CREATED patients (UI only)
-  const [createdPatients, setCreatedPatients] = useState<Record<string, Patient>>({});
-
-  // Guardian + Admission info store, seeded with examples
-  const [detailStore, setDetailStore] = useState<Record<string, { guardian: Guardian; admission: AdmissionMedical }>>({
-    "BHT-1001": {
-      guardian: { name: "Chathura Perera", address: "23/4, Galaha Rd, Peradeniya", phone: "071-222-3344", nic: "721234567V" },
-      admission: {
-        admissionType: "Direct admission",
-        complaints: "Shortness of breath, fatigue.",
-        examination: "BP 140/90, edema ++.",
-        allergies: "Penicillin.",
-        currentMedications: "Furosemide 40mg, ACE inhibitor.",
-        problems: "Fluid overload; electrolyte imbalance.",
-        management: "Diuretics, fluid restriction, dialysis plan.",
-        stamps: "—",
-        notifiableDisease: false,
-        admittingOfficer: "Dr. M. Ranasinghe",
+  // Additional DISPLAY data for Patient Details (guardian + admission medical)
+  const detailExtras: Record<string, { guardian: Guardian; admission: AdmissionMedical }> = useMemo(
+    () => ({
+      "BHT-1001": {
+        guardian: { name: "Chathura Perera", address: "23/4, Galaha Rd, Peradeniya", phone: "071-222-3344", nic: "721234567V" },
+        admission: {
+          admissionType: "Direct admission",
+          complaints: "Shortness of breath, fatigue.",
+          examination: "BP 140/90, edema ++.",
+          allergies: "Penicillin.",
+          currentMedications: "Furosemide 40mg, ACE inhibitor.",
+          problems: "Fluid overload; electrolyte imbalance.",
+          management: "Diuretics, fluid restriction, dialysis plan.",
+          stamps: "—",
+          notifiableDisease: false,
+          admittingOfficer: "Dr. M. Ranasinghe",
+        }
+      },
+      "BHT-1002": {
+        guardian: { name: "Ravindu Fernando", address: "Colombo 5", phone: "077-888-1122", nic: "802345678V" },
+        admission: {
+          admissionType: "Referred from clinic",
+          complaints: "Nausea, dizziness.",
+          examination: "Pulse 88 bpm, mild pallor.",
+          allergies: "None known.",
+          currentMedications: "Metformin, Atorvastatin.",
+          problems: "Type 2 DM; mild anemia.",
+          management: "Medication adjustment; follow-up.",
+          stamps: "—",
+          notifiableDisease: false,
+          admittingOfficer: "Dr. P. Fernando",
+        }
       }
-    },
-    "BHT-1002": {
-      guardian: { name: "Ravindu Fernando", address: "Colombo 5", phone: "077-888-1122", nic: "802345678V" },
-      admission: {
-        admissionType: "Referred from clinic",
-        complaints: "Nausea, dizziness.",
-        examination: "Pulse 88 bpm, mild pallor.",
-        allergies: "None known.",
-        currentMedications: "Metformin, Atorvastatin.",
-        problems: "Type 2 DM; mild anemia.",
-        management: "Medication adjustment; follow-up.",
-        stamps: "—",
-        notifiableDisease: false,
-        admittingOfficer: "Dr. P. Fernando",
-      }
-    }
-  });
-
-  // Final patient to show = mock OR created (by current bht)
-  const finalPatient: Patient | null = mockPatient ?? (bhtParam ? createdPatients[bhtParam] ?? null : null);
-  const extras = finalPatient ? detailStore[finalPatient.id] : undefined;
+    }),
+    []
+  );
 
   // Tabs
   type TabKey = "details" | "progress" | "history" | "allergy" | "investigations" | "discharge";
   const [activeTab, setActiveTab] = useState<TabKey>("details");
 
-  // Notes & investigations (unchanged)
+  // Notes & investigations
   const [progressNotes, setProgressNotes] = useState<Entry[]>([]);
   const [medicalHistory, setMedicalHistory] = useState<Entry[]>([]);
   const [allergicHistory, setAllergicHistory] = useState<Entry[]>([]);
@@ -211,107 +204,7 @@ const WardManagement: React.FC = () => {
     { id: "3", number: 1, admittedOn: "2023-12-01", hasDischargeSummary: false, isActive: false },
   ]);
 
-  // ===== Add New Patient Modal state =====
-  const [showAdd, setShowAdd] = useState(false);
-
-  // Form state for new patient
-  const [f, setF] = useState<Patient>({
-    id: "",
-    name: "",
-    dob: "",
-    sex: "Male",
-    status: "Admitted",
-    phn: "",
-    address: "",
-    phone: "",
-    nic: "",
-    mohArea: "",
-    ethnicGroup: "",
-    religion: "",
-    occupation: "",
-    maritalStatus: "",
-    admissionDate: "",
-    admissionTime: "",
-    wardNumber: "",
-    consultantName: "",
-  });
-  const [g, setG] = useState<Guardian>({ name: "", address: "", phone: "", nic: "" });
-  const [aMed, setAMed] = useState<AdmissionMedical>({
-    admissionType: "Direct admission",
-    complaints: "",
-    examination: "",
-    allergies: "",
-    currentMedications: "",
-    problems: "",
-    management: "",
-    stamps: "",
-    notifiableDisease: false,
-    admittingOfficer: "",
-  });
-
-  const resetForm = () => {
-    setF({
-      id: "",
-      name: "",
-      dob: "",
-      sex: "Male",
-      status: "Admitted",
-      phn: "",
-      address: "",
-      phone: "",
-      nic: "",
-      mohArea: "",
-      ethnicGroup: "",
-      religion: "",
-      occupation: "",
-      maritalStatus: "",
-      admissionDate: "",
-      admissionTime: "",
-      wardNumber: "",
-      consultantName: "",
-    });
-    setG({ name: "", address: "", phone: "", nic: "" });
-    setAMed({
-      admissionType: "Direct admission",
-      complaints: "",
-      examination: "",
-      allergies: "",
-      currentMedications: "",
-      problems: "",
-      management: "",
-      stamps: "",
-      notifiableDisease: false,
-      admittingOfficer: "",
-    });
-  };
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    const required = [
-      ["BHT Number", f.id],
-      ["Patient Name", f.name],
-      ["Date of birth", f.dob],
-      ["Sex", f.sex],
-    ];
-    const missing = required.filter(([, v]) => !String(v || "").trim());
-    if (missing.length) {
-      alert("Please fill required fields: " + missing.map(([k]) => k).join(", "));
-      return;
-    }
-
-    // Save to local stores
-    setCreatedPatients((prev) => ({ ...prev, [f.id]: { ...f } }));
-    setDetailStore((prev) => ({ ...prev, [f.id]: { guardian: { ...g }, admission: { ...aMed } } }));
-
-    // Navigate to the new BHT
-    navigate(`?bht=${encodeURIComponent(f.id)}`);
-    setActiveTab("details");
-    setShowAdd(false);
-    // Optional UX: clear form
-    resetForm();
-  };
-
-  // Helpers unchanged
+  // Helpers
   const addEntry = (target: "progress" | "history" | "allergy") => {
     if (!author.trim() || !text.trim()) return;
     const entry: Entry = { id: crypto.randomUUID(), author: author.trim(), text: text.trim(), createdAt: new Date().toISOString() };
@@ -336,9 +229,9 @@ const WardManagement: React.FC = () => {
   };
 
   const downloadDischargePDF = (admission: Admission) => {
-    const filename = `${(finalPatient?.name || "Patient").replace(/\s+/g, "_")}_${finalPatient?.id || "BHT"}_${admission.admittedOn}_DischargeSummary.pdf`;
+    const filename = `${(patient?.name || "Patient").replace(/\s+/g, "_")}_${patient?.id || "BHT"}_${admission.admittedOn}_DischargeSummary.pdf`;
     const content = `Discharge Summary
-Patient: ${finalPatient?.name} (${finalPatient?.id})
+Patient: ${patient?.name} (${patient?.id})
 Admission Date: ${admission.admittedOn}
 Status: ${admission.isActive ? "Active Admission" : "Past Admission"}
 
@@ -349,39 +242,18 @@ NOTE: Placeholder PDF.`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
+  const extras = patient ? detailExtras[patient.id] : undefined;
+
   // === RENDER ===
   return (
     <div className="flex w-full">
       {/* MAIN COLUMN */}
       <div className="flex-1 px-6 py-6">
-        {/* Page header row with Add button (right) */}
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-center md:text-left w-full">
-            RENAL CARE UNIT - TEACHING HOSPITAL, PERADENIYA
-          </h2>
-          <div className="hidden md:block">
-            <button
-              onClick={() => setShowAdd(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border bg-white hover:bg-slate-50"
-              title="Add New Patient"
-            >
-              <Plus className="w-4 h-4" /> Add New Patient
-            </button>
-          </div>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-center">RENAL CARE UNIT - TEACHING HOSPITAL, PERADENIYA</h2>
         </div>
 
-        {/* In small screens, show the button under header */}
-        <div className="md:hidden mb-3">
-          <button
-            onClick={() => setShowAdd(true)}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border bg-white hover:bg-slate-50"
-            title="Add New Patient"
-          >
-            <Plus className="w-4 h-4" /> Add New Patient
-          </button>
-        </div>
-
-        {!finalPatient && (
+        {!patient && (
           <div className="border-2 border-dashed rounded-xl p-10 text-center text-slate-500 bg-white">
             {loading ? (
               <div className="flex items-center justify-center gap-3">
@@ -392,31 +264,29 @@ NOTE: Placeholder PDF.`;
               <div className="flex flex-col items-center gap-3">
                 <Search />
                 <p className="font-medium">SEARCH PATIENTS USING BHT NUMBER</p>
-                <p className="text-xs text-slate-400">
-                  Use the search box in the page header to find a patient. (Example: BHT-1001)
-                </p>
+                <p className="text-xs text-slate-400">Use the search box in the page header to find a patient. (Example: BHT-1001)</p>
               </div>
             )}
           </div>
         )}
 
-        {finalPatient && (
+        {patient && (
           <div className="mt-4 bg-white rounded-xl border p-5">
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm">
-              <div><p className="text-slate-500">Name</p><p className="font-medium">{finalPatient.name}</p></div>
-              <div><p className="text-slate-500">Date of Birth</p><p className="font-medium">{finalPatient.dob}</p></div>
-              <div><p className="text-slate-500">BHT Number</p><p className="font-medium">{finalPatient.id}</p></div>
-              <div><p className="text-slate-500">Age</p><p className="font-medium">{calcAge(finalPatient.dob)}</p></div>
-              <div><p className="text-slate-500">Sex</p><p className="font-medium">{finalPatient.sex}</p></div>
+              <div><p className="text-slate-500">Name</p><p className="font-medium">{patient.name}</p></div>
+              <div><p className="text-slate-500">Date of Birth</p><p className="font-medium">{patient.dob}</p></div>
+              <div><p className="text-slate-500">BHT Number</p><p className="font-medium">{patient.id}</p></div>
+              <div><p className="text-slate-500">Age</p><p className="font-medium">{calcAge(patient.dob)}</p></div>
+              <div><p className="text-slate-500">Sex</p><p className="font-medium">{patient.sex}</p></div>
               <div>
                 <p className="text-slate-500">Current Status</p>
-                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${finalPatient.status === "Admitted" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>{finalPatient.status}</span>
+                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${patient.status === "Admitted" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>{patient.status}</span>
               </div>
             </div>
           </div>
         )}
 
-        {finalPatient && (
+        {patient && (
           <div className="mt-4 flex gap-4">
             {/* Tabs + content */}
             <div className="flex-1">
@@ -440,30 +310,30 @@ NOTE: Placeholder PDF.`;
               </div>
 
               <div className="mt-3 bg-white border rounded-xl p-4">
-                {activeTab === "details" && finalPatient && (
+                {activeTab === "details" && patient && (
                   <div className="space-y-8">
                     {/* ===== Demographics (DISPLAY ONLY) ===== */}
                     <section>
                       <h3 className="font-semibold mb-3">Demographics</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                        <ReadOnly label="BHT Number" value={finalPatient.id} />
-                        <ReadOnly label="Personal Health No (PHN)" value={finalPatient.phn || "—"} />
-                        <ReadOnly label="Patient Name" value={finalPatient.name} />
-                        <ReadOnly label="Patient Address" value={finalPatient.address || "—"} />
-                        <ReadOnly label="Telephone number" value={finalPatient.phone || "—"} />
-                        <ReadOnly label="NIC No" value={finalPatient.nic || "—"} />
-                        <ReadOnly label="MOH Area" value={finalPatient.mohArea || "—"} />
-                        <ReadOnly label="Date of birth" value={finalPatient.dob} />
-                        <ReadOnly label="Age" value={String(calcAge(finalPatient.dob))} />
-                        <ReadOnly label="Sex" value={finalPatient.sex} />
-                        <ReadOnly label="Ethnic group" value={finalPatient.ethnicGroup || "—"} />
-                        <ReadOnly label="Religion" value={finalPatient.religion || "—"} />
-                        <ReadOnly label="Occupation" value={finalPatient.occupation || "—"} />
-                        <ReadOnly label="Marital Status" value={finalPatient.maritalStatus || "—"} />
-                        <ReadOnly label="Date of admission" value={finalPatient.admissionDate || "—"} />
-                        <ReadOnly label="Time of admission" value={finalPatient.admissionTime || "—"} />
-                        <ReadOnly label="Ward number" value={finalPatient.wardNumber || "—"} />
-                        <ReadOnly label="Consultant Name" value={finalPatient.consultantName || "—"} />
+                        <ReadOnly label="BHT Number" value={patient.id} />
+                        <ReadOnly label="Personal Health No (PHN)" value={patient.phn || "—"} />
+                        <ReadOnly label="Patient Name" value={patient.name} />
+                        <ReadOnly label="Patient Address" value={patient.address || "—"} />
+                        <ReadOnly label="Telephone number" value={patient.phone || "—"} />
+                        <ReadOnly label="NIC No" value={patient.nic || "—"} />
+                        <ReadOnly label="MOH Area" value={patient.mohArea || "—"} />
+                        <ReadOnly label="Date of birth" value={patient.dob} />
+                        <ReadOnly label="Age" value={String(calcAge(patient.dob))} />
+                        <ReadOnly label="Sex" value={patient.sex} />
+                        <ReadOnly label="Ethnic group" value={patient.ethnicGroup || "—"} />
+                        <ReadOnly label="Religion" value={patient.religion || "—"} />
+                        <ReadOnly label="Occupation" value={patient.occupation || "—"} />
+                        <ReadOnly label="Marital Status" value={patient.maritalStatus || "—"} />
+                        <ReadOnly label="Date of admission" value={patient.admissionDate || "—"} />
+                        <ReadOnly label="Time of admission" value={patient.admissionTime || "—"} />
+                        <ReadOnly label="Ward number" value={patient.wardNumber || "—"} />
+                        <ReadOnly label="Consultant Name" value={patient.consultantName || "—"} />
                       </div>
                     </section>
 
@@ -653,108 +523,11 @@ NOTE: Placeholder PDF.`;
           </div>
         )}
       </div>
-
-      {/* ===== ADD NEW PATIENT MODAL ===== */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowAdd(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-[95vw] max-w-5xl max-h-[90vh] overflow-auto">
-            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b bg-white rounded-t-2xl">
-              <h3 className="text-base font-semibold">Add New Patient</h3>
-              <button className="p-2 rounded-md hover:bg-slate-100" onClick={() => setShowAdd(false)} aria-label="Close">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form className="p-5 space-y-8" onSubmit={handleCreate}>
-              {/* ===== Admission data ===== */}
-              <section>
-                <h4 className="font-semibold mb-3">Admission data</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <Labeled label="BHT Number *" value={f.id} onChange={(v)=>setF({...f, id:v})} />
-                  <Labeled label="Personal Health No (PHN)" value={f.phn} onChange={(v)=>setF({...f, phn:v})} />
-                  <Labeled label="Patient Name *" value={f.name} onChange={(v)=>setF({...f, name:v})} />
-                  <Labeled label="Patient Address" value={f.address} onChange={(v)=>setF({...f, address:v})} />
-                  <Labeled label="Telephone number" value={f.phone} onChange={(v)=>setF({...f, phone:v})} />
-                  <Labeled label="NIC No" value={f.nic} onChange={(v)=>setF({...f, nic:v})} />
-                  <Labeled label="MOH Area" value={f.mohArea} onChange={(v)=>setF({...f, mohArea:v})} />
-                  <Labeled label="Date of birth *" type="date" value={f.dob} onChange={(v)=>setF({...f, dob:v})} />
-                  <Labeled label="Age (auto from DOB; editable)" value={String(f.dob ? calcAge(f.dob) : "")} onChange={() => { /* keep editable if needed */ }} />
-                  <Select  label="Sex *" value={f.sex} onChange={(v)=>setF({...f, sex: v as Sex})} options={["Male","Female","Other"]} />
-                  <Labeled label="Ethnic group" value={f.ethnicGroup} onChange={(v)=>setF({...f, ethnicGroup:v})} />
-                  <Labeled label="Religion" value={f.religion} onChange={(v)=>setF({...f, religion:v})} />
-                  <Labeled label="Occupation" value={f.occupation} onChange={(v)=>setF({...f, occupation:v})} />
-                  <Labeled label="Marital Status" value={f.maritalStatus} onChange={(v)=>setF({...f, maritalStatus:v})} />
-                  <Labeled label="Date of admission" type="date" value={f.admissionDate} onChange={(v)=>setF({...f, admissionDate:v})} />
-                  <Labeled label="Time of admission" type="time" value={f.admissionTime} onChange={(v)=>setF({...f, admissionTime:v})} />
-                  <Labeled label="Ward number" value={f.wardNumber} onChange={(v)=>setF({...f, wardNumber:v})} />
-                  <Labeled label="Consultant Name" value={f.consultantName} onChange={(v)=>setF({...f, consultantName:v})} />
-                </div>
-              </section>
-
-              {/* ===== Guardian ===== */}
-              <section>
-                <h4 className="font-semibold mb-3">Information related to guardian</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <Labeled label="Name of guardian" value={g.name} onChange={(v)=>setG({...g, name:v})} />
-                  <Labeled label="Telephone number" value={g.phone} onChange={(v)=>setG({...g, phone:v})} />
-                  <Labeled label="Address of Guardian" value={g.address} onChange={(v)=>setG({...g, address:v})} />
-                  <Labeled label="NIC No" value={g.nic} onChange={(v)=>setG({...g, nic:v})} />
-                </div>
-              </section>
-
-              {/* ===== Admission medical problem related information ===== */}
-              <section>
-                <h4 className="font-semibold mb-3">Admission medical problem related information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <Select
-                    label="Type of admission"
-                    value={aMed.admissionType || "Direct admission"}
-                    onChange={(v)=>setAMed({...aMed, admissionType: v as AdmissionMedical["admissionType"]})}
-                    options={["Direct admission","Referred from clinic","Referred from medical practitioner","Transfer from hospital"]}
-                  />
-                  <Labeled label="Name of admitting officer" value={aMed.admittingOfficer || ""} onChange={(v)=>setAMed({...aMed, admittingOfficer:v})} />
-                  <Area label="Complaints" value={aMed.complaints} onChange={(v)=>setAMed({...aMed, complaints:v})} />
-                  <Area label="Examination" value={aMed.examination} onChange={(v)=>setAMed({...aMed, examination:v})} />
-                  <Area label="Allergies" value={aMed.allergies} onChange={(v)=>setAMed({...aMed, allergies:v})} />
-                  <Area label="Current medications" value={aMed.currentMedications} onChange={(v)=>setAMed({...aMed, currentMedications:v})} />
-                  <Area label="Problems" value={aMed.problems} onChange={(v)=>setAMed({...aMed, problems:v})} />
-                  <Area label="Management" value={aMed.management} onChange={(v)=>setAMed({...aMed, management:v})} />
-                  <Area label="Stamps" value={aMed.stamps} onChange={(v)=>setAMed({...aMed, stamps:v})} />
-                </div>
-
-                <div className="mt-2">
-                  <p className="text-sm mb-2">Is it a notifiable disease:</p>
-                  <div className="flex items-center gap-4">
-                    <label className="inline-flex items-center gap-2 text-sm">
-                      <input type="radio" name="notifiable" checked={aMed.notifiableDisease === true} onChange={()=>setAMed({...aMed, notifiableDisease:true})} />
-                      <span>YES</span>
-                    </label>
-                    <label className="inline-flex items-center gap-2 text-sm">
-                      <input type="radio" name="notifiable" checked={aMed.notifiableDisease === false} onChange={()=>setAMed({...aMed, notifiableDisease:false})} />
-                      <span>NO</span>
-                    </label>
-                  </div>
-                </div>
-              </section>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button type="button" className="px-4 py-2 rounded-lg border bg-white hover:bg-slate-50 text-sm" onClick={() => { setShowAdd(false); }}>
-                  Cancel
-                </button>
-                <button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium">
-                  Create Patient
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-/** Small helpers */
+/** Small display helpers */
 const ReadOnly: React.FC<{label:string; value?: string;}> = ({label, value}) => (
   <div className="flex flex-col gap-1">
     <span className="text-slate-500">{label}</span>
@@ -767,46 +540,6 @@ const ReadOnlyArea: React.FC<{label:string; value?: string;}> = ({label, value})
     <span className="text-slate-500">{label}</span>
     <div className="border rounded-lg px-3 py-2 text-sm bg-slate-50 whitespace-pre-wrap min-h-12">{value ?? "—"}</div>
   </div>
-);
-
-const Labeled: React.FC<{label:string; value?: string; onChange:(v:string)=>void; type?: string;}> =
-  ({label, value, onChange, type}) => (
-  <label className="flex flex-col gap-1">
-    <span className="text-slate-500">{label}</span>
-    <input
-      className="border rounded-lg px-3 py-2 text-sm"
-      value={value ?? ""}
-      onChange={(e)=>onChange(e.target.value)}
-      type={type || "text"}
-    />
-  </label>
-);
-
-const Select: React.FC<{label:string; value:string; onChange:(v:string)=>void; options:string[];}> =
-  ({label, value, onChange, options}) => (
-  <label className="flex flex-col gap-1">
-    <span className="text-slate-500">{label}</span>
-    <select
-      className="border rounded-lg px-3 py-2 text-sm bg-white"
-      value={value}
-      onChange={(e)=>onChange(e.target.value)}
-    >
-      {options.map((o)=> <option key={o} value={o}>{o}</option>)}
-    </select>
-  </label>
-);
-
-const Area: React.FC<{label:string; value?: string; onChange:(v:string)=>void;}> =
-  ({label, value, onChange}) => (
-  <label className="flex flex-col gap-1">
-    <span className="text-slate-500">{label}</span>
-    <textarea
-      className="border rounded-lg px-3 py-2 text-sm min-h-24"
-      value={value ?? ""}
-      onChange={(e)=>onChange(e.target.value)}
-      rows={3}
-    />
-  </label>
 );
 
 export default WardManagement;
