@@ -35,6 +35,34 @@ public class DonorAssessmentResponseDTO {
     private ImmunologicalDetailsDTO immunologicalDetails;
 
     private String patientPhn;
+    private String status;
+    private String assignedRecipientName;
+    private String assignedRecipientPhn;
+
+    // Add getters and setters
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getAssignedRecipientName() {
+        return assignedRecipientName;
+    }
+
+    public void setAssignedRecipientName(String assignedRecipientName) {
+        this.assignedRecipientName = assignedRecipientName;
+    }
+
+    public String getAssignedRecipientPhn() {
+        return assignedRecipientPhn;
+    }
+
+    public void setAssignedRecipientPhn(String assignedRecipientPhn) {
+        this.assignedRecipientPhn = assignedRecipientPhn;
+    }
 
     // Getters and Setters (same as DonorAssessmentDataDTO plus id and patientPhn)
     public Long getId() {

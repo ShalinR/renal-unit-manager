@@ -26,12 +26,23 @@ public class RecipientAssessmentService {
         Patient patient = patientRepository.findByPhn(request.getPhn())
                 .orElseThrow(() -> new RuntimeException("Patient not found with PHN: " + request.getPhn()));
 
-        RecipientAssessment entity = convertToEntity(request);
-        entity.setPatient(patient);
+        RecipientAssessment entity;
+
+        if (request.getId() != null) {
+            // UPDATE existing assessment
+            entity = repository.findById(request.getId())
+                    .orElseThrow(() -> new RuntimeException("Assessment not found with id: " + request.getId()));
+            updateEntityFromDTO(entity, request);
+        } else {
+            // CREATE new assessment
+            entity = convertToEntity(request);
+            entity.setPatient(patient);
+        }
 
         RecipientAssessment savedEntity = repository.save(entity);
         return convertToResponseDTO(savedEntity);
     }
+
 
     public List<RecipientAssessmentResponseDTO> getAll() {
         return repository.findAll().stream()
@@ -45,16 +56,92 @@ public class RecipientAssessmentService {
         return convertToResponseDTO(entity);
     }
 
+
+
+
+
+
     public List<RecipientAssessmentResponseDTO> getByPatientPhn(String phn) {
         return repository.findByPatientPhn(phn).stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
+    private void updateEntityFromDTO(RecipientAssessment entity, RecipientAssessmentDTO dto) {
+        // Update basic patient info
+        entity.setName(dto.getName());
+        entity.setAge(dto.getAge());
+        entity.setGender(dto.getGender());
+        entity.setDateOfBirth(dto.getDateOfBirth());
+        entity.setOccupation(dto.getOccupation());
+        entity.setAddress(dto.getAddress());
+        entity.setNicNo(dto.getNicNo());
+        entity.setContactDetails(dto.getContactDetails());
+        entity.setEmailAddress(dto.getEmailAddress());
 
-    public void deleteById(Long id) {
-        repository.deleteById(id);
+        // Update assessment specific fields
+        entity.setDonorId(dto.getDonorId());
+        entity.setRelationType(dto.getRelationType());
+        entity.setRelationToRecipient(dto.getRelationToRecipient());
+
+        // Update comorbidities
+        if (dto.getComorbidities() != null) {
+            if (entity.getComorbidities() == null) {
+                entity.setComorbidities(new Comorbidities());
+            }
+            updateComorbiditiesFromDTO(entity.getComorbidities(), dto.getComorbidities());
+        }
+
+        // Update RRT Details
+        if (dto.getRrtDetails() != null) {
+            if (entity.getRrtDetails() == null) {
+                entity.setRrtDetails(new RRTDetails());
+            }
+            updateRRTDetailsFromDTO(entity.getRrtDetails(), dto.getRrtDetails());
+        }
+
+        // Update other embedded objects
+        entity.setSystemicInquiry(convertSystemicInquiryToEntity(dto.getSystemicInquiry()));
+        entity.setComplains(dto.getComplains());
+        entity.setDrugHistory(dto.getDrugHistory());
+        entity.setAllergyHistory(convertAllergyHistoryToEntity(dto.getAllergyHistory()));
+        entity.setFamilyHistory(convertFamilyHistoryToEntity(dto.getFamilyHistory()));
+        entity.setSubstanceUse(convertSubstanceUseToEntity(dto.getSubstanceUse()));
+        entity.setSocialHistory(convertSocialHistoryToEntity(dto.getSocialHistory()));
+        entity.setExamination(convertExaminationToEntity(dto.getExamination()));
+        entity.setImmunologicalDetails(convertImmunologicalDetailsToEntity(dto.getImmunologicalDetails()));
     }
 
+    // Helper methods for updating embedded objects
+    private void updateComorbiditiesFromDTO(Comorbidities entity, ComorbiditiesDTO dto) {
+        if (dto.getDm() != null) entity.setDm(dto.getDm());
+        entity.setDuration(dto.getDuration());
+        if (dto.getPsychiatricIllness() != null) entity.setPsychiatricIllness(dto.getPsychiatricIllness());
+        if (dto.getHtn() != null) entity.setHtn(dto.getHtn());
+        if (dto.getIhd() != null) entity.setIhd(dto.getIhd());
+        if (dto.getRetinopathy() != null) entity.setRetinopathy(dto.getRetinopathy());
+        if (dto.getNephropathy() != null) entity.setNephropathy(dto.getNephropathy());
+        if (dto.getNeuropathy() != null) entity.setNeuropathy(dto.getNeuropathy());
+        entity.setTwoDEcho(dto.getTwoDEcho());
+        entity.setCoronaryAngiogram(dto.getCoronaryAngiogram());
+        if (dto.getCva() != null) entity.setCva(dto.getCva());
+        if (dto.getPvd() != null) entity.setPvd(dto.getPvd());
+        if (dto.getDl() != null) entity.setDl(dto.getDl());
+        if (dto.getClcd() != null) entity.setClcd(dto.getClcd());
+        entity.setChildClass(dto.getChildClass());
+        entity.setMeldScore(dto.getMeldScore());
+        if (dto.getHf() != null) entity.setHf(dto.getHf());
+    }
+
+    private void updateRRTDetailsFromDTO(RRTDetails entity, RRTDetailsDTO dto) {
+        if (dto.getModalityHD() != null) entity.setModalityHD(dto.getModalityHD());
+        if (dto.getModalityCAPD() != null) entity.setModalityCAPD(dto.getModalityCAPD());
+        entity.setStartingDate(dto.getStartingDate());
+        if (dto.getAccessFemoral() != null) entity.setAccessFemoral(dto.getAccessFemoral());
+        if (dto.getAccessIJC() != null) entity.setAccessIJC(dto.getAccessIJC());
+        if (dto.getAccessPermeath() != null) entity.setAccessPermeath(dto.getAccessPermeath());
+        if (dto.getAccessCAPD() != null) entity.setAccessCAPD(dto.getAccessCAPD());
+        entity.setComplications(dto.getComplications());
+    }
     private RecipientAssessment convertToEntity(RecipientAssessmentDTO dto) {
         RecipientAssessment entity = new RecipientAssessment();
 
@@ -74,16 +161,16 @@ public class RecipientAssessmentService {
         entity.setRelationType(dto.getRelationType());
         entity.setRelationToRecipient(dto.getRelationToRecipient());
 
-        // Copy comorbidities
-        if (dto.getDm() != null || dto.getDuration() != null || dto.getPsychiatricIllness() != null ||
-                dto.getHtn() != null || dto.getIhd() != null) {
-            Comorbidities comorbidities = new Comorbidities();
-            comorbidities.setDm(dto.getDm() != null ? dto.getDm() : false);
-            comorbidities.setDuration(dto.getDuration());
-            comorbidities.setPsychiatricIllness(dto.getPsychiatricIllness() != null ? dto.getPsychiatricIllness() : false);
-            comorbidities.setHtn(dto.getHtn() != null ? dto.getHtn() : false);
-            comorbidities.setIhd(dto.getIhd() != null ? dto.getIhd() : false);
+        // Copy comorbidities - UPDATED STRUCTURE
+        if (dto.getComorbidities() != null) {
+            Comorbidities comorbidities = convertComorbiditiesToEntity(dto.getComorbidities());
             entity.setComorbidities(comorbidities);
+        }
+
+        // Copy RRT Details - NEW STRUCTURE
+        if (dto.getRrtDetails() != null) {
+            RRTDetails rrtDetails = convertRRTDetailsToEntity(dto.getRrtDetails());
+            entity.setRrtDetails(rrtDetails);
         }
 
         // Copy other embedded objects
@@ -121,13 +208,16 @@ public class RecipientAssessmentService {
         dto.setRelationType(entity.getRelationType());
         dto.setRelationToRecipient(entity.getRelationToRecipient());
 
-        // Copy comorbidities
+        // Copy comorbidities - UPDATED STRUCTURE
         if (entity.getComorbidities() != null) {
-            dto.setDm(entity.getComorbidities().isDm());
-            dto.setDuration(entity.getComorbidities().getDuration());
-            dto.setPsychiatricIllness(entity.getComorbidities().isPsychiatricIllness());
-            dto.setHtn(entity.getComorbidities().isHtn());
-            dto.setIhd(entity.getComorbidities().isIhd());
+            ComorbiditiesDTO comorbiditiesDTO = convertComorbiditiesToDTO(entity.getComorbidities());
+            dto.setComorbidities(comorbiditiesDTO);
+        }
+
+        // Copy RRT Details - NEW STRUCTURE
+        if (entity.getRrtDetails() != null) {
+            RRTDetailsDTO rrtDetailsDTO = convertRRTDetailsToDTO(entity.getRrtDetails());
+            dto.setRrtDetails(rrtDetailsDTO);
         }
 
         // Copy other embedded objects as DTOs
@@ -148,8 +238,104 @@ public class RecipientAssessmentService {
 
         return dto;
     }
+    // In RecipientAssessmentService
+    public RecipientAssessmentResponseDTO getLatestByPatientPhn(String phn) {
+        List<RecipientAssessment> assessments = repository.findByPatientPhnOrderByIdDesc(phn);
+        if (assessments.isEmpty()) {
+            return null; // No existing assessment
+        }
+        return convertToResponseDTO(assessments.get(0)); // Return the latest one
+    }
+    // ============ NEW CONVERSION METHODS FOR COMORBIDITIES AND RRT DETAILS ============
 
-    // ============ CONVERSION METHODS FOR EMBEDDED OBJECTS ============
+    private Comorbidities convertComorbiditiesToEntity(ComorbiditiesDTO dto) {
+        if (dto == null) return null;
+
+        Comorbidities entity = new Comorbidities();
+        entity.setDm(dto.getDm() != null ? dto.getDm() : false);
+        entity.setDuration(dto.getDuration());
+        entity.setPsychiatricIllness(dto.getPsychiatricIllness() != null ? dto.getPsychiatricIllness() : false);
+        entity.setHtn(dto.getHtn() != null ? dto.getHtn() : false);
+        entity.setIhd(dto.getIhd() != null ? dto.getIhd() : false);
+        entity.setRetinopathy(dto.getRetinopathy() != null ? dto.getRetinopathy() : false);
+        entity.setNephropathy(dto.getNephropathy() != null ? dto.getNephropathy() : false);
+        entity.setNeuropathy(dto.getNeuropathy() != null ? dto.getNeuropathy() : false);
+        entity.setTwoDEcho(dto.getTwoDEcho());
+        entity.setCoronaryAngiogram(dto.getCoronaryAngiogram());
+        entity.setCva(dto.getCva() != null ? dto.getCva() : false);
+        entity.setPvd(dto.getPvd() != null ? dto.getPvd() : false);
+        entity.setDl(dto.getDl() != null ? dto.getDl() : false);
+        entity.setClcd(dto.getClcd() != null ? dto.getClcd() : false);
+        entity.setChildClass(dto.getChildClass());
+        entity.setMeldScore(dto.getMeldScore());
+        entity.setHf(dto.getHf() != null ? dto.getHf() : false);
+
+        return entity;
+    }
+
+    private ComorbiditiesDTO convertComorbiditiesToDTO(Comorbidities entity) {
+        if (entity == null) return null;
+
+        ComorbiditiesDTO dto = new ComorbiditiesDTO();
+        dto.setDm(entity.isDm());
+        dto.setDuration(entity.getDuration());
+        dto.setPsychiatricIllness(entity.isPsychiatricIllness());
+        dto.setHtn(entity.isHtn());
+        dto.setIhd(entity.isIhd());
+        dto.setRetinopathy(entity.isRetinopathy());
+        dto.setNephropathy(entity.isNephropathy());
+        dto.setNeuropathy(entity.isNeuropathy());
+        dto.setTwoDEcho(entity.getTwoDEcho());
+        dto.setCoronaryAngiogram(entity.getCoronaryAngiogram());
+        dto.setCva(entity.isCva());
+        dto.setPvd(entity.isPvd());
+        dto.setDl(entity.isDl());
+        dto.setClcd(entity.isClcd());
+        dto.setChildClass(entity.getChildClass());
+        dto.setMeldScore(entity.getMeldScore());
+        dto.setHf(entity.isHf());
+
+        return dto;
+    }
+
+    private RRTDetails convertRRTDetailsToEntity(RRTDetailsDTO dto) {
+        if (dto == null) return null;
+
+        RRTDetails entity = new RRTDetails();
+        entity.setModalityHD(dto.getModalityHD() != null ? dto.getModalityHD() : false);
+        entity.setModalityCAPD(dto.getModalityCAPD() != null ? dto.getModalityCAPD() : false);
+        entity.setStartingDate(dto.getStartingDate());
+        entity.setAccessFemoral(dto.getAccessFemoral() != null ? dto.getAccessFemoral() : false);
+        entity.setAccessIJC(dto.getAccessIJC() != null ? dto.getAccessIJC() : false);
+        entity.setAccessPermeath(dto.getAccessPermeath() != null ? dto.getAccessPermeath() : false);
+        entity.setAccessCAPD(dto.getAccessCAPD() != null ? dto.getAccessCAPD() : false);
+        entity.setComplications(dto.getComplications());
+
+        return entity;
+    }
+
+    private RRTDetailsDTO convertRRTDetailsToDTO(RRTDetails entity) {
+        if (entity == null) return null;
+
+        RRTDetailsDTO dto = new RRTDetailsDTO();
+        dto.setModalityHD(entity.isModalityHD());
+        dto.setModalityCAPD(entity.isModalityCAPD());
+        dto.setStartingDate(entity.getStartingDate());
+        dto.setAccessFemoral(entity.isAccessFemoral());
+        dto.setAccessIJC(entity.isAccessIJC());
+        dto.setAccessPermeath(entity.isAccessPermeath());
+        dto.setAccessCAPD(entity.isAccessCAPD());
+        dto.setComplications(entity.getComplications());
+
+        return dto;
+    }
+    public void deleteById(Long id) {
+        if (!repository.existsById(id)) {
+            throw new RuntimeException("Recipient assessment not found with id: " + id);
+        }
+        repository.deleteById(id);
+    }
+    // ============ EXISTING CONVERSION METHODS FOR EMBEDDED OBJECTS ============
 
     private SystemicInquiry convertSystemicInquiryToEntity(SystemicInquiryDTO dto) {
         if (dto == null) return null;
@@ -298,6 +484,7 @@ public class RecipientAssessmentService {
 
         return dto;
     }
+
     private Examination convertExaminationToEntity(ExaminationDTO dto) {
         if (dto == null) return null;
 
@@ -342,8 +529,8 @@ public class RecipientAssessmentService {
         // Convert Respiratory Exam
         if (dto.getRespiratory() != null) {
             Examination.RespExam respExam = new Examination.RespExam();
-            respExam.setRr(dto.getRespiratory().getRr());
-            respExam.setSpo2(dto.getRespiratory().getSpo2());
+            respExam.setRr(dto.getRespiratory().getRr()!= null ? dto.getRespiratory().getRr() : false);
+            respExam.setSpo2(dto.getRespiratory().getSpo2()!=null ? dto.getRespiratory().getSpo2() : false);
             respExam.setAuscultation(dto.getRespiratory().getAuscultation() != null ? dto.getRespiratory().getAuscultation() : false);
             respExam.setCrepts(dto.getRespiratory().getCrepts() != null ? dto.getRespiratory().getCrepts() : false);
             respExam.setRanchi(dto.getRespiratory().getRanchi() != null ? dto.getRespiratory().getRanchi() : false);
@@ -418,8 +605,8 @@ public class RecipientAssessmentService {
         // Convert Respiratory Exam
         if (entity.getRespiratory() != null) {
             RespiratoryExamDTO respExam = new RespiratoryExamDTO();
-            respExam.setRr(entity.getRespiratory().getRr());
-            respExam.setSpo2(entity.getRespiratory().getSpo2());
+            respExam.setRr(entity.getRespiratory().isRr());
+            respExam.setSpo2(entity.getRespiratory().isSpo2());
             respExam.setAuscultation(entity.getRespiratory().isAuscultation());
             respExam.setCrepts(entity.getRespiratory().isCrepts());
             respExam.setRanchi(entity.getRespiratory().isRanchi());

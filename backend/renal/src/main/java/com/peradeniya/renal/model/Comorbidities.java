@@ -13,6 +13,24 @@ public class Comorbidities {
     private boolean psychiatricIllness;
     private boolean htn;
     private boolean ihd;
+    
+    // Microvascular complications
+    private boolean retinopathy;
+    private boolean nephropathy;
+    private boolean neuropathy;
+    
+    // Macrovascular complications
+    private String twoDEcho;
+    private String coronaryAngiogram;
+    private boolean cva;
+    private boolean pvd;
+    
+    // Other comorbidities
+    private boolean dl; // Dyslipidemia
+    private boolean clcd; // Chronic Liver Disease
+    private String childClass;
+    private String meldScore;
+    private boolean hf; // Heart Failure
 
     public boolean isDm() {
         return dm;
@@ -52,5 +70,101 @@ public class Comorbidities {
 
     public void setIhd(boolean ihd) {
         this.ihd = ihd;
+    }
+
+    public boolean isRetinopathy() {
+        return retinopathy;
+    }
+
+    public void setRetinopathy(boolean retinopathy) {
+        this.retinopathy = retinopathy;
+    }
+
+    public boolean isNephropathy() {
+        return nephropathy;
+    }
+
+    public void setNephropathy(boolean nephropathy) {
+        this.nephropathy = nephropathy;
+    }
+
+    public boolean isNeuropathy() {
+        return neuropathy;
+    }
+
+    public void setNeuropathy(boolean neuropathy) {
+        this.neuropathy = neuropathy;
+    }
+
+    public String getTwoDEcho() {
+        return twoDEcho;
+    }
+
+    public void setTwoDEcho(String twoDEcho) {
+        this.twoDEcho = twoDEcho;
+    }
+
+    public String getCoronaryAngiogram() {
+        return coronaryAngiogram;
+    }
+
+    public void setCoronaryAngiogram(String coronaryAngiogram) {
+        this.coronaryAngiogram = coronaryAngiogram;
+    }
+
+    public boolean isCva() {
+        return cva;
+    }
+
+    public void setCva(boolean cva) {
+        this.cva = cva;
+    }
+
+    public boolean isPvd() {
+        return pvd;
+    }
+
+    public void setPvd(boolean pvd) {
+        this.pvd = pvd;
+    }
+
+    public boolean isDl() {
+        return dl;
+    }
+
+    public void setDl(boolean dl) {
+        this.dl = dl;
+    }
+
+    public boolean isClcd() {
+        return clcd;
+    }
+
+    public void setClcd(boolean clcd) {
+        this.clcd = clcd;
+    }
+
+    public String getChildClass() {
+        return childClass;
+    }
+
+    public void setChildClass(String childClass) {
+        this.childClass = childClass;
+    }
+
+    public String getMeldScore() {
+        return meldScore;
+    }
+
+    public void setMeldScore(String meldScore) {
+        this.meldScore = meldScore;
+    }
+
+    public boolean isHf() {
+        return hf;
+    }
+
+    public void setHf(boolean hf) {
+        this.hf = hf;
     }
 }

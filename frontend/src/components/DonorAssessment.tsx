@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -6,6 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DonorAssessmentForm, Donor } from "../types/donor";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,188 +34,19 @@ import {
   UserPlus,
   ArrowRight,
   CheckCircle2,
+  Loader2,
+  AlertCircle,
+  Search,
 } from "lucide-react";
 import { DonorDetailsModal } from "./DonorDetailsModal";
 import { usePatientContext } from "@/context/PatientContext";
-import { useDonorContext, type Donor } from "@/context/DonorContext";
+import { useDonorContext } from "@/context/DonorContext";
+import { Patient, PatientBasicDTO } from "../types/patient";
 
-interface DonorAssessmentForm {
-  name: string;
-  age: string;
-  gender: string;
-  dateOfBirth: string;
-  occupation: string;
-  address: string;
-  nicNo: string;
-  contactDetails: string;
-  emailAddress: string;
-  relationToRecipient: string;
-  relationType: string;
-  comorbidities: {
-    dl: boolean;
-    dm: boolean;
-    psychiatricIllness: boolean;
-    htn: boolean;
-    ihd: boolean;
-  };
-  complains: string;
-  systemicInquiry: {
-    constitutional: {
-      loa: boolean;
-      low: boolean;
-    };
-    cvs: {
-      chestPain: boolean;
-      odema: boolean;
-      sob: boolean;
-    };
-    respiratory: {
-      cough: boolean;
-      hemoptysis: boolean;
-      wheezing: boolean;
-    };
-    git: {
-      constipation: boolean;
-      diarrhea: boolean;
-      melena: boolean;
-      prBleeding: boolean;
-    };
-    renal: {
-      hematuria: boolean;
-      frothyUrine: boolean;
-    };
-    neuro: {
-      seizures: boolean;
-      visualDisturbance: boolean;
-      headache: boolean;
-      limbWeakness: boolean;
-    };
-    gynecology: {
-      pvBleeding: boolean;
-      menopause: boolean;
-      menorrhagia: boolean;
-      lrmp: boolean;
-    };
-    sexualHistory: string;
-  };
-  drugHistory: string;
-  allergyHistory: {
-    foods: boolean;
-    drugs: boolean;
-    p: boolean;
-  };
-  familyHistory: {
-    dm: string;
-    htn: string;
-    ihd: string;
-    stroke: string;
-    renal: string;
-  };
-  substanceUse: {
-    smoking: boolean;
-    alcohol: boolean;
-    other: string;
-  };
-  socialHistory: {
-    spouseDetails: string;
-    childrenDetails: string;
-    income: string;
-    other: string;
-  };
-  examination: {
-    height: string;
-    weight: string;
-    bmi: string;
-    pallor: boolean;
-    icterus: boolean;
-    oral: {
-      dentalCaries: boolean;
-      oralHygiene: boolean;
-      satisfactory: boolean;
-      unsatisfactory: boolean;
-    };
-    lymphNodes: {
-      cervical: boolean;
-      axillary: boolean;
-      inguinal: boolean;
-    };
-    clubbing: boolean;
-    ankleOedema: boolean;
-    cvs: {
-      bp: string;
-      pr: string;
-      murmurs: boolean;
-    };
-    respiratory: {
-      rr: string;
-      spo2: string;
-      auscultation: boolean;
-      crepts: boolean;
-      ranchi: boolean;
-      effusion: boolean;
-    };
-    abdomen: {
-      hepatomegaly: boolean;
-      splenomegaly: boolean;
-      renalMasses: boolean;
-      freeFluid: boolean;
-    };
-    BrcostExamination: string;
-    neurologicalExam: {
-      cranialNerves: boolean;
-      upperLimb: boolean;
-      lowerLimb: boolean;
-      coordination: boolean;
-    };
-  };
-  immunologicalDetails: {
-    bloodGroup: {
-      d: string;
-      r: string;
-    };
-    crossMatch: {
-      tCell: string;
-      bCell: string;
-    };
-    hlaTyping: {
-      donor: {
-        hlaA: string;
-        hlaB: string;
-        hlaC: string;
-        hlaDR: string;
-        hlaDP: string;
-        hlaDQ: string;
-      };
-      recipient: {
-        hlaA: string;
-        hlaB: string;
-        hlaC: string;
-        hlaDR: string;
-        hlaDP: string;
-        hlaDQ: string;
-      };
-      conclusion: {
-        hlaA: string;
-        hlaB: string;
-        hlaC: string;
-        hlaDR: string;
-        hlaDP: string;
-        hlaDQ: string;
-      };
-    };
-    pra: {
-      pre: string;
-      post: string;
-    };
-    dsa: string;
-    immunologicalRisk: string;
-  };
-}
 
 const FORM_STEPS = [
   { title: "Personal Info", icon: User },
-  { title: "Relationship", icon: Users },
-  { title: "Medical History", icon: FileText },
+  { title: "Medical History", icon: Users },
   { title: "Systemic Inquiry", icon: ClipboardList },
   { title: "Drug & Allergy", icon: Pill },
   { title: "Family History", icon: Heart },
@@ -225,8 +58,6 @@ const FORM_STEPS = [
 ];
 
 interface DonorAssessmentProps {
-  donorForm?: DonorAssessmentForm;
-  setDonorForm?: (form: DonorAssessmentForm) => void;
   setActiveView?: (
     view:
       | "dashboard"
@@ -236,24 +67,32 @@ interface DonorAssessmentProps {
       | "follow-up"
       | "summary"
   ) => void;
-  handleDonorFormChange?: (field: string, value: any) => void;
-  handleDonorFormSubmit?: (e: React.FormEvent) => void;
 }
 
-const DonorAssessment: React.FC<DonorAssessmentProps> = ({
-  donorForm,
-  setDonorForm,
-  setActiveView,
-  handleDonorFormChange,
-  handleDonorFormSubmit,
-}) => {
+const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
   const [currentView, setCurrentView] = useState<"list" | "form">("list");
   const [currentStep, setCurrentStep] = useState(0);
   const [showDonorModal, setShowDonorModal] = useState(false);
-  const [selectedDonor, setSelectedDonor] = useState<DonorAssessmentForm | null>(null);
+  const [selectedDonor, setSelectedDonor] =
+    useState<DonorAssessmentForm | null>(null);
+  const [searchPhn, setSearchPhn] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [searchedPatient, setSearchedPatient] = useState<Patient | null>(null);
+  const [donorType, setDonorType] = useState<"new" | "existing">("new");
+
   const { patient } = usePatientContext();
-  const { donors, addDonor, setSelectedDonor: setContextSelectedDonor } = useDonorContext();
-  const [localFormData, setLocalFormData] = useState<DonorAssessmentForm>({
+  const {
+    donors,
+    addDonor,
+    setSelectedDonor: setContextSelectedDonor,
+    isLoading,
+    error,
+    fetchDonors,
+  } = useDonorContext();
+
+  // Single source of truth for form data
+  const [formData, setFormData] = useState<DonorAssessmentForm>({
     name: "",
     age: "",
     gender: "",
@@ -274,30 +113,16 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
     },
     complains: "",
     systemicInquiry: {
-      constitutional: {
-        loa: false,
-        low: false,
-      },
-      cvs: {
-        chestPain: false,
-        odema: false,
-        sob: false,
-      },
-      respiratory: {
-        cough: false,
-        hemoptysis: false,
-        wheezing: false,
-      },
+      constitutional: { loa: false, low: false },
+      cvs: { chestPain: false, odema: false, sob: false },
+      respiratory: { cough: false, hemoptysis: false, wheezing: false },
       git: {
         constipation: false,
         diarrhea: false,
         melena: false,
         prBleeding: false,
       },
-      renal: {
-        hematuria: false,
-        frothyUrine: false,
-      },
+      renal: { hematuria: false, frothyUrine: false },
       neuro: {
         seizures: false,
         visualDisturbance: false,
@@ -313,23 +138,9 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
       sexualHistory: "",
     },
     drugHistory: "",
-    allergyHistory: {
-      foods: false,
-      drugs: false,
-      p: false,
-    },
-    familyHistory: {
-      dm: "",
-      htn: "",
-      ihd: "",
-      stroke: "",
-      renal: "",
-    },
-    substanceUse: {
-      smoking: false,
-      alcohol: false,
-      other: "",
-    },
+    allergyHistory: { foods: false, drugs: false, p: false },
+    familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
+    substanceUse: { smoking: false, alcohol: false, other: "" },
     socialHistory: {
       spouseDetails: "",
       childrenDetails: "",
@@ -348,21 +159,13 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
         satisfactory: false,
         unsatisfactory: false,
       },
-      lymphNodes: {
-        cervical: false,
-        axillary: false,
-        inguinal: false,
-      },
+      lymphNodes: { cervical: false, axillary: false, inguinal: false },
       clubbing: false,
       ankleOedema: false,
-      cvs: {
-        bp: "",
-        pr: "",
-        murmurs: false,
-      },
+      cvs: { bp: "", pr: "", murmurs: false },
       respiratory: {
-        rr: "",
-        spo2: "",
+        rr: false,
+        spo2: false,
         auscultation: false,
         crepts: false,
         ranchi: false,
@@ -383,14 +186,8 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
       },
     },
     immunologicalDetails: {
-      bloodGroup: {
-        d: "",
-        r: "",
-      },
-      crossMatch: {
-        tCell: "",
-        bCell: "",
-      },
+      bloodGroup: { d: "", r: "" },
+      crossMatch: { tCell: "", bCell: "" },
       hlaTyping: {
         donor: {
           hlaA: "",
@@ -417,248 +214,682 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
           hlaDQ: "",
         },
       },
-      pra: {
-        pre: "",
-        post: "",
-      },
-      dsa: "",
-      immunologicalRisk: "",
-    },
-  });
-
-  // Enhanced auto-population with proper dependency handling
-  useEffect(() => {
-    if (patient?.name) {
-      console.log("Auto-populating donor form with patient data...");
-      
-      setLocalFormData((prevForm) => {
-        // Check if any patient data is actually different from current form data
-        const hasChanges = 
-          prevForm.name !== patient.name ||
-          prevForm.age !== (patient.age?.toString() || "") ||
-          prevForm.gender !== (patient.gender || "") ||
-          prevForm.dateOfBirth !== (patient.dateOfBirth || "") ||
-          prevForm.occupation !== (patient.occupation || "") ||
-          prevForm.address !== (patient.address || "") ||
-          prevForm.nicNo !== (patient.nic || "") ||
-          prevForm.contactDetails !== (patient.contact || "") ||
-          prevForm.emailAddress !== (patient.email || "");
-
-        if (!hasChanges) {
-          console.log("No changes detected, skipping update");
-          return prevForm;
-        }
-
-        console.log("Updating donor form with patient data");
-        return {
-          ...prevForm,
-          name: patient.name || "",
-          age: patient.age?.toString() || "",
-          gender: patient.gender || "",
-          dateOfBirth: patient.dateOfBirth || "",
-          occupation: patient.occupation || "",
-          address: patient.address || "",
-          nicNo: patient.nic || "",
-          contactDetails: patient.contact || "",
-          emailAddress: patient.email || "",
-        };
-      });
-    }
-  }, [
-    patient?.name,
-    patient?.age,
-    patient?.gender,
-    patient?.dateOfBirth,
-    patient?.occupation,
-    patient?.address,
-    patient?.nic,
-    patient?.contact,
-    patient?.email,
-  ]);
-
-  
-  // Use props data if available, otherwise use local state
-const formData = donorForm || localFormData;
-
-// Create a unified setFormData function that handles both cases
-const setFormData = (updater: DonorAssessmentForm | ((prev: DonorAssessmentForm) => DonorAssessmentForm)) => {
-  if (setDonorForm) {
-    // If using props, we can only accept direct values, not functions
-    if (typeof updater === 'function') {
-      // If a function is passed, we need to compute the new value first
-      const newValue = updater(formData);
-      setDonorForm(newValue);
-    } else {
-      setDonorForm(updater);
-    }
-  } else {
-    // If using local state, we can accept both functions and direct values
-    if (typeof updater === 'function') {
-      setLocalFormData(updater);
-    } else {
-      setLocalFormData(updater);
-    }
-  }
-};
-
-// Unified handleFieldChange function
-const handleFieldChange =
-  handleDonorFormChange ||
-  ((field: string, value: any) => {
-    const keys = field.split(".");
-    setFormData((prev: DonorAssessmentForm) => {
-      const updated = { ...prev };
-      let current: any = updated;
-      for (let i = 0; i < keys.length - 1; i++) {
-        current = current[keys[i]];
-      }
-      current[keys[keys.length - 1]] = value;
-      return updated;
-    });
-  });
-
- const calculateBMI = () => {
-  const height = parseFloat(formData.examination.height);
-  const weight = parseFloat(formData.examination.weight);
-  
-  // Only calculate if both values are valid numbers
-  if (height && weight && height > 0 && weight > 0) {
-    const bmi = (weight / (height / 100) ** 2).toFixed(2);
-    setFormData((prev) => ({
-      ...prev,
-      examination: {
-        ...prev.examination,
-        bmi: bmi,
-      },
-    }));
-  } else if (formData.examination.bmi && (!height || !weight)) {
-    // Clear BMI if inputs are invalid
-    setFormData((prev) => ({
-      ...prev,
-      examination: {
-        ...prev.examination,
-        bmi: "",
-      },
-    }));
-  }
-};
-
-  const nextStep = () => {
-    if (currentStep < FORM_STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Create donor object from form data for the context
-  const newDonor: Donor = {
-    id: `donor-${Date.now()}`,
-    name: formData.name,
-    bloodGroup: `${formData.immunologicalDetails?.bloodGroup?.d || ''}${formData.immunologicalDetails?.bloodGroup?.r || ''}`,
-    age: String(formData.age),
-    gender: formData.gender,
-    dateOfBirth: formData.dateOfBirth,
-    occupation: formData.occupation,
-    address: formData.address,
-    nicNo: formData.nicNo,
-    contactDetails: formData.contactDetails,
-    emailAddress: formData.emailAddress,
-    relationType: formData.relationType,
-    relationToRecipient: formData.relationToRecipient,
-  };
-
-  // Save to context
-  addDonor(newDonor);
-  
-  console.log("Donor registered and saved to context:", newDonor);
-  
-  // Show success message and reset
-  alert("Donor registration submitted successfully! The donor is now available for selection.");
-  setCurrentStep(0);
-  setCurrentView("list");
-  
-  // Reset form data - FIXED VERSION
-  setLocalFormData({
-    name: "",
-    age: "",
-    gender: "",
-    dateOfBirth: "",
-    occupation: "",
-    address: "",
-    nicNo: "",
-    contactDetails: "",
-    emailAddress: "",
-    relationToRecipient: "",
-    relationType: "",
-    comorbidities: {
-      dl: false,
-      dm: false,
-      psychiatricIllness: false,
-      htn: false,
-      ihd: false,
-    },
-    complains: "",
-    systemicInquiry: {
-      constitutional: { loa: false, low: false },
-      cvs: { chestPain: false, odema: false, sob: false },
-      respiratory: { cough: false, hemoptysis: false, wheezing: false },
-      git: { constipation: false, diarrhea: false, melena: false, prBleeding: false },
-      renal: { hematuria: false, frothyUrine: false },
-      neuro: { seizures: false, visualDisturbance: false, headache: false, limbWeakness: false },
-      gynecology: { pvBleeding: false, menopause: false, menorrhagia: false, lrmp: false },
-      sexualHistory: "",
-    },
-    drugHistory: "",
-    allergyHistory: { foods: false, drugs: false, p: false },
-    familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
-    substanceUse: { smoking: false, alcohol: false, other: "" },
-    socialHistory: { spouseDetails: "", childrenDetails: "", income: "", other: "" },
-    examination: {
-      height: "", weight: "", bmi: "", pallor: false, icterus: false,
-      oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
-      lymphNodes: { cervical: false, axillary: false, inguinal: false },
-      clubbing: false, ankleOedema: false,
-      cvs: { bp: "", pr: "", murmurs: false },
-      respiratory: { rr: "", spo2: "", auscultation: false, crepts: false, ranchi: false, effusion: false },
-      abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
-      BrcostExamination: "",
-      neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
-    },
-    immunologicalDetails: {
-      bloodGroup: { d: "", r: "" },
-      crossMatch: { tCell: "", bCell: "" },
-      hlaTyping: {
-        donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-        recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-        conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-      },
       pra: { pre: "", post: "" },
       dsa: "",
       immunologicalRisk: "",
     },
   });
-};
-  // Enhanced donor selection handler
-  const handleSelectDonor = (donor: Donor) => {
-    setContextSelectedDonor(donor);
-    alert(`Donor ${donor.name} selected! You can now use this donor in recipient assessment.`);
-    
-    // Optional: Navigate to recipient assessment
-    if (setActiveView) {
-      setActiveView("recipient-assessment");
-    }
+
+
+
+  // Helper function to update nested form data
+  const updateFormField = useCallback((path: string, value: any) => {
+    setFormData((prev) => {
+      const keys = path.split(".");
+
+      // Base case: if it's a top-level field
+      if (keys.length === 1) {
+        return { ...prev, [keys[0]]: value };
+      }
+
+      // Recursive function to create the updated nested structure
+      const updateNestedObject = (
+        currentObj: any,
+        keyPath: string[],
+        currentIndex: number
+      ): any => {
+        if (currentIndex === keyPath.length - 1) {
+          // We've reached the target field, update it
+          return { ...currentObj, [keyPath[currentIndex]]: value };
+        }
+
+        const currentKey = keyPath[currentIndex];
+        const nextObj = currentObj[currentKey] || {};
+
+        // Recursively update the next level
+        return {
+          ...currentObj,
+          [currentKey]: updateNestedObject(nextObj, keyPath, currentIndex + 1),
+        };
+      };
+
+      return updateNestedObject(prev, keys, 0);
+    });
+  }, []);
+
+  const getNestedValue = (obj: any, path: string) => {
+    return path.split(".").reduce((acc, key) => {
+      if (acc == null) return "";
+      return acc[key] ?? "";
+    }, obj);
   };
 
-  // Enhanced renderAvailableDonors to use actual donors from context
+  // Unified input change handler
+  const handleInputChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >
+    ) => {
+      const { name, value, type } = e.target;
+      const checked = (e.target as HTMLInputElement).checked;
+      const finalValue = type === "checkbox" ? checked : value;
+
+      updateFormField(name, finalValue);
+    },
+    [updateFormField]
+  );
+
+  // Direct checkbox handler
+  const handleCheckboxChange = useCallback(
+    (name: string, checked: boolean) => {
+      updateFormField(name, checked);
+    },
+    [updateFormField]
+  );
+
+  // Search patient by PHN
+  // Search patient by PHN using your Spring Boot API
+// Search patient by PHN using your Spring Boot API
+const searchPatientByPhn = useCallback(async () => {
+  if (!searchPhn.trim()) {
+    setSearchError("Please enter a PHN number");
+    return;
+  }
+
+  setIsSearching(true);
+  setSearchError("");
+  setSearchedPatient(null);
+
+  try {
+    const response = await fetch(`/api/patient/${searchPhn}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Patient not found with this PHN");
+      }
+      throw new Error("Failed to fetch patient data");
+    }
+
+    const patientData: PatientBasicDTO = await response.json();
+    
+    // Convert PatientBasicDTO to Patient type for the form
+    const patientForForm: Patient = {
+      phn: patientData.phn,
+      name: patientData.name || "",
+      age: patientData.age || "",
+      gender: patientData.gender || "",
+      dateOfBirth: patientData.dateOfBirth || "",
+      occupation: patientData.occupation || "",
+      address: patientData.address || "",
+      nicNo: patientData.nicNo || "",
+      contactDetails: patientData.contactDetails || "",
+      emailAddress: patientData.emailAddress || ""
+    };
+
+    setSearchedPatient(patientForForm);
+    setDonorType("existing")
+    // Auto-populate personal information fields
+    updateFormField("name", patientForForm.name);
+    updateFormField("age", patientForForm.age);
+    updateFormField("gender", patientForForm.gender);
+    updateFormField("dateOfBirth", patientForForm.dateOfBirth);
+    updateFormField("occupation", patientForForm.occupation);
+    updateFormField("address", patientForForm.address);
+    updateFormField("nicNo", patientForForm.nicNo);
+    updateFormField("contactDetails", patientForForm.contactDetails);
+    updateFormField("emailAddress", patientForForm.emailAddress);
+
+    if (currentStep !== 0) {
+      setCurrentStep(0);
+    }
+
+  } catch (err) {
+    console.error('API Error:', err);
+    setSearchError("Cannot connect to server. Make sure the backend is running.");
+  } finally {
+    setIsSearching(false);
+  }
+}, [searchPhn, updateFormField, currentStep]);
+
+const clearSearch = useCallback(() => {
+  setSearchPhn("");
+  setSearchedPatient(null);
+  setSearchError("");
+  setDonorType("new"); // Reset to new donor
+  resetForm();
+}, []);
+
+  // Helper function to convert Donor to DonorAssessmentForm
+  const convertDonorToFormData = useCallback(
+    (donor: Donor): DonorAssessmentForm => {
+      return {
+        name: donor.name || "",
+        age: donor.age || "",
+        gender: donor.gender || "",
+        dateOfBirth: donor.dateOfBirth || "",
+        occupation: donor.occupation || "",
+        address: donor.address || "",
+        nicNo: donor.nicNo || "",
+        contactDetails: donor.contactDetails || "",
+        emailAddress: donor.emailAddress || "",
+        relationToRecipient: donor.relationToRecipient || "",
+        relationType: donor.relationType || "",
+        comorbidities: donor.comorbidities || {
+          dl: false,
+          dm: false,
+          psychiatricIllness: false,
+          htn: false,
+          ihd: false,
+        },
+        complains: "",
+        systemicInquiry: {
+          constitutional: { loa: false, low: false },
+          cvs: { chestPain: false, odema: false, sob: false },
+          respiratory: { cough: false, hemoptysis: false, wheezing: false },
+          git: {
+            constipation: false,
+            diarrhea: false,
+            melena: false,
+            prBleeding: false,
+          },
+          renal: { hematuria: false, frothyUrine: false },
+          neuro: {
+            seizures: false,
+            visualDisturbance: false,
+            headache: false,
+            limbWeakness: false,
+          },
+          gynecology: {
+            pvBleeding: false,
+            menopause: false,
+            menorrhagia: false,
+            lrmp: false,
+          },
+          sexualHistory: "",
+        },
+        drugHistory: "",
+        allergyHistory: { foods: false, drugs: false, p: false },
+        familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
+        substanceUse: { smoking: false, alcohol: false, other: "" },
+        socialHistory: {
+          spouseDetails: "",
+          childrenDetails: "",
+          income: "",
+          other: "",
+        },
+        examination: donor.examination || {
+          height: "",
+          weight: "",
+          bmi: "",
+          pallor: false,
+          icterus: false,
+          oral: {
+            dentalCaries: false,
+            oralHygiene: false,
+            satisfactory: false,
+            unsatisfactory: false,
+          },
+          lymphNodes: { cervical: false, axillary: false, inguinal: false },
+          clubbing: false,
+          ankleOedema: false,
+          cvs: { bp: "", pr: "", murmurs: false },
+          respiratory: {
+            rr: false,
+            spo2: false,
+            auscultation: false,
+            crepts: false,
+            ranchi: false,
+            effusion: false,
+          },
+          abdomen: {
+            hepatomegaly: false,
+            splenomegaly: false,
+            renalMasses: false,
+            freeFluid: false,
+          },
+          BrcostExamination: "",
+          neurologicalExam: {
+            cranialNerves: false,
+            upperLimb: false,
+            lowerLimb: false,
+            coordination: false,
+          },
+        },
+        immunologicalDetails: donor.immunologicalDetails || {
+          bloodGroup: {
+            d: donor.bloodGroup?.charAt(0) || "",
+            r: donor.bloodGroup?.charAt(1) || "",
+          },
+          crossMatch: { tCell: "", bCell: "" },
+          hlaTyping: {
+            donor: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+            recipient: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+            conclusion: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+          },
+          pra: { pre: "", post: "" },
+          dsa: "",
+          immunologicalRisk: "",
+        },
+      };
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (patient?.phn) {
+      fetchDonors(patient.phn);
+    } else {
+      fetchDonors();
+    }
+  }, [patient?.phn, fetchDonors]);
+
+  // Calculate BMI function
+  const calculateBMI = useCallback(() => {
+    const height = parseFloat(formData.examination.height);
+    const weight = parseFloat(formData.examination.weight);
+
+    if (height && weight && height > 0 && weight > 0) {
+      const bmi = (weight / (height / 100) ** 2).toFixed(2);
+      updateFormField("examination.bmi", bmi);
+    } else if (formData.examination.bmi && (!height || !weight)) {
+      updateFormField("examination.bmi", "");
+    }
+  }, [
+    formData.examination.height,
+    formData.examination.weight,
+    formData.examination.bmi,
+    updateFormField,
+  ]);
+
+  const nextStep = useCallback(() => {
+    if (currentStep < FORM_STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  }, [currentStep]);
+
+  const prevStep = useCallback(() => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  }, [currentStep]);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      name: "",
+      age: "",
+      gender: "",
+      dateOfBirth: "",
+      occupation: "",
+      address: "",
+      nicNo: "",
+      contactDetails: "",
+      emailAddress: "",
+      relationToRecipient: "",
+      relationType: "",
+      comorbidities: {
+        dl: false,
+        dm: false,
+        psychiatricIllness: false,
+        htn: false,
+        ihd: false,
+      },
+      complains: "",
+      systemicInquiry: {
+        constitutional: { loa: false, low: false },
+        cvs: { chestPain: false, odema: false, sob: false },
+        respiratory: { cough: false, hemoptysis: false, wheezing: false },
+        git: {
+          constipation: false,
+          diarrhea: false,
+          melena: false,
+          prBleeding: false,
+        },
+        renal: { hematuria: false, frothyUrine: false },
+        neuro: {
+          seizures: false,
+          visualDisturbance: false,
+          headache: false,
+          limbWeakness: false,
+        },
+        gynecology: {
+          pvBleeding: false,
+          menopause: false,
+          menorrhagia: false,
+          lrmp: false,
+        },
+        sexualHistory: "",
+      },
+      drugHistory: "",
+      allergyHistory: { foods: false, drugs: false, p: false },
+      familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
+      substanceUse: { smoking: false, alcohol: false, other: "" },
+      socialHistory: {
+        spouseDetails: "",
+        childrenDetails: "",
+        income: "",
+        other: "",
+      },
+      examination: {
+        height: "",
+        weight: "",
+        bmi: "",
+        pallor: false,
+        icterus: false,
+        oral: {
+          dentalCaries: false,
+          oralHygiene: false,
+          satisfactory: false,
+          unsatisfactory: false,
+        },
+        lymphNodes: { cervical: false, axillary: false, inguinal: false },
+        clubbing: false,
+        ankleOedema: false,
+        cvs: { bp: "", pr: "", murmurs: false },
+        respiratory: {
+          rr: false,
+          spo2: false,
+          auscultation: false,
+          crepts: false,
+          ranchi: false,
+          effusion: false,
+        },
+        abdomen: {
+          hepatomegaly: false,
+          splenomegaly: false,
+          renalMasses: false,
+          freeFluid: false,
+        },
+        BrcostExamination: "",
+        neurologicalExam: {
+          cranialNerves: false,
+          upperLimb: false,
+          lowerLimb: false,
+          coordination: false,
+        },
+      },
+      immunologicalDetails: {
+        bloodGroup: { d: "", r: "" },
+        crossMatch: { tCell: "", bCell: "" },
+        hlaTyping: {
+          donor: {
+            hlaA: "",
+            hlaB: "",
+            hlaC: "",
+            hlaDR: "",
+            hlaDP: "",
+            hlaDQ: "",
+          },
+          recipient: {
+            hlaA: "",
+            hlaB: "",
+            hlaC: "",
+            hlaDR: "",
+            hlaDP: "",
+            hlaDQ: "",
+          },
+          conclusion: {
+            hlaA: "",
+            hlaB: "",
+            hlaC: "",
+            hlaDR: "",
+            hlaDP: "",
+            hlaDQ: "",
+          },
+        },
+        pra: { pre: "", post: "" },
+        dsa: "",
+        immunologicalRisk: "",
+      },
+    });
+  }, []);
+
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Check if we have a donor (either from search or form data)
+  if (!formData.name || !formData.nicNo) {
+    alert("Please fill in at least the donor's name and NIC number, or search for an existing patient first.");
+    return;
+  }
+
+  // Basic validation for required fields
+  const requiredFields = [
+    { field: formData.name, name: "Full Name" },
+    { field: formData.age, name: "Age" },
+    { field: formData.gender, name: "Gender" },
+    { field: formData.nicNo, name: "NIC Number" },
+    { field: formData.contactDetails, name: "Contact Details" },
+  ];
+
+  const missingFields = requiredFields.filter((item) => !item.field);
+  if (missingFields.length > 0) {
+    const fieldNames = missingFields.map((item) => item.name).join(", ");
+    alert(`Please fill in the following required fields: ${fieldNames}`);
+    return;
+  }
+
+  try {
+    // Use the searched patient's PHN if available, otherwise you might need to generate one
+    // or handle the case where this is a new donor without a PHN
+    const patientPhn = searchedPatient?.phn || formData.nicNo; // Fallback to NIC if no PHN
+    
+    // The addDonor function now expects DonorAssessmentForm directly
+    await addDonor(formData, patientPhn);
+
+    alert(
+      "Donor registration submitted successfully! The donor is now available for selection."
+    );
+    setCurrentStep(0);
+    setCurrentView("list");
+    clearSearch();
+  } catch (err) {
+    console.error("Failed to submit donor:", err);
+    alert("Failed to submit donor. Please try again.");
+  }
+};
+
+  const handleSelectDonor = useCallback(
+    (donor: Donor) => {
+      setContextSelectedDonor(donor);
+      alert(
+        `Donor ${donor.name} selected! You can now use this donor in recipient assessment.`
+      );
+
+      if (setActiveView) {
+        setActiveView("recipient-assessment");
+      }
+    },
+    [setContextSelectedDonor, setActiveView]
+  );
+
+  const CheckboxField = useCallback(
+    ({
+      name,
+      label,
+      checked,
+    }: {
+      name: string;
+      label: string;
+      checked: boolean;
+    }) => (
+      <label className="flex items-start gap-3 cursor-pointer group">
+        <Checkbox
+          name={name}
+          checked={checked}
+          onCheckedChange={(checked) => {
+            handleCheckboxChange(name, checked === true);
+          }}
+          className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+        />
+        <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
+          {label}
+        </span>
+      </label>
+    ),
+    [handleCheckboxChange]
+  );
+
+const InputField = ({
+  name,
+  label,
+  type = "text",
+  placeholder = "",
+  required = false,
+  value, // Add value prop
+}: {
+  name: string;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  value?: string; // Add value to the type definition
+}) => (
+  <div className="space-y-2">
+    <Label htmlFor={name} className="text-sm font-medium text-slate-700">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </Label>
+    <Input
+      id={name}
+      name={name}
+      type={type}
+      value={value} // Pass the value prop
+      onChange={handleInputChange}
+      placeholder={placeholder}
+      className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+    />
+  </div>
+);
+
+  const SectionCard = useCallback(
+    ({
+      title,
+      children,
+      className = "",
+    }: {
+      title: string;
+      children: React.ReactNode;
+      className?: string;
+    }) => (
+      <div
+        className={`bg-white border border-slate-200 rounded-lg p-6 ${className}`}
+      >
+        <h4 className="text-base font-medium text-slate-900 mb-4">{title}</h4>
+        {children}
+      </div>
+    ),
+    []
+  );
+
+  // Search Bar Component
+  // Search Bar Component
+const SearchBar = () => (
+  <Card className="border border-slate-200 shadow-sm mb-6">
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-medium text-slate-900">Search Existing Patient</h3>
+          <p className="text-sm text-slate-600">
+            Search by PHN to auto-populate personal information
+          </p>
+        </div>
+        {searchedPatient && (
+          <Badge variant="secondary" className="bg-green-100 text-green-800">
+            Patient Loaded
+          </Badge>
+        )}
+      </div>
+      
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <Label htmlFor="phn-search" className="text-sm font-medium text-slate-700 mb-2 block">
+            PHN Number
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="phn-search"
+              type="text"
+              placeholder="Enter patient PHN number..."
+              value={searchPhn}
+              onChange={(e) => setSearchPhn(e.target.value)}
+              className="flex-1 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  searchPatientByPhn();
+                }
+              }}
+            />
+            <Button
+              onClick={searchPatientByPhn}
+              disabled={isSearching || !searchPhn.trim()}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isSearching ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+              Search
+            </Button>
+            {searchedPatient && (
+              <Button
+                onClick={clearSearch}
+                variant="outline"
+                className="border-red-300 text-red-700 hover:bg-red-50"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+          {searchError && (
+            <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" />
+              {searchError}
+            </p>
+          )}
+          {searchedPatient && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-blue-900">{searchedPatient.name}</p>
+                  <p className="text-sm text-blue-700">
+                    PHN: {searchedPatient.phn} | Age: {searchedPatient.age} | Gender: {searchedPatient.gender}
+                  </p>
+                </div>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <p className="text-xs text-blue-600 mt-2">
+                Personal information has been auto-populated from your database.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
   const renderAvailableDonors = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -673,19 +904,52 @@ const handleSubmit = (e: React.FormEvent) => {
         <Button
           onClick={() => setCurrentView("form")}
           className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          disabled={isLoading}
         >
           <UserPlus className="w-4 h-4 mr-2" />
-          Add New Donor
+          {isLoading ? "Loading..." : "Add New Donor"}
         </Button>
       </div>
 
-      {donors.length === 0 ? (
+      {error && (
+        <Card className="border border-red-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertCircle className="w-5 h-5" />
+              <span>Error loading donors: {error}</span>
+            </div>
+            <Button
+              onClick={() => fetchDonors(patient?.phn)}
+              variant="outline"
+              size="sm"
+              className="mt-2"
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <Card className="border border-slate-200 shadow-sm">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 mb-2">
+              Loading Donors
+            </h3>
+            <p className="text-slate-600">Fetching donor data from server...</p>
+          </CardContent>
+        </Card>
+      ) : donors.length === 0 ? (
         <Card className="border border-slate-200 shadow-sm">
           <CardContent className="p-8 text-center">
             <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No Donors Registered</h3>
+            <h3 className="text-lg font-medium text-slate-900 mb-2">
+              No Donors Registered
+            </h3>
             <p className="text-slate-600 mb-4">
-              Get started by registering your first donor. Registered donors will appear here and be available for recipient matching.
+              Get started by registering your first donor. Registered donors
+              will appear here and be available for recipient matching.
             </p>
             <Button
               onClick={() => setCurrentView("form")}
@@ -703,29 +967,65 @@ const handleSubmit = (e: React.FormEvent) => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">Donor</th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">Blood Type</th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">Age</th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">Relation</th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">Status</th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">Actions</th>
+                    <th className="text-left py-4 px-6 font-medium text-slate-700">
+                      Donor
+                    </th>
+                    <th className="text-left py-4 px-6 font-medium text-slate-700">
+                      Blood Type
+                    </th>
+                    <th className="text-left py-4 px-6 font-medium text-slate-700">
+                      Age
+                    </th>
+                    <th className="text-left py-4 px-6 font-medium text-slate-700">
+                      Relation
+                    </th>
+                    <th className="text-left py-4 px-6 font-medium text-slate-700">
+                      Status
+                    </th>
+                    <th className="text-left py-4 px-6 font-medium text-slate-700">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {donors.map((donor) => (
-                    <tr key={donor.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <tr
+                      key={donor.id}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    >
                       <td className="py-4 px-6">
-                        <div className="font-medium text-slate-900">{donor.name}</div>
-                        <div className="text-sm text-slate-500">{donor.gender}</div>
+                        <div className="font-medium text-slate-900">
+                          {donor.name}
+                        </div>
+                        <div className="text-sm text-slate-500">
+                          {donor.gender}
+                        </div>
                       </td>
                       <td className="py-4 px-6 text-slate-600">
                         <span className="font-medium">{donor.bloodGroup}</span>
                       </td>
-                      <td className="py-4 px-6 text-slate-600">{donor.age} years</td>
-                      <td className="py-4 px-6 text-slate-600">{donor.relationToRecipient}</td>
+                      <td className="py-4 px-6 text-slate-600">
+                        {donor.age} years
+                      </td>
+                      <td className="py-4 px-6 text-slate-600">
+                        {donor.relationToRecipient}
+                      </td>
                       <td className="py-4 px-6">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Available
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            donor.status === "assigned"
+                              ? "bg-blue-100 text-blue-800"
+                              : donor.status === "evaluating"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : donor.status === "rejected"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {donor.status
+                            ? donor.status.charAt(0).toUpperCase() +
+                              donor.status.slice(1)
+                            : "Available"}
                         </span>
                       </td>
                       <td className="py-4 px-6">
@@ -735,63 +1035,7 @@ const handleSubmit = (e: React.FormEvent) => {
                             variant="outline"
                             className="text-slate-600 border-slate-300 hover:bg-slate-50"
                             onClick={() => {
-                              // Convert Donor to DonorAssessmentForm for the modal
-                              const donorDetails: DonorAssessmentForm = {
-                                name: donor.name,
-                                age: donor.age != null ? String(donor.age) : "",
-                                gender: donor.gender || "",
-                                dateOfBirth: donor.dateOfBirth || "",
-                                occupation: donor.occupation || "",
-                                address: donor.address || "",
-                                nicNo: donor.nicNo || "",
-                                contactDetails: donor.contactDetails || "",
-                                emailAddress: donor.emailAddress || "",
-                                relationToRecipient: donor.relationToRecipient || "",
-                                relationType: donor.relationType || "",
-                                comorbidities: {
-                                  dl: false, dm: false, psychiatricIllness: false, htn: false, ihd: false
-                                },
-                                complains: "",
-                                systemicInquiry: {
-                                  constitutional: { loa: false, low: false },
-                                  cvs: { chestPain: false, odema: false, sob: false },
-                                  respiratory: { cough: false, hemoptysis: false, wheezing: false },
-                                  git: { constipation: false, diarrhea: false, melena: false, prBleeding: false },
-                                  renal: { hematuria: false, frothyUrine: false },
-                                  neuro: { seizures: false, visualDisturbance: false, headache: false, limbWeakness: false },
-                                  gynecology: { pvBleeding: false, menopause: false, menorrhagia: false, lrmp: false },
-                                  sexualHistory: "",
-                                },
-                                drugHistory: "",
-                                allergyHistory: { foods: false, drugs: false, p: false },
-                                familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
-                                substanceUse: { smoking: false, alcohol: false, other: "" },
-                                socialHistory: { spouseDetails: "", childrenDetails: "", income: "", other: "" },
-                                examination: {
-                                  height: "", weight: "", bmi: "", pallor: false, icterus: false,
-                                  oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
-                                  lymphNodes: { cervical: false, axillary: false, inguinal: false },
-                                  clubbing: false, ankleOedema: false,
-                                  cvs: { bp: "", pr: "", murmurs: false },
-                                  respiratory: { rr: "", spo2: "", auscultation: false, crepts: false, ranchi: false, effusion: false },
-                                  abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
-                                  BrcostExamination: "",
-                                  neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
-                                },
-                                immunologicalDetails: {
-                                  bloodGroup: { d: donor.bloodGroup?.charAt(0) || "", r: donor.bloodGroup?.charAt(1) || "" },
-                                  crossMatch: { tCell: "", bCell: "" },
-                                  hlaTyping: {
-                                    donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-                                    recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-                                    conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-                                  },
-                                  pra: { pre: "", post: "" },
-                                  dsa: "",
-                                  immunologicalRisk: "",
-                                },
-                              };
-                              setSelectedDonor(donorDetails);
+                              setSelectedDonor(convertDonorToFormData(donor));
                               setShowDonorModal(true);
                             }}
                           >
@@ -818,131 +1062,12 @@ const handleSubmit = (e: React.FormEvent) => {
       )}
     </div>
   );
-const handleInputChange = (
-  e: React.ChangeEvent<
-    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-  >
-) => {
-  const { name, value, type } = e.target;
-  const checked = (e.target as HTMLInputElement).checked;
-
-  if (name.includes(".")) {
-    const [parent, child, subChild] = name.split(".");
-
-    const updated = { ...formData };
-    
-    if (subChild) {
-      const parentObj = updated[parent as keyof DonorAssessmentForm];
-      if (typeof parentObj === "object" && parentObj !== null) {
-        const childObj = (parentObj as any)[child];
-        if (typeof childObj === "object" && childObj !== null) {
-          (parentObj as any)[child] = {
-            ...childObj,
-            [subChild]: type === "checkbox" ? checked : value,
-          };
-        } else {
-          (parentObj as any)[child] = {
-            [subChild]: type === "checkbox" ? checked : value,
-          };
-        }
-      }
-    } else {
-      const parentObj = updated[parent as keyof DonorAssessmentForm];
-      if (typeof parentObj === "object" && parentObj !== null) {
-        (parentObj as any)[child] = type === "checkbox" ? checked : value;
-      }
-    }
-    
-    setFormData(updated);
-  } else {
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
-  }
-};
-  const CheckboxField = ({
-    name,
-    label,
-    checked,
-  }: {
-    name: string;
-    label: string;
-    checked: boolean;
-  }) => (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <Checkbox
-        name={name}
-        checked={checked}
-        onCheckedChange={(checked) => {
-          const syntheticEvent = {
-            target: { name, checked, type: "checkbox" },
-          } as React.ChangeEvent<HTMLInputElement>;
-          handleInputChange(syntheticEvent);
-        }}
-        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-      />
-      <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
-        {label}
-      </span>
-    </label>
-  );
-
-  const InputField = ({
-    name,
-    label,
-    value,
-    type = "text",
-    placeholder = "",
-    required = false,
-  }: {
-    name: string;
-    label: string;
-    value: string;
-    type?: string;
-    placeholder?: string;
-    required?: boolean;
-  }) => (
-   
-    <div className="space-y-2">
-      <Label htmlFor={name} className="text-sm font-medium text-slate-700">
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={handleInputChange}
-        placeholder={placeholder}
-        className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-      />
-    </div>
-  );
-
-  const SectionCard = ({
-    title,
-    children,
-    className = "",
-  }: {
-    title: string;
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <div
-      className={`bg-white border border-slate-200 rounded-lg p-6 ${className}`}
-    >
-      <h4 className="text-base font-medium text-slate-900 mb-4">{title}</h4>
-      {children}
-    </div>
-  );
-
   const renderFormStep = () => {
     switch (currentStep) {
-      case 0: // Personal Info
+      case 0:
         return (
           <div className="space-y-6">
+            <SearchBar />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputField
                 name="name"
@@ -959,7 +1084,6 @@ const handleInputChange = (
                 required
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
@@ -985,7 +1109,6 @@ const handleInputChange = (
                 required
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputField
                 name="occupation"
@@ -1001,7 +1124,6 @@ const handleInputChange = (
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
                 Address
@@ -1015,7 +1137,6 @@ const handleInputChange = (
                 placeholder="Enter full address"
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputField
                 name="contactDetails"
@@ -1035,62 +1156,133 @@ const handleInputChange = (
           </div>
         );
 
-      case 1: // Relationship
+      case 1:
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                name="relationToRecipient"
-                label="Relation to Recipient"
-                value={formData.relationToRecipient}
-                placeholder="Enter relationship"
-                required
-              />
+            {/* Complains Section - Added at the top */}
+            <SectionCard title="Chief Complaints">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Type of Relation <span className="text-red-500 ml-1">*</span>
+                  Chief Complaints
                 </Label>
-                <select
-                  name="relationType"
-                  value={formData.relationType}
+                <Textarea
+                  name="complains"
+                  value={formData.complains}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">Select relation type</option>
-                  <option value="family">Family</option>
-                  <option value="friend">Friend</option>
-                  <option value="colleague">Colleague</option>
-                  <option value="other">Other</option>
-                </select>
+                  rows={4}
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter chief complaints and details about current symptoms, duration, severity, etc."
+                />
               </div>
-            </div>
-          </div>
-        );
+            </SectionCard>
 
-      case 2: // Medical History
-        return (
-          <div className="space-y-6">
             <SectionCard title="Comorbidities">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CheckboxField
                   name="comorbidities.dm"
-                  label="Diabetes Mellitus"
+                  label="Diabetes Mellitus(DM)"
                   checked={formData.comorbidities.dm}
                 />
                 <CheckboxField
                   name="comorbidities.htn"
-                  label="Hypertension"
+                  label="Hypertension(HTN)"
                   checked={formData.comorbidities.htn}
                 />
                 <CheckboxField
                   name="comorbidities.ihd"
-                  label="Ischemic Heart Disease"
+                  label="Ischemic Heart Disease(IHD)"
                   checked={formData.comorbidities.ihd}
                 />
                 <CheckboxField
                   name="comorbidities.psychiatricIllness"
                   label="Psychiatric Illness"
                   checked={formData.comorbidities.psychiatricIllness}
+                />
+                <CheckboxField
+                  name="comorbidities.dl"
+                  label="Dyslipidemia (DL)"
+                  checked={formData.comorbidities.dl}
+                />
+              </div>
+            </SectionCard>
+          </div>
+        );
+      case 2:
+        return (
+          <div className="space-y-6">
+            <SectionCard title="Constitutional Symptoms">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CheckboxField
+                  name="systemicInquiry.constitutional.loa"
+                  label="Loss of Appetite"
+                  checked={formData.systemicInquiry.constitutional.loa}
+                />
+                <CheckboxField
+                  name="systemicInquiry.constitutional.low"
+                  label="Loss of Weight"
+                  checked={formData.systemicInquiry.constitutional.low}
+                />
+              </div>
+            </SectionCard>
+            <SectionCard title="Cardiovascular System(CVS)">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <CheckboxField
+                  name="systemicInquiry.cvs.chestPain"
+                  label="Chest Pain"
+                  checked={formData.systemicInquiry.cvs.chestPain}
+                />
+                <CheckboxField
+                  name="systemicInquiry.cvs.odema"
+                  label="Odem"
+                  checked={formData.systemicInquiry.cvs.odema}
+                />
+                <CheckboxField
+                  name="systemicInquiry.cvs.sob"
+                  label="Shortness of Breath(SOB)"
+                  checked={formData.systemicInquiry.cvs.sob}
+                />
+              </div>
+            </SectionCard>
+            <SectionCard title="Respiratory System">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <CheckboxField
+                  name="systemicInquiry.respiratory.cough"
+                  label="Cough"
+                  checked={formData.systemicInquiry.respiratory.cough}
+                />
+                <CheckboxField
+                  name="systemicInquiry.respiratory.hemoptysis"
+                  label="Hemoptysis"
+                  checked={formData.systemicInquiry.respiratory.hemoptysis}
+                />
+                <CheckboxField
+                  name="systemicInquiry.respiratory.wheezing"
+                  label="Wheezing"
+                  checked={formData.systemicInquiry.respiratory.wheezing}
+                />
+              </div>
+            </SectionCard>
+            <SectionCard title="Gastrointestinal System">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <CheckboxField
+                  name="systemicInquiry.git.constipation"
+                  label="Constipation"
+                  checked={formData.systemicInquiry.git.constipation}
+                />
+                <CheckboxField
+                  name="systemicInquiry.git.diarrhea"
+                  label="Diarrhea"
+                  checked={formData.systemicInquiry.git.diarrhea}
+                />
+                <CheckboxField
+                  name="systemicInquiry.git.melena"
+                  label="Melena"
+                  checked={formData.systemicInquiry.git.melena}
+                />
+                <CheckboxField
+                  name="systemicInquiry.git.prBleeding"
+                  label="PR Bleeding"
+                  checked={formData.systemicInquiry.git.prBleeding}
                 />
               </div>
             </SectionCard>
@@ -1175,106 +1367,7 @@ const handleInputChange = (
           </div>
         );
 
-      case 3: // Systemic Inquiry
-        return (
-          <div className="space-y-6">
-            <SectionCard title="Constitutional Symptoms">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CheckboxField
-                  name="systemicInquiry.constitutional.loa"
-                  label="Loss of Appetite"
-                  checked={formData.systemicInquiry.constitutional.loa}
-                />
-                <CheckboxField
-                  name="systemicInquiry.constitutional.low"
-                  label="Loss of Weight"
-                  checked={formData.systemicInquiry.constitutional.low}
-                />
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Cardiovascular System">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <CheckboxField
-                  name="systemicInquiry.cvs.chestPain"
-                  label="Chest Pain"
-                  checked={formData.systemicInquiry.cvs.chestPain}
-                />
-                <CheckboxField
-                  name="systemicInquiry.cvs.odema"
-                  label="Edema"
-                  checked={formData.systemicInquiry.cvs.odema}
-                />
-                <CheckboxField
-                  name="systemicInquiry.cvs.sob"
-                  label="Shortness of Breath"
-                  checked={formData.systemicInquiry.cvs.sob}
-                />
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Respiratory System">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <CheckboxField
-                  name="systemicInquiry.respiratory.cough"
-                  label="Cough"
-                  checked={formData.systemicInquiry.respiratory.cough}
-                />
-                <CheckboxField
-                  name="systemicInquiry.respiratory.hemoptysis"
-                  label="Hemoptysis"
-                  checked={formData.systemicInquiry.respiratory.hemoptysis}
-                />
-                <CheckboxField
-                  name="systemicInquiry.respiratory.wheezing"
-                  label="Wheezing"
-                  checked={formData.systemicInquiry.respiratory.wheezing}
-                />
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Gastrointestinal System">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <CheckboxField
-                  name="systemicInquiry.git.constipation"
-                  label="Constipation"
-                  checked={formData.systemicInquiry.git.constipation}
-                />
-                <CheckboxField
-                  name="systemicInquiry.git.diarrhea"
-                  label="Diarrhea"
-                  checked={formData.systemicInquiry.git.diarrhea}
-                />
-                <CheckboxField
-                  name="systemicInquiry.git.melena"
-                  label="Melena"
-                  checked={formData.systemicInquiry.git.melena}
-                />
-                <CheckboxField
-                  name="systemicInquiry.git.prBleeding"
-                  label="PR Bleeding"
-                  checked={formData.systemicInquiry.git.prBleeding}
-                />
-              </div>
-            </SectionCard>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
-                Chief Complaints
-              </Label>
-              <Textarea
-                name="complains"
-                value={formData.complains}
-                onChange={handleInputChange}
-                rows={4}
-                className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Enter chief complaints and details"
-              />
-            </div>
-          </div>
-        );
-
-      case 4: // Drug & Allergy
+      case 3:
         return (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -1290,7 +1383,6 @@ const handleInputChange = (
                 placeholder="List current medications, dosages, and duration"
               />
             </div>
-
             <SectionCard title="Known Allergies">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <CheckboxField
@@ -1313,25 +1405,25 @@ const handleInputChange = (
           </div>
         );
 
-      case 5: // Family History
+      case 4:
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputField
                 name="familyHistory.dm"
-                label="Diabetes Mellitus"
+                label="Diabetes Mellitus(DM)"
                 value={formData.familyHistory.dm}
                 placeholder="Family member relationship"
               />
               <InputField
                 name="familyHistory.htn"
-                label="Hypertension"
+                label="Hypertension(HTN)"
                 value={formData.familyHistory.htn}
                 placeholder="Family member relationship"
               />
               <InputField
                 name="familyHistory.ihd"
-                label="Ischemic Heart Disease"
+                label="Ischemic Heart Disease(IHD)"
                 value={formData.familyHistory.ihd}
                 placeholder="Family member relationship"
               />
@@ -1351,12 +1443,12 @@ const handleInputChange = (
           </div>
         );
 
-      case 6: // Substance Use
+      case 5:
         return (
           <div className="space-y-6">
             <SectionCard title="Substance Use History">
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-col-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <CheckboxField
                     name="substanceUse.smoking"
                     label="Smoking"
@@ -1386,7 +1478,7 @@ const handleInputChange = (
           </div>
         );
 
-      case 7: // Social History
+      case 6:
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1441,7 +1533,7 @@ const handleInputChange = (
           </div>
         );
 
-      case 8: // Examination
+      case 7:
         return (
           <div className="space-y-6">
             <SectionCard title="Anthropometric Measurements">
@@ -1477,7 +1569,6 @@ const handleInputChange = (
                 </div>
               </div>
             </SectionCard>
-
             <SectionCard title="General Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
@@ -1502,17 +1593,16 @@ const handleInputChange = (
                 />
               </div>
             </SectionCard>
-
             <SectionCard title="Oral Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
                   name="examination.oral.dentalCaries"
-                  label="Dental Caries"
+                  label="Dental Conics"
                   checked={formData.examination.oral.dentalCaries}
                 />
                 <CheckboxField
                   name="examination.oral.oralHygiene"
-                  label="Poor Oral Hygiene"
+                  label="Oral Hygiene"
                   checked={formData.examination.oral.oralHygiene}
                 />
                 <CheckboxField
@@ -1527,7 +1617,6 @@ const handleInputChange = (
                 />
               </div>
             </SectionCard>
-
             <SectionCard title="Lymph Nodes">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <CheckboxField
@@ -1547,8 +1636,7 @@ const handleInputChange = (
                 />
               </div>
             </SectionCard>
-
-            <SectionCard title="Cardiovascular System">
+            <SectionCard title="Cardiovascular System(CVS)">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <InputField
                   name="examination.cvs.bp"
@@ -1571,21 +1659,18 @@ const handleInputChange = (
                 </div>
               </div>
             </SectionCard>
-
             <SectionCard title="Respiratory System">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputField
+                  <CheckboxField
                     name="examination.respiratory.rr"
-                    label="Respiratory Rate"
-                    value={formData.examination.respiratory.rr}
-                    placeholder="e.g., 16/min"
+                    label="Respiratory Rate (RR)"
+                    checked={formData.examination.respiratory.rr}
                   />
-                  <InputField
+                  <CheckboxField
                     name="examination.respiratory.spo2"
                     label="SpO2"
-                    value={formData.examination.respiratory.spo2}
-                    placeholder="e.g., 98%"
+                    checked={formData.examination.respiratory.spo2}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1612,7 +1697,6 @@ const handleInputChange = (
                 </div>
               </div>
             </SectionCard>
-
             <SectionCard title="Abdominal Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
@@ -1637,8 +1721,7 @@ const handleInputChange = (
                 />
               </div>
             </SectionCard>
-
-            <SectionCard title="Breast/Chest Examination">
+            <SectionCard title="Brcost Examination">
               <div className="space-y-2">
                 <Textarea
                   name="examination.BrcostExamination"
@@ -1646,11 +1729,10 @@ const handleInputChange = (
                   onChange={handleInputChange}
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Describe breast/chest examination findings"
+                  placeholder="Describe examination findings"
                 />
               </div>
             </SectionCard>
-
             <SectionCard title="Neurological Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
@@ -1678,7 +1760,7 @@ const handleInputChange = (
           </div>
         );
 
-      case 9: // Immunological
+      case 8:
         return (
           <div className="space-y-6">
             <SectionCard title="Blood Group">
@@ -1697,7 +1779,6 @@ const handleInputChange = (
                 />
               </div>
             </SectionCard>
-
             <SectionCard title="Cross Match">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
@@ -1714,19 +1795,32 @@ const handleInputChange = (
                 />
               </div>
             </SectionCard>
-
             <SectionCard title="HLA Typing">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b border-slate-300">
-                      <th className="text-left py-3 px-4 font-medium text-slate-700">Type</th>
-                      <th className="text-left py-3 px-4 font-medium text-slate-700">HLA-A</th>
-                      <th className="text-left py-3 px-4 font-medium text-slate-700">HLA-B</th>
-                      <th className="text-left py-3 px-4 font-medium text-slate-700">HLA-C</th>
-                      <th className="text-left py-3 px-4 font-medium text-slate-700">HLA-DR</th>
-                      <th className="text-left py-3 px-4 font-medium text-slate-700">HLA-DP</th>
-                      <th className="text-left py-3 px-4 font-medium text-slate-700">HLA-DQ</th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700">
+                        Type
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700">
+                        HLA-A
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700">
+                        HLA-B
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700">
+                        HLA-C
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700">
+                        HLA-DR
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700">
+                        HLA-DP
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700">
+                        HLA-DQ
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1735,7 +1829,14 @@ const handleInputChange = (
                         <td className="py-3 px-4 font-medium text-slate-700 capitalize">
                           {type}
                         </td>
-                        {["hlaA", "hlaB", "hlaC", "hlaDR", "hlaDP", "hlaDQ"].map((hla) => (
+                        {[
+                          "hlaA",
+                          "hlaB",
+                          "hlaC",
+                          "hlaDR",
+                          "hlaDP",
+                          "hlaDQ",
+                        ].map((hla) => (
                           <td key={hla} className="py-3 px-2">
                             <Input
                               name={`immunologicalDetails.hlaTyping.${type}.${hla}`}
@@ -1758,7 +1859,6 @@ const handleInputChange = (
                 </table>
               </div>
             </SectionCard>
-
             <SectionCard title="PRA (Panel Reactive Antibodies)">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
@@ -1775,7 +1875,6 @@ const handleInputChange = (
                 />
               </div>
             </SectionCard>
-
             <SectionCard title="DSA & Risk Assessment">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -1790,21 +1889,26 @@ const handleInputChange = (
                     placeholder="Enter DSA details"
                   />
                 </div>
-
                 <div className="space-y-3">
                   <Label className="text-sm font-medium text-slate-700">
                     Immunological Risk
                   </Label>
                   <RadioGroup
                     value={formData.immunologicalDetails.immunologicalRisk}
-                    onValueChange={(value) => {
-                      handleFieldChange("immunologicalDetails.immunologicalRisk", value);
-                    }}
+                    onValueChange={(value) =>
+                      updateFormField(
+                        "immunologicalDetails.immunologicalRisk",
+                        value
+                      )
+                    }
                     className="flex gap-6"
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="low" id="low" />
-                      <Label htmlFor="low" className="text-sm text-slate-700 cursor-pointer">
+                      <Label
+                        htmlFor="low"
+                        className="text-sm text-slate-700 cursor-pointer"
+                      >
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Low
                         </span>
@@ -1812,7 +1916,10 @@ const handleInputChange = (
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="average" id="average" />
-                      <Label htmlFor="average" className="text-sm text-slate-700 cursor-pointer">
+                      <Label
+                        htmlFor="average"
+                        className="text-sm text-slate-700 cursor-pointer"
+                      >
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                           Average
                         </span>
@@ -1820,7 +1927,10 @@ const handleInputChange = (
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="high" id="high" />
-                      <Label htmlFor="high" className="text-sm text-slate-700 cursor-pointer">
+                      <Label
+                        htmlFor="high"
+                        className="text-sm text-slate-700 cursor-pointer"
+                      >
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                           High
                         </span>
@@ -1833,7 +1943,7 @@ const handleInputChange = (
           </div>
         );
 
-      case 10: // Confirmation
+      case 9:
         return (
           <div className="space-y-6">
             <SectionCard title="Registration Summary">
@@ -1878,13 +1988,17 @@ const handleInputChange = (
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="font-medium text-slate-600">Relation:</span>
+                    <span className="font-medium text-slate-600">
+                      Relation:
+                    </span>
                     <span className="text-slate-900">
                       {formData.relationToRecipient || "Not provided"}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="font-medium text-slate-600">Relation Type:</span>
+                    <span className="font-medium text-slate-600">
+                      Relation Type:
+                    </span>
                     <span className="text-slate-900">
                       {formData.relationType || "Not provided"}
                     </span>
@@ -1892,7 +2006,6 @@ const handleInputChange = (
                 </div>
               </div>
             </SectionCard>
-
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <Shield className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -1909,7 +2022,6 @@ const handleInputChange = (
                 </div>
               </div>
             </div>
-
             <SectionCard title="Consent and Confirmation">
               <div className="space-y-4">
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -1923,7 +2035,6 @@ const handleInputChange = (
                     providing truthful medical information.
                   </span>
                 </label>
-
                 <label className="flex items-start gap-3 cursor-pointer">
                   <Checkbox
                     className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
@@ -1958,12 +2069,12 @@ const handleInputChange = (
 
   const renderRegisterForm = () => (
     <div className="space-y-6">
-      {/* Back Button */}
       <Button
         variant="outline"
         onClick={() => {
           setCurrentView("list");
           setCurrentStep(0);
+          clearSearch();
         }}
         className="mb-4 flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
       >
@@ -1971,11 +2082,9 @@ const handleInputChange = (
         Back to Donor List
       </Button>
 
-      {/* Progress Stepper */}
       <Card className="border border-slate-200 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-between relative mb-2">
-            {/* Progress line */}
             <div className="absolute top-6 left-0 right-0 h-0.5 bg-slate-200">
               <div
                 className="h-0.5 bg-blue-600 transition-all duration-300"
@@ -1984,7 +2093,6 @@ const handleInputChange = (
                 }}
               />
             </div>
-
             {FORM_STEPS.map((step, index) => {
               const StepIcon = step.icon;
               return (
@@ -1993,14 +2101,11 @@ const handleInputChange = (
                   className="flex flex-col items-center relative"
                 >
                   <div
-                    className={`
-                    flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-200 bg-white relative z-10
-                    ${
+                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-200 bg-white relative z-10 ${
                       currentStep >= index
                         ? "border-blue-600 text-blue-600"
                         : "border-slate-300 text-slate-400"
-                    }
-                  `}
+                    }`}
                   >
                     {currentStep > index ? (
                       <CheckCircle className="w-6 h-6 text-blue-600 fill-current" />
@@ -2008,12 +2113,8 @@ const handleInputChange = (
                       <StepIcon className="w-5 h-5" />
                     )}
                   </div>
-
                   <div
-                    className={`
-                    text-center mt-3 transition-colors duration-200
-                    ${currentStep >= index ? "text-slate-900" : "text-slate-400"}
-                  `}
+                    className={`text-center mt-3 transition-colors duration-200 ${currentStep >= index ? "text-slate-900" : "text-slate-400"}`}
                   >
                     <div className="text-xs font-medium">{step.title}</div>
                   </div>
@@ -2024,7 +2125,6 @@ const handleInputChange = (
         </CardContent>
       </Card>
 
-      {/* Form Content */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-200">
@@ -2041,23 +2141,17 @@ const handleInputChange = (
           <CardContent className="p-6">{renderFormStep()}</CardContent>
         </Card>
 
-        {/* Navigation */}
         <div className="flex justify-between items-center">
           <Button
             type="button"
             onClick={prevStep}
             disabled={currentStep === 0}
             variant="outline"
-            className={`${
-              currentStep === 0
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-slate-50"
-            }`}
+            className={`${currentStep === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-50"}`}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
-
           {currentStep < FORM_STEPS.length - 1 ? (
             <Button
               type="button"
@@ -2084,7 +2178,6 @@ const handleInputChange = (
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -2109,14 +2202,12 @@ const handleInputChange = (
           </div>
         </div>
 
-        {/* Content */}
         <div className="space-y-8">
           {currentView === "list" && renderAvailableDonors()}
           {currentView === "form" && renderRegisterForm()}
         </div>
       </div>
 
-      {/* Donor Details Modal */}
       <DonorDetailsModal
         isOpen={showDonorModal}
         onClose={() => setShowDonorModal(false)}

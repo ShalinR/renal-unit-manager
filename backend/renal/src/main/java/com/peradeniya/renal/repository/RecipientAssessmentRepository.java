@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface RecipientAssessmentRepository extends JpaRepository<RecipientAssessment, Long> {
 
     @Query("SELECT ra FROM RecipientAssessment ra WHERE ra.patient.phn = :phn")
-    List<RecipientAssessment> findByPatientPhn(@Param("phn") String phn);
-
+    List<RecipientAssessment> findByPatientPhn(String phn);
+    List<RecipientAssessment> findByPatientPhnOrderByIdDesc(String phn);
     Optional<RecipientAssessment> findByIdAndPatientPhn(Long id, String phn);
 }

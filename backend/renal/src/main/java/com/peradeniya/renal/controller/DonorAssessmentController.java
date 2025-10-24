@@ -2,13 +2,17 @@ package com.peradeniya.renal.controller;
 
 import com.peradeniya.renal.dto.DonorAssessmentDTO;
 import com.peradeniya.renal.dto.DonorAssessmentResponseDTO;
+import com.peradeniya.renal.dto.DonorAssignmentDTO;
 import com.peradeniya.renal.services.DonorAssessmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/donor-assessment")
+@CrossOrigin(origins = "http://localhost:5173", maxAge = 3600)
 public class DonorAssessmentController {
 
     private final DonorAssessmentService service;
@@ -44,6 +48,25 @@ public class DonorAssessmentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // NEW ENDPOINTS FOR ASSIGNMENT FUNCTIONALITY
+    @PostMapping("/assign")
+    public ResponseEntity<Void> assignDonorToRecipient(@RequestBody DonorAssignmentDTO assignment) {
+        service.assignDonorToRecipient(assignment);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/unassign")
+    public ResponseEntity<Void> unassignDonor(@PathVariable Long id) {
+        service.unassignDonor(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateDonorStatus(@PathVariable Long id, @RequestBody Map<String, String> statusRequest) {
+        service.updateDonorStatus(id, statusRequest.get("status"));
         return ResponseEntity.ok().build();
     }
 }

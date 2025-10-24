@@ -30,12 +30,30 @@ public class RecipientAssessment {
     private String relationToRecipient;
 
     @Embedded
+    private RRTDetails rrtDetails;
+
+    @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "dm", column = @Column(name = "recipient_dm")),
             @AttributeOverride(name = "duration", column = @Column(name = "recipient_comorbidity_duration")),
             @AttributeOverride(name = "psychiatricIllness", column = @Column(name = "recipient_psychiatric_illness")),
             @AttributeOverride(name = "htn", column = @Column(name = "recipient_htn")),
-            @AttributeOverride(name = "ihd", column = @Column(name = "recipient_ihd"))
+            @AttributeOverride(name = "ihd", column = @Column(name = "recipient_ihd")),
+            // Microvascular complications
+            @AttributeOverride(name = "retinopathy", column = @Column(name = "recipient_retinopathy")),
+            @AttributeOverride(name = "nephropathy", column = @Column(name = "recipient_nephropathy")),
+            @AttributeOverride(name = "neuropathy", column = @Column(name = "recipient_neuropathy")),
+            // Macrovascular complications
+            @AttributeOverride(name = "twoDEcho", column = @Column(name = "recipient_two_d_echo")),
+            @AttributeOverride(name = "coronaryAngiogram", column = @Column(name = "recipient_coronary_angiogram")),
+            @AttributeOverride(name = "cva", column = @Column(name = "recipient_cva")),
+            @AttributeOverride(name = "pvd", column = @Column(name = "recipient_pvd")),
+            // Other comorbidities
+            @AttributeOverride(name = "dl", column = @Column(name = "recipient_dl")),
+            @AttributeOverride(name = "clcd", column = @Column(name = "recipient_clcd")),
+            @AttributeOverride(name = "childClass", column = @Column(name = "recipient_child_class")),
+            @AttributeOverride(name = "meldScore", column = @Column(name = "recipient_meld_score")),
+            @AttributeOverride(name = "hf", column = @Column(name = "recipient_hf"))
     })
     private Comorbidities comorbidities;
 
@@ -128,3 +146,4 @@ public class RecipientAssessment {
     @JoinColumn(name = "patient_id")
     private Patient patient;
 }
+

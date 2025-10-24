@@ -18,17 +18,17 @@ public class RecipientAssessmentResponseDTO {
     private String contactDetails;
     private String emailAddress;
 
-    // Assessment specific fields
     private String donorId;
     private String relationType;
     private String relationToRecipient;
 
-    // Comorbidities
-    private Boolean dm;
-    private String duration;
-    private Boolean psychiatricIllness;
-    private Boolean htn;
-    private Boolean ihd;
+    // Comorbidities - Updated with all fields
+    private ComorbiditiesDTO comorbidities;
+
+
+
+    // RRT Details
+    private RRTDetailsDTO rrtDetails;
 
     // Systemic Inquiry
     private SystemicInquiryDTO systemicInquiry;

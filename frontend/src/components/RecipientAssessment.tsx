@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useCallback  } from "react";
 import {
   Card,
   CardContent,
@@ -21,7 +21,7 @@ import {
   Pill,
   ClipboardList,
   User,
-  Trash2 ,
+  Trash2,
   FileText,
   Shield,
   Search,
@@ -33,6 +33,8 @@ import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
 
 interface RecipientAssessmentForm {
+  id?: string; // ADD THIS FOR UPDATES
+  phn?: string; // ADD THIS FOR PATIENT LOOKUP
   name: string;
   age: string;
   gender: string;
@@ -48,19 +50,37 @@ interface RecipientAssessmentForm {
   comorbidities: {
     dm: boolean;
     duration: string;
-    psychiatricIllness: boolean;
-    htn: boolean;
+    retinopathy: boolean;
+    nephropathy: boolean;
+    neuropathy: boolean;
     ihd: boolean;
+    twoDEcho: string;
+    coronaryAngiogram: string;
+    cva: boolean;
+    pvd: boolean;
+    dl: boolean;
+    htn: boolean;
+    clcd: boolean;
+    childClass: string;
+    meldScore: string;
+    hf: boolean;
+    psychiatricIllness: boolean;
   };
-  rrtModality?: string;
-  rrtStartDate?: string;
-  rrtComplications?: string;
+  rrtDetails: {
+    modalityHD: boolean;
+    modalityCAPD: boolean;
+    startingDate: string;
+    accessFemoral: boolean;
+    accessIJC: boolean;
+    accessPermeath: boolean;
+    accessCAPD: boolean;
+    complications: string;
+  };
 
   // Systemic Inquiry
   complains?: string;
 
   // Other sections
-
   systemicInquiry: {
     constitutional: {
       loa: boolean;
@@ -205,10 +225,8 @@ interface RecipientAssessmentForm {
         hlaDQ: string;
       };
     };
-    pra: {
-      pre: string;
-      post: string;
-    };
+    praPre: string;
+    praPost: string;
     dsa: string;
     immunologicalRisk: string;
   };
@@ -234,7 +252,7 @@ export interface RecipientAssessmentProps {
 
 const FORM_STEPS = [
   { label: "Personal Info", icon: User },
-  { label: "Relationship", icon: Heart },
+  //{ label: "Relationship", icon: Heart },
   { label: "Comorbidities", icon: Activity },
   { label: "RRT Details", icon: Pill },
   { label: "Transfusion History", icon: ClipboardList },
@@ -260,104 +278,128 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [donorSearch, setDonorSearch] = useState("");
-  
+  const [isEditing, setIsEditing] = useState(false);
+
   // Use donors from props or context
-  const donorList = donors && donors.length > 0 ? donors : contextDonors;
-  const filteredDonors = donorList.filter(
-    (donor) =>
-      donor.name.toLowerCase().includes(donorSearch.toLowerCase()) ||
-      donor.bloodGroup.toLowerCase().includes(donorSearch.toLowerCase()) ||
-      donor.relationToRecipient
-        ?.toLowerCase()
-        .includes(donorSearch.toLowerCase())
-  );
+  // const donorList = donors && donors.length > 0 ? donors : contextDonors;
+  // const filteredDonors = donorList.filter(
+  //   (donor) =>
+  //     donor.name.toLowerCase().includes(donorSearch.toLowerCase()) ||
+  //     donor.bloodGroup.toLowerCase().includes(donorSearch.toLowerCase()) ||
+  //     donor.relationToRecipient
+  //       ?.toLowerCase()
+  //       .includes(donorSearch.toLowerCase())
+  // );
 
   const [transfusions, setTransfusions] = useState<
     { date: string; indication: string; volume: string }[]
   >([{ date: "", indication: "", volume: "" }]);
 
- 
-useEffect(() => {
-  if (patient?.name) {
-    console.log("Auto-populating form with patient data...");
-
-    setRecipientForm((prevForm) => {
-      // Check if any patient data is actually different from current form data
-      const hasChanges =
-        prevForm.name !== patient.name ||
-        prevForm.age !== (patient.age?.toString() || "") ||
-        prevForm.gender !== (patient.gender || "") ||
-        prevForm.dateOfBirth !== (patient.dateOfBirth || "") ||
-        prevForm.occupation !== (patient.occupation || "") ||
-        prevForm.address !== (patient.address || "") ||
-        prevForm.nicNo !== (patient.nic || "") ||
-        prevForm.contactDetails !== (patient.contact || "") ||
-        prevForm.emailAddress !== (patient.email || "");
-
-      if (!hasChanges) {
-        console.log("No changes detected, skipping update");
-        return prevForm;
+  // Add this function to load patient assessment data
+  // Add this function to load patient assessment data
+// Add this function to load patient assessment data
+const loadPatientAssessmentData = async (phn: string) => {
+  try {
+    setIsSubmitting(true);
+    
+    // Try to load existing assessment
+    const response = await fetch(`/api/recipient-assessment/patient/${phn}/latest`);
+    
+    if (response.ok) {
+      const existingAssessment = await response.json();
+      
+      if (existingAssessment && existingAssessment.id) {
+        // Load existing assessment for editing
+        setRecipientForm(existingAssessment);
+        setIsEditing(true);
+        console.log("Loaded existing assessment for editing:", existingAssessment);
+      } else {
+        // No existing assessment found - this is normal
+        console.log("No existing assessment found, starting new one");
+        setIsEditing(false);
+        
+        // Try to load basic patient data if available
+        try {
+          const patientResponse = await fetch(`/api/patients/${phn}`);
+          if (patientResponse.ok) {
+            const patientData = await patientResponse.json();
+            setRecipientForm(prev => ({
+              ...prev,
+              ...patientData,
+              phn: phn,
+              id: undefined
+            }));
+            console.log("Loaded patient data for new assessment");
+          }
+        } catch (patientError) {
+          console.log("No patient data available, starting blank form");
+        }
       }
-
-      console.log("Updating form with patient data");
-      return {
-        ...prevForm,
-        name: patient.name || "",
-        age: patient.age?.toString() || "",
-        gender: patient.gender || "",
-        dateOfBirth: patient.dateOfBirth || "",
-        occupation: patient.occupation || "",
-        address: patient.address || "",
-        nicNo: patient.nic || "",
-        contactDetails: patient.contact || "",
-        emailAddress: patient.email || "",
-      };
-    });
-  }
-}, [
-  patient?.name,
-  patient?.age,
-  patient?.gender,
-  patient?.dateOfBirth,
-  patient?.occupation,
-  patient?.address,
-  patient?.nic,
-  patient?.contact,
-  patient?.email,
-  setRecipientForm,
-]);
-
-// Auto-fill donor information when a donor is selected - FIXED
-useEffect(() => {
-  if (selectedDonor) {
-    console.log("Auto-populating donor information:", selectedDonor);
-    setRecipientForm((prev) => ({
-      ...prev,
-      donorId: selectedDonor.id,
-      relationType: selectedDonor.relationType || "",
-      relationToRecipient: selectedDonor.relationToRecipient || "",
-    }));
-  }
-}, [selectedDonor, setRecipientForm]);
-
-
-  // Auto-save functionality
-useEffect(() => {
-  const autoSave = setTimeout(() => {
-    // Only save if there are actual changes (not just auto-populated data)
-    if (recipientForm.name || recipientForm.donorId) {
-      const draftData = {
-        form: recipientForm,
-        transfusions,
-        step,
-      };
-      localStorage.setItem(
-        "recipient-assessment-draft",
-        JSON.stringify(draftData)
-      );
-      console.log("Auto-saved draft data");
+    } else if (response.status === 404) {
+      // No existing assessment found - this is normal for new patients
+      console.log("No existing assessment found (404), starting new one");
+      setIsEditing(false);
+    } else {
+      throw new Error(`Server error: ${response.status}`);
     }
-  }, 2000);
+  } catch (error) {
+    console.error('Error loading patient assessment data:', error);
+    // Don't show alert for 404 errors - they're normal for new patients
+    if (error instanceof Error && !error.message.includes('404')) {
+      console.log('Server error occurred, but continuing with blank form');
+    }
+    setIsEditing(false);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+// Load patient assessment when patient is selected - ADD DEPENDENCY
+// Load patient assessment when patient is selected
+useEffect(() => {
+  if (patient?.phn && patient.phn.trim() !== '') {
+    console.log("Patient selected, loading assessment data for:", patient.phn);
+    loadPatientAssessmentData(patient.phn);
+  }
+}, [patient?.phn]); // Only run when patient.phn changes
+  // Auto-fill donor information when a donor is selected
+// Auto-fill donor information when a donor is selected - FIXED INFINITE LOOP
+// Auto-fill donor information when a donor is selected - FIXED
+// useEffect(() => {
+//   if (selectedDonor && selectedDonor.id !== recipientForm.donorId) {
+//     console.log("Auto-populating donor information:", selectedDonor);
+    
+//     // Use a timeout to break the update cycle
+//     const timeoutId = setTimeout(() => {
+//       setRecipientForm((prev) => ({
+//         ...prev,
+//         donorId: selectedDonor.id,
+//         relationType: selectedDonor.relationType || "",
+//         relationToRecipient: selectedDonor.relationToRecipient || "",
+//       }));
+//     }, 0);
+    
+//     return () => clearTimeout(timeoutId);
+//   }
+// }, [selectedDonor, recipientForm.donorId]); // Remove setRecipientForm from dependencies
+//   // Auto-save functionality
+useEffect(() => {
+  // Only auto-save if we have meaningful data and not too frequently
+  const hasMeaningfulData = recipientForm.name || recipientForm.nicNo || recipientForm.contactDetails;
+  
+  if (!hasMeaningfulData) return;
+  
+  const autoSave = setTimeout(() => {
+    const draftData = {
+      form: recipientForm,
+      transfusions,
+      step,
+    };
+    localStorage.setItem(
+      "recipient-assessment-draft",
+      JSON.stringify(draftData)
+    );
+    console.log("Auto-saved draft data");
+  }, 5000);
 
     return () => clearTimeout(autoSave);
   }, [recipientForm, transfusions, step]);
@@ -387,326 +429,360 @@ useEffect(() => {
   }, [setRecipientForm]);
 
   // Update the donor selection in the Relationship step
-  const handleDonorSelection = (donorId: string) => {
-    const selected = donorList.find((donor) => donor.id === donorId);
-    if (selected) {
-      setSelectedDonor(selected);
-      handleNestedChange("donorId", donorId);
-      handleNestedChange("relationType", selected.relationType || "");
-      handleNestedChange(
-        "relationToRecipient",
-        selected.relationToRecipient || ""
-      );
+  // const handleDonorSelection = (donorId: string) => {
+  //   const selected = donorList.find((donor) => donor.id === donorId);
+  //   if (selected) {
+  //     setSelectedDonor(selected);
+  //     handleNestedChange("donorId", donorId);
+  //     handleNestedChange("relationType", selected.relationType || "");
+  //     handleNestedChange(
+  //       "relationToRecipient",
+  //       selected.relationToRecipient || ""
+  //     );
+  //   }
+  // };
+
+  // Add the reset function inside your component
+  const handleResetForm = () => {
+    if (confirm("Are you sure you want to reset the entire form? All data will be lost.")) {
+      // Reset the form to initial empty state
+      setRecipientForm({
+        name: "",
+        age: "",
+        gender: "",
+        dateOfBirth: "",
+        occupation: "",
+        address: "",
+        nicNo: "",
+        contactDetails: "",
+        emailAddress: "",
+        donorId: "",
+        relationType: "",
+        relationToRecipient: "",
+        comorbidities: {
+          dm: false,
+          duration: "",
+          retinopathy: false,
+          nephropathy: false,
+          neuropathy: false,
+          ihd: false,
+          twoDEcho: "",
+          coronaryAngiogram: "",
+          cva: false,
+          pvd: false,
+          dl: false,
+          htn: false,
+          clcd: false,
+          childClass: "",
+          meldScore: "",
+          hf: false,
+          psychiatricIllness: false
+        },
+        rrtDetails: {
+          modalityHD: false,
+          modalityCAPD: false,
+          startingDate: "",
+          accessFemoral: false,
+          accessIJC: false,
+          accessPermeath: false,
+          accessCAPD: false,
+          complications: ""
+        },
+        systemicInquiry: {
+          constitutional: {
+            loa: false,
+            low: false,
+          },
+          cvs: {
+            chestPain: false,
+            odema: false,
+            sob: false,
+          },
+          respiratory: {
+            cough: false,
+            hemoptysis: false,
+            wheezing: false,
+          },
+          git: {
+            constipation: false,
+            diarrhea: false,
+            melena: false,
+            prBleeding: false,
+          },
+          renal: {
+            hematuria: false,
+            frothyUrine: false,
+          },
+          neuro: {
+            seizures: false,
+            visualDisturbance: false,
+            headache: false,
+            limbWeakness: false,
+          },
+          gynecology: {
+            pvBleeding: false,
+            menopause: false,
+            menorrhagia: false,
+            lrmp: false,
+          },
+          sexualHistory: "",
+        },
+        drugHistory: "",
+        allergyHistory: {
+          foods: false,
+          drugs: false,
+          p: false,
+        },
+        familyHistory: {
+          dm: "",
+          htn: "",
+          ihd: "",
+          stroke: "",
+          renal: "",
+        },
+        substanceUse: {
+          smoking: false,
+          alcohol: false,
+          other: "",
+        },
+        socialHistory: {
+          spouseDetails: "",
+          childrenDetails: "",
+          income: "",
+          other: "",
+        },
+        examination: {
+          height: "",
+          weight: "",
+          bmi: "",
+          pallor: false,
+          icterus: false,
+          oral: {
+            dentalCaries: false,
+            oralHygiene: false,
+            satisfactory: false,
+            unsatisfactory: false,
+          },
+          lymphNodes: {
+            cervical: false,
+            axillary: false,
+            inguinal: false,
+          },
+          clubbing: false,
+          ankleOedema: false,
+          cvs: {
+            bp: "",
+            pr: "",
+            murmurs: false,
+          },
+          respiratory: {
+            rr: "",
+            spo2: "",
+            auscultation: false,
+            crepts: false,
+            ranchi: false,
+            effusion: false,
+          },
+          abdomen: {
+            hepatomegaly: false,
+            splenomegaly: false,
+            renalMasses: false,
+            freeFluid: false,
+          },
+          BrcostExamination: "",
+          neurologicalExam: {
+            cranialNerves: false,
+            upperLimb: false,
+            lowerLimb: false,
+            coordination: false,
+          },
+        },
+        immunologicalDetails: {
+          bloodGroup: {
+            d: "",
+            r: "",
+          },
+          crossMatch: {
+            tCell: "",
+            bCell: "",
+          },
+          hlaTyping: {
+            donor: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+            recipient: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+            conclusion: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+          },
+          praPre: "",
+          praPost: "",
+          dsa: "",
+          immunologicalRisk: "",
+        },
+      });
+
+      // Reset other states
+      setStep(0);
+      setIsEditing(false);
+      setErrors({});
+      setTransfusions([{ date: "", indication: "", volume: "" }]);
+     // setSelectedDonor(null);
+     // setDonorSearch("");
+      
+      // Clear draft data
+      localStorage.removeItem("recipient-assessment-draft");
+      
+      console.log("Form reset successfully");
     }
   };
 
-  // Add this to your imports if not already there
-
-// Add the reset function inside your component
-const handleResetForm = () => {
-  if (confirm("Are you sure you want to reset the entire form? All data will be lost.")) {
-    // Reset the form to initial empty state
-    setRecipientForm({
-      name: "",
-      age: "",
-      gender: "",
-      dateOfBirth: "",
-      occupation: "",
-      address: "",
-      nicNo: "",
-      contactDetails: "",
-      emailAddress: "",
-      donorId: "",
-      relationType: "",
-      relationToRecipient: "",
-      comorbidities: {
-        dm: false,
-        duration: "",
-        psychiatricIllness: false,
-        htn: false,
-        ihd: false,
-      },
-      rrtModality: "",
-      rrtStartDate: "",
-      rrtComplications: "",
-      systemicInquiry: {
-        constitutional: {
-          loa: false,
-          low: false,
-        },
-        cvs: {
-          chestPain: false,
-          odema: false,
-          sob: false,
-        },
-        respiratory: {
-          cough: false,
-          hemoptysis: false,
-          wheezing: false,
-        },
-        git: {
-          constipation: false,
-          diarrhea: false,
-          melena: false,
-          prBleeding: false,
-        },
-        renal: {
-          hematuria: false,
-          frothyUrine: false,
-        },
-        neuro: {
-          seizures: false,
-          visualDisturbance: false,
-          headache: false,
-          limbWeakness: false,
-        },
-        gynecology: {
-          pvBleeding: false,
-          menopause: false,
-          menorrhagia: false,
-          lrmp: false,
-        },
-        sexualHistory: "",
-      },
-      drugHistory: "",
-      allergyHistory: {
-        foods: false,
-        drugs: false,
-        p: false,
-      },
-      familyHistory: {
-        dm: "",
-        htn: "",
-        ihd: "",
-        stroke: "",
-        renal: "",
-      },
-      substanceUse: {
-        smoking: false,
-        alcohol: false,
-        other: "",
-      },
-      socialHistory: {
-        spouseDetails: "",
-        childrenDetails: "",
-        income: "",
-        other: "",
-      },
-      examination: {
-        height: "",
-        weight: "",
-        bmi: "",
-        pallor: false,
-        icterus: false,
-        oral: {
-          dentalCaries: false,
-          oralHygiene: false,
-          satisfactory: false,
-          unsatisfactory: false,
-        },
-        lymphNodes: {
-          cervical: false,
-          axillary: false,
-          inguinal: false,
-        },
-        clubbing: false,
-        ankleOedema: false,
-        cvs: {
-          bp: "",
-          pr: "",
-          murmurs: false,
-        },
-        respiratory: {
-          rr: "",
-          spo2: "",
-          auscultation: false,
-          crepts: false,
-          ranchi: false,
-          effusion: false,
-        },
-        abdomen: {
-          hepatomegaly: false,
-          splenomegaly: false,
-          renalMasses: false,
-          freeFluid: false,
-        },
-        BrcostExamination: "",
-        neurologicalExam: {
-          cranialNerves: false,
-          upperLimb: false,
-          lowerLimb: false,
-          coordination: false,
-        },
-      },
-      immunologicalDetails: {
-        bloodGroup: {
-          d: "",
-          r: "",
-        },
-        crossMatch: {
-          tCell: "",
-          bCell: "",
-        },
-        hlaTyping: {
-          donor: {
-            hlaA: "",
-            hlaB: "",
-            hlaC: "",
-            hlaDR: "",
-            hlaDP: "",
-            hlaDQ: "",
-          },
-          recipient: {
-            hlaA: "",
-            hlaB: "",
-            hlaC: "",
-            hlaDR: "",
-            hlaDP: "",
-            hlaDQ: "",
-          },
-          conclusion: {
-            hlaA: "",
-            hlaB: "",
-            hlaC: "",
-            hlaDR: "",
-            hlaDP: "",
-            hlaDQ: "",
-          },
-        },
-        pra: {
-          pre: "",
-          post: "",
-        },
-        dsa: "",
-        immunologicalRisk: "",
-      },
-    });
-
-    // Reset other states
-    setStep(0);
-    setErrors({});
-    setTransfusions([{ date: "", indication: "", volume: "" }]);
-    setSelectedDonor(null);
-    setDonorSearch("");
-    
-    // Clear draft data
-    localStorage.removeItem("recipient-assessment-draft");
-    
-    console.log("Form reset successfully");
-  }
-};
   // Clear donor selection
-  const handleClearDonorSelection = () => {
-    setSelectedDonor(null);
-    handleNestedChange("donorId", "");
-    handleNestedChange("relationType", "");
-    handleNestedChange("relationToRecipient", "");
-  };
+  // const handleClearDonorSelection = () => {
+  //   setSelectedDonor(null);
+  //   handleNestedChange("donorId", "");
+  //   handleNestedChange("relationType", "");
+  //   handleNestedChange("relationToRecipient", "");
+  // };
 
   // Helper function to handle nested object changes
- const handleNestedChange = (path: string, value: any) => {
-  // Add a check to prevent unnecessary updates
-  const currentValue = getNestedValue(recipientForm, path);
-  if (currentValue !== value) {
-    handleRecipientFormChange(path, value);
-  }
-};
+ // Helper function to handle nested object changes - IMPROVED
+const handleNestedChange = useCallback((path: string, value: any) => {
+  handleRecipientFormChange(path, value);
+}, [handleRecipientFormChange]); // Only depend on handleRecipientFormChange
 
+  // Helper function to get nested values safely
 // Helper function to get nested values safely
 const getNestedValue = (obj: any, path: string) => {
   return path.split('.').reduce((current, key) => {
     return current && current[key] !== undefined ? current[key] : undefined;
   }, obj);
 };
+
   // Form validation
   const validateStep = (step: number): boolean => {
-  const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
 
-  switch (step) {
-    case 0: // Personal Info
-      if (!recipientForm.name.trim()) newErrors.name = "Name is required";
-      if (!recipientForm.age) newErrors.age = "Age is required";
-      if (!recipientForm.nicNo.trim()) newErrors.nicNo = "NIC is required";
-      if (!recipientForm.gender) newErrors.gender = "Gender is required";
-      if (!recipientForm.dateOfBirth)
-        newErrors.dateOfBirth = "Date of birth is required";
-      if (!recipientForm.contactDetails.trim())
-        newErrors.contactDetails = "Contact number is required";
-      break;
+    switch (step) {
+      case 0: // Personal Info
+        if (!recipientForm.name.trim()) newErrors.name = "Name is required";
+        if (!recipientForm.age) newErrors.age = "Age is required";
+        if (!recipientForm.nicNo.trim()) newErrors.nicNo = "NIC is required";
+        if (!recipientForm.gender) newErrors.gender = "Gender is required";
+        if (!recipientForm.dateOfBirth)
+          newErrors.dateOfBirth = "Date of birth is required";
+        if (!recipientForm.contactDetails.trim())
+          newErrors.contactDetails = "Contact number is required";
+        break;
 
-    case 1: // Relationship - FIXED
-      // Only validate if a donor is actually selected
-      if (recipientForm.donorId && recipientForm.donorId !== "") {
-        if (!recipientForm.relationType || recipientForm.relationType === "") {
-          newErrors.relationType = "Relationship type is required when donor is selected";
+     // case 1: // Relationship - FIXED
+        // Only validate if a donor is actually selected
+        if (recipientForm.donorId && recipientForm.donorId !== "") {
+          if (!recipientForm.relationType || recipientForm.relationType === "") {
+            newErrors.relationType = "Relationship type is required when donor is selected";
+          }
+          if (recipientForm.relationType === "related" && (!recipientForm.relationToRecipient || recipientForm.relationToRecipient.trim() === "")) {
+            newErrors.relationToRecipient = "Specific relation is required for related donors";
+          }
         }
-        if (recipientForm.relationType === "related" && (!recipientForm.relationToRecipient || recipientForm.relationToRecipient.trim() === "")) {
-          newErrors.relationToRecipient = "Specific relation is required for related donors";
-        }
-      }
-      // If no donor selected, no validation needed - proceed freely
-      break;
+        // If no donor selected, no validation needed - proceed freely
+        break;
 
-    case 6: // Confirmation
-      if (!recipientForm.name.trim())
-        newErrors.confirmation =
-          "Please complete all required steps before submitting";
-      break;
-  }
+      case 6: // Confirmation
+        if (!recipientForm.name.trim())
+          newErrors.confirmation =
+            "Please complete all required steps before submitting";
+        break;
+    }
 
-  setErrors(newErrors);
-  console.log("Validation for step", step, "errors:", newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    setErrors(newErrors);
+    console.log("Validation for step", step, "errors:", newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Transfusion history handlers
-// Remove this entire useEffect:
-// useEffect(() => {
-//   handleNestedChange("transfusionHistory", transfusions);
-// }, [transfusions]);
+  const addTransfusion = () => {
+    const newTransfusions = [
+      ...transfusions,
+      { date: "", indication: "", volume: "" },
+    ];
+    setTransfusions(newTransfusions);
+    handleNestedChange("transfusionHistory", newTransfusions);
+  };
 
-// And update the transfusion handlers to manually update the form:
-const addTransfusion = () => {
-  const newTransfusions = [
-    ...transfusions,
-    { date: "", indication: "", volume: "" },
-  ];
-  setTransfusions(newTransfusions);
-  handleNestedChange("transfusionHistory", newTransfusions);
-};
+  const removeTransfusion = (index: number) => {
+    const newTransfusions = transfusions.filter((_, i) => i !== index);
+    const finalTransfusions = newTransfusions.length ? newTransfusions : [{ date: "", indication: "", volume: "" }];
+    setTransfusions(finalTransfusions);
+    handleNestedChange("transfusionHistory", finalTransfusions);
+  };
 
-const removeTransfusion = (index: number) => {
-  const newTransfusions = transfusions.filter((_, i) => i !== index);
-  const finalTransfusions = newTransfusions.length ? newTransfusions : [{ date: "", indication: "", volume: "" }];
-  setTransfusions(finalTransfusions);
-  handleNestedChange("transfusionHistory", finalTransfusions);
-};
-
-const handleTransfusionChange = (
-  index: number,
-  field: "date" | "indication" | "volume",
-  value: string
-) => {
-  const newTransfusions = transfusions.map((r, i) =>
-    i === index ? { ...r, [field]: value } : r
-  );
-  setTransfusions(newTransfusions);
-  handleNestedChange("transfusionHistory", newTransfusions);
-};
-
-
+  const handleTransfusionChange = (
+    index: number,
+    field: "date" | "indication" | "volume",
+    value: string
+  ) => {
+    const newTransfusions = transfusions.map((r, i) =>
+      i === index ? { ...r, [field]: value } : r
+    );
+    setTransfusions(newTransfusions);
+    handleNestedChange("transfusionHistory", newTransfusions);
+  };
 
   // Navigation handlers
-  const nextStep = () => {
-    if (validateStep(step)) {
-      setStep((s) => Math.min(FORM_STEPS.length - 1, s + 1));
+// Navigation handlers - ADD THESE BACK
+// Navigation handlers - FIXED VERSION
+const nextStep = () => {
+  if (validateStep(step)) {
+    // Map current step to actual step index (skipping step 1)
+    const stepMap = {
+      0: 0, // Personal Info -> Step 0
+      1: 2, // Comorbidities -> Step 2  
+      2: 3, // RRT Details -> Step 3
+      3: 4, // Transfusion History -> Step 4
+      4: 5, // Immunological -> Step 5
+      5: 6  // Confirmation -> Step 6
+    };
+    
+    const currentMappedStep = stepMap[step as keyof typeof stepMap] || step;
+    const nextStepIndex = currentMappedStep + 1;
+    
+    // Find the next visible step
+    let nextVisibleStep = step + 1;
+    if (nextVisibleStep === 1) { // Skip the commented out Relationship step
+      nextVisibleStep = 2;
     }
-  };
+    
+    setStep(Math.min(FORM_STEPS.length - 1, nextVisibleStep));
+  }
+};
 
-  const prevStep = () => {
-    setStep((s) => Math.max(0, s - 1));
-  };
-
+const prevStep = () => {
+  // Find the previous visible step
+  let prevVisibleStep = step - 1;
+  if (prevVisibleStep === 1) { // Skip the commented out Relationship step
+    prevVisibleStep = 0;
+  }
+  
+  setStep(Math.max(0, prevVisibleStep));
+};
   // Enhanced submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -714,15 +790,37 @@ const handleTransfusionChange = (
 
     try {
       if (validateStep(step)) {
-        await handleRecipientFormSubmit(e);
+        const url = isEditing && recipientForm.id 
+          ? `/api/recipient-assessment/${recipientForm.id}` 
+          : '/api/recipient-assessment';
         
-        // Clear draft data after successful submission
-        localStorage.removeItem("recipient-assessment-draft");
+        const method = isEditing && recipientForm.id ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...recipientForm,
+            phn: patient?.phn
+          }),
+        });
 
-        console.log("Assessment submitted successfully");
+        if (response.ok) {
+          const savedAssessment = await response.json();
+          setRecipientForm(savedAssessment);
+          setIsEditing(true);
+          localStorage.removeItem("recipient-assessment-draft");
+          alert(`Assessment ${isEditing ? 'updated' : 'created'} successfully!`);
+          setActiveView("dashboard");
+        } else {
+          throw new Error('Failed to save assessment');
+        }
       }
     } catch (error) {
       console.error("Error submitting assessment:", error);
+      alert('Error saving assessment.');
     } finally {
       setIsSubmitting(false);
     }
@@ -744,27 +842,31 @@ const handleTransfusionChange = (
             <div className="flex items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-blue-900 mb-2">
-                  Recipient Assessment
+                  Recipient Assessment {isEditing && "(Editing)"}
                 </h1>
                 <p className="text-blue-600">
                   {patient && patient.name
                     ? `Patient: ${patient.name} (PHN: ${patient.phn})`
                     : "Complete medical evaluation for kidney transplant recipient"}
                 </p>
+                {isEditing && (
+                  <p className="text-green-600 text-sm font-medium">
+                    ✓ Editing existing assessment
+                  </p>
+                )}
               </div>
-            
             </div>
             
-                  <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={handleResetForm}
-      className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50"
-    >
-      <Trash2 className="w-4 h-4" />
-      Reset Form
-    </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleResetForm}
+              className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              Reset Form
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -776,7 +878,7 @@ const handleTransfusionChange = (
             </Button>
           </div>
 
-          {/* Progress Stepper - FIXED: Added click handlers */}
+          {/* Progress Stepper */}
           <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-blue-900">
@@ -841,7 +943,7 @@ const handleTransfusionChange = (
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Step 0: Personal Info - FIXED: Added proper error handling */}
+          {/* Step 0: Personal Info */}
           {step === 0 && (
             <Card className="shadow-lg border-0 bg-white">
               <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
@@ -1079,158 +1181,155 @@ const handleTransfusionChange = (
             </Card>
           )}
 
-          {/* Step 1: Relationship - Enhanced with Search */}
-          {step === 1 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Heart className="w-6 h-6" />
-                  Donor Information (Optional)
-                </CardTitle>
-                <CardDescription className="text-blue-100">
-                  {selectedDonor 
-                    ? `Selected: ${selectedDonor.name} (${selectedDonor.bloodGroup})`
-                    : "Select a registered donor if available, or proceed without one"
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Select Registered Donor (Optional)
-                    </Label>
-                    {selectedDonor && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleClearDonorSelection}
-                        className="text-red-600 border-red-300 hover:bg-red-50"
-                      >
-                        Clear Selection
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {/* Search Input */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search donors by name, blood group, or relationship..."
-                      value={donorSearch}
-                      onChange={(e) => setDonorSearch(e.target.value)}
-                      className="pl-10 h-12 border-2 border-gray-200 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <select
-                    value={recipientForm.donorId || ""}
-                    onChange={(e) => handleDonorSelection(e.target.value)}
-                    className="w-full h-12 p-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg bg-white"
-                  >
-                    <option value="">No donor selected (proceed without donor)</option>
-                    {filteredDonors.map((donor) => (
-                      <option key={donor.id} value={donor.id}>
-                        {donor.name} (Blood Group: {donor.bloodGroup}) - {donor.relationToRecipient}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* No donor selected message */}
-                  {!recipientForm.donorId && (
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-600" />
-                        <div>
-                          <p className="font-medium text-yellow-800">No Donor Selected</p>
-                          <p className="text-sm text-yellow-700">
-                            Proceeding without a donor. You can add donor information later if needed.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedDonor && (
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <div>
-                          <p className="font-medium text-green-800">Donor Selected</p>
-                          <p className="text-sm text-green-700">
-                            {selectedDonor.name} • {selectedDonor.bloodGroup} • {selectedDonor.age} years • {selectedDonor.relationToRecipient}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Only show relationship details if donor is selected */}
-                {recipientForm.donorId && (
-                  <div className="space-y-6 bg-blue-50 p-6 rounded-lg border border-blue-200">
-                    <div className="space-y-4">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Type of Relationship <span className="text-red-500 ml-1">*</span>
-                      </Label>
-                      <RadioGroup
-                        value={recipientForm.relationType || ""}
-                        onValueChange={(value) => handleNestedChange("relationType", value)}
-                        className="space-y-4"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <RadioGroupItem value="related" id="recipientRelated" className="border-2 border-blue-300" />
-                          <Label htmlFor="recipientRelated" className="text-gray-700 font-medium">Related</Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <RadioGroupItem value="unrelated" id="recipientUnrelated" className="border-2 border-blue-300" />
-                          <Label htmlFor="recipientUnrelated" className="text-gray-700 font-medium">Unrelated</Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <RadioGroupItem value="altruistic" id="recipientAltruistic" className="border-2 border-blue-300" />
-                          <Label htmlFor="recipientAltruistic" className="text-gray-700 font-medium">Altruistic</Label>
-                        </div>
-                      </RadioGroup>
-                      {errors.relationType && <ErrorMessage message={errors.relationType} />}
-                    </div>
-
-                    {recipientForm.relationType === "related" && (
-                      <div className="space-y-3">
-                        <Label htmlFor="relationToRecipient" className="text-sm font-semibold text-gray-700">
-                          Specific Relation <span className="text-red-500 ml-1">*</span>
-                        </Label>
-                        <Input
-                          id="relationToRecipient"
-                          value={recipientForm.relationToRecipient || ""}
-                          onChange={(e) => handleNestedChange("relationToRecipient", e.target.value)}
-                          placeholder="e.g., Brother, Sister, Parent, etc."
-                          className={`h-12 border-2 ${errors.relationToRecipient ? 'border-red-500' : 'border-gray-200'} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg`}
-                        />
-                        {errors.relationToRecipient && <ErrorMessage message={errors.relationToRecipient} />}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Option to skip donor selection entirely */}
-                {!recipientForm.donorId && (
-                  <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                    <div className="text-center space-y-3">
-                      <p className="text-gray-700 font-medium">
-                        No donor information available at this time?
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        You can proceed without selecting a donor. Donor information can be added later when available.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+ {/* Step 1: Relationship - COMMENTED OUT */}
+{/*
+{step === 1 && (
+  <Card className="shadow-lg border-0 bg-white">
+    <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+      <CardTitle className="flex items-center gap-3 text-xl">
+        <Heart className="w-6 h-6" />
+        Donor Information (Optional)
+      </CardTitle>
+      <CardDescription className="text-blue-100">
+        {selectedDonor 
+          ? `Selected: ${selectedDonor.name} (${selectedDonor.bloodGroup})`
+          : "Select a registered donor if available, or proceed without one"
+        }
+      </CardDescription>
+    </CardHeader>
+    <CardContent className="p-8 space-y-8">
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <Label className="text-sm font-semibold text-gray-700">
+            Select Registered Donor (Optional)
+          </Label>
+          {selectedDonor && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleClearDonorSelection}
+              className="text-red-600 border-red-300 hover:bg-red-50"
+            >
+              Clear Selection
+            </Button>
           )}
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search donors by name, blood group, or relationship..."
+            value={donorSearch}
+            onChange={(e) => setDonorSearch(e.target.value)}
+            className="pl-10 h-12 border-2 border-gray-200 focus:border-blue-500"
+          />
+        </div>
+        
+        <select
+          value={recipientForm.donorId || ""}
+          onChange={(e) => handleDonorSelection(e.target.value)}
+          className="w-full h-12 p-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg bg-white"
+        >
+          <option value="">No donor selected (proceed without donor)</option>
+          {filteredDonors.map((donor) => (
+            <option key={donor.id} value={donor.id}>
+              {donor.name} (Blood Group: {donor.bloodGroup}) - {donor.relationToRecipient}
+            </option>
+          ))}
+        </select>
 
-          {/* Steps 2-5 remain the same as your original code */}
+        {!recipientForm.donorId && (
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <div>
+                <p className="font-medium text-yellow-800">No Donor Selected</p>
+                <p className="text-sm text-yellow-700">
+                  Proceeding without a donor. You can add donor information later if needed.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedDonor && (
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <div>
+                <p className="font-medium text-green-800">Donor Selected</p>
+                <p className="text-sm text-green-700">
+                  {selectedDonor.name} • {selectedDonor.bloodGroup} • {selectedDonor.age} years • {selectedDonor.relationToRecipient}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {recipientForm.donorId && (
+        <div className="space-y-6 bg-blue-50 p-6 rounded-lg border border-blue-200">
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold text-gray-700">
+              Type of Relationship <span className="text-red-500 ml-1">*</span>
+            </Label>
+            <RadioGroup
+              value={recipientForm.relationType || ""}
+              onValueChange={(value) => handleNestedChange("relationType", value)}
+              className="space-y-4"
+            >
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="related" id="recipientRelated" className="border-2 border-blue-300" />
+                <Label htmlFor="recipientRelated" className="text-gray-700 font-medium">Related</Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="unrelated" id="recipientUnrelated" className="border-2 border-blue-300" />
+                <Label htmlFor="recipientUnrelated" className="text-gray-700 font-medium">Unrelated</Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="altruistic" id="recipientAltruistic" className="border-2 border-blue-300" />
+                <Label htmlFor="recipientAltruistic" className="text-gray-700 font-medium">Altruistic</Label>
+              </div>
+            </RadioGroup>
+            {errors.relationType && <ErrorMessage message={errors.relationType} />}
+          </div>
+
+          {recipientForm.relationType === "related" && (
+            <div className="space-y-3">
+              <Label htmlFor="relationToRecipient" className="text-sm font-semibold text-gray-700">
+                Specific Relation <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <Input
+                id="relationToRecipient"
+                value={recipientForm.relationToRecipient || ""}
+                onChange={(e) => handleNestedChange("relationToRecipient", e.target.value)}
+                placeholder="e.g., Brother, Sister, Parent, etc."
+                className={`h-12 border-2 ${errors.relationToRecipient ? 'border-red-500' : 'border-gray-200'} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg`}
+              />
+              {errors.relationToRecipient && <ErrorMessage message={errors.relationToRecipient} />}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!recipientForm.donorId && (
+        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+          <div className="text-center space-y-3">
+            <p className="text-gray-700 font-medium">
+              No donor information available at this time?
+            </p>
+            <p className="text-sm text-gray-600">
+              You can proceed without selecting a donor. Donor information can be added later when available.
+            </p>
+          </div>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+)}
+*/}
+          {/* Steps 2-6 remain the same as your original code */}
           {/* Step 2: Comorbidities */}
           {step === 2 && (
             <Card className="shadow-lg border-0 bg-white">
@@ -1287,6 +1386,131 @@ const handleTransfusionChange = (
                       />
                     </div>
                   </div>
+
+                  {/* Microvascular Complications */}
+                  <div className="mt-6">
+                    <h4 className="text-md font-semibold text-blue-800 mb-3">Microvascular Complications</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="recipientRetinopathy"
+                          checked={recipientForm.comorbidities.retinopathy}
+                          onCheckedChange={(checked) =>
+                            handleNestedChange("comorbidities.retinopathy", checked)
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label htmlFor="recipientRetinopathy" className="text-gray-700">
+                          Retinopathy
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="recipientNephropathy"
+                          checked={recipientForm.comorbidities.nephropathy}
+                          onCheckedChange={(checked) =>
+                            handleNestedChange("comorbidities.nephropathy", checked)
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label htmlFor="recipientNephropathy" className="text-gray-700">
+                          Nephropathy
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="recipientNeuropathy"
+                          checked={recipientForm.comorbidities.neuropathy}
+                          onCheckedChange={(checked) =>
+                            handleNestedChange("comorbidities.neuropathy", checked)
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label htmlFor="recipientNeuropathy" className="text-gray-700">
+                          Neuropathy
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Macrovascular Complications */}
+                  <div className="mt-6">
+                    <h4 className="text-md font-semibold text-blue-800 mb-3">Macrovascular Complications</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="recipientIHD"
+                          checked={recipientForm.comorbidities.ihd}
+                          onCheckedChange={(checked) =>
+                            handleNestedChange("comorbidities.ihd", checked)
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label htmlFor="recipientIHD" className="text-gray-700">
+                          IHD
+                        </Label>
+                      </div>
+                      {/* IHD Sub-investigations */}
+                      {recipientForm.comorbidities.ihd && (
+                        <div className="ml-6 space-y-3 bg-blue-100 p-4 rounded-lg">
+                          <div className="space-y-2">
+                            <Label htmlFor="recipient2DEcho" className="text-sm font-medium text-gray-700">
+                              2D Echo
+                            </Label>
+                            <Input
+                              id="recipient2DEcho"
+                              value={recipientForm.comorbidities.twoDEcho || ""}
+                              onChange={(e) =>
+                                handleNestedChange("comorbidities.twoDEcho", e.target.value)
+                              }
+                              placeholder="2D Echo findings"
+                              className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="recipientCoronaryAngiogram" className="text-sm font-medium text-gray-700">
+                              Coronary Angiogram
+                            </Label>
+                            <Input
+                              id="recipientCoronaryAngiogram"
+                              value={recipientForm.comorbidities.coronaryAngiogram || ""}
+                              onChange={(e) =>
+                                handleNestedChange("comorbidities.coronaryAngiogram", e.target.value)
+                              }
+                              placeholder="Coronary angiogram findings"
+                              className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="recipientCVA"
+                          checked={recipientForm.comorbidities.cva}
+                          onCheckedChange={(checked) =>
+                            handleNestedChange("comorbidities.cva", checked)
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label htmlFor="recipientCVA" className="text-gray-700">
+                          CVA
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="recipientPVD"
+                          checked={recipientForm.comorbidities.pvd}
+                          onCheckedChange={(checked) =>
+                            handleNestedChange("comorbidities.pvd", checked)
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label htmlFor="recipientPVD" className="text-gray-700">
+                          PVD
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Other Comorbidities */}
@@ -1310,15 +1534,41 @@ const handleTransfusionChange = (
                     </div>
                     <div className="flex items-center space-x-3">
                       <Checkbox
-                        id="recipientIHD"
-                        checked={recipientForm.comorbidities.ihd}
+                        id="recipientDL"
+                        checked={recipientForm.comorbidities.dl}
                         onCheckedChange={(checked) =>
-                          handleNestedChange("comorbidities.ihd", checked)
+                          handleNestedChange("comorbidities.dl", checked)
                         }
                         className="border-2 border-blue-300"
                       />
-                      <Label htmlFor="recipientIHD" className="text-gray-700">
-                        IHD
+                      <Label htmlFor="recipientDL" className="text-gray-700">
+                        Dyslipidemia (DL)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="recipientCLCD"
+                        checked={recipientForm.comorbidities.clcd}
+                        onCheckedChange={(checked) =>
+                          handleNestedChange("comorbidities.clcd", checked)
+                        }
+                        className="border-2 border-blue-300"
+                      />
+                      <Label htmlFor="recipientCLCD" className="text-gray-700">
+                        Chronic Liver Disease (CLCD)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="recipientHF"
+                        checked={recipientForm.comorbidities.hf}
+                        onCheckedChange={(checked) =>
+                          handleNestedChange("comorbidities.hf", checked)
+                        }
+                        className="border-2 border-blue-300"
+                      />
+                      <Label htmlFor="recipientHF" className="text-gray-700">
+                        Heart Failure (HF)
                       </Label>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -1341,11 +1591,49 @@ const handleTransfusionChange = (
                       </Label>
                     </div>
                   </div>
+
+                  {/* CLCD Details */}
+                  {recipientForm.comorbidities.clcd && (
+                    <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="text-md font-semibold text-blue-800 mb-3">Chronic Liver Disease Details</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="recipientChildClass" className="text-sm font-medium text-gray-700">
+                            Child Class
+                          </Label>
+                          <Input
+                            id="recipientChildClass"
+                            value={recipientForm.comorbidities.childClass || ""}
+                            onChange={(e) =>
+                              handleNestedChange("comorbidities.childClass", e.target.value)
+                            }
+                            placeholder="Child Class (A, B, or C)"
+                            className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="recipientMELDScore" className="text-sm font-medium text-gray-700">
+                            MELD Score
+                          </Label>
+                          <Input
+                            id="recipientMELDScore"
+                            value={recipientForm.comorbidities.meldScore || ""}
+                            onChange={(e) =>
+                              handleNestedChange("comorbidities.meldScore", e.target.value)
+                            }
+                            placeholder="MELD Score"
+                            className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           )}
 
+          {/* Step 3: RRT Details */}
           {step === 3 && (
             <Card className="shadow-lg border-0 bg-white">
               <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
@@ -1363,42 +1651,121 @@ const handleTransfusionChange = (
                   <h3 className="text-lg font-semibold text-blue-900">
                     Treatment Modality
                   </h3>
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="rrtModality"
-                      className="text-sm font-semibold text-gray-700"
-                    >
-                      RRT Modality
-                    </Label>
-                    <Input
-                      id="rrtModality"
-                      value={recipientForm.rrtModality || ""}
-                      onChange={(e) =>
-                        handleNestedChange("rrtModality", e.target.value)
-                      }
-                      placeholder="e.g., Hemodialysis, CAPD, etc."
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700 block">
+                        RRT Modality
+                      </Label>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="modalityHD"
+                            checked={recipientForm.rrtDetails?.modalityHD || false}
+                            onCheckedChange={(checked) =>
+                              handleNestedChange("rrtDetails.modalityHD", checked)
+                            }
+                            className="border-2 border-blue-300"
+                          />
+                          <Label htmlFor="modalityHD" className="text-gray-700">
+                            HD (Hemodialysis)
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="modalityCAPD"
+                            checked={recipientForm.rrtDetails?.modalityCAPD || false}
+                            onCheckedChange={(checked) =>
+                              handleNestedChange("rrtDetails.modalityCAPD", checked)
+                            }
+                            className="border-2 border-blue-300"
+                          />
+                          <Label htmlFor="modalityCAPD" className="text-gray-700">
+                            CAPD
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Starting Date */}
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="rrtStartDate"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Starting Date
+                      </Label>
+                      <Input
+                        id="rrtStartDate"
+                        type="date"
+                        value={recipientForm.rrtDetails?.startingDate || ""}
+                        onChange={(e) =>
+                          handleNestedChange("rrtDetails.startingDate", e.target.value)
+                        }
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Starting Date */}
-                <div className="space-y-3">
-                  <Label
-                    htmlFor="rrtStartDate"
-                    className="text-sm font-semibold text-gray-700"
-                  >
-                    RRT Starting Date
-                  </Label>
-                  <Input
-                    id="rrtStartDate"
-                    type="date"
-                    value={recipientForm.rrtStartDate || ""}
-                    onChange={(e) =>
-                      handleNestedChange("rrtStartDate", e.target.value)
-                    }
-                    className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg max-w-md"
-                  />
+                {/* Access Section */}
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-6">
+                  <h3 className="text-lg font-semibold text-blue-900">
+                    Access
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="accessFemoral"
+                        checked={recipientForm.rrtDetails?.accessFemoral || false}
+                        onCheckedChange={(checked) =>
+                          handleNestedChange("rrtDetails.accessFemoral", checked)
+                        }
+                        className="border-2 border-blue-300"
+                      />
+                      <Label htmlFor="accessFemoral" className="text-gray-700">
+                        Femoral
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="accessIJC"
+                        checked={recipientForm.rrtDetails?.accessIJC || false}
+                        onCheckedChange={(checked) =>
+                          handleNestedChange("rrtDetails.accessIJC", checked)
+                        }
+                        className="border-2 border-blue-300"
+                      />
+                      <Label htmlFor="accessIJC" className="text-gray-700">
+                        IJC
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="accessPermeath"
+                        checked={recipientForm.rrtDetails?.accessPermeath || false}
+                        onCheckedChange={(checked) =>
+                          handleNestedChange("rrtDetails.accessPermeath", checked)
+                        }
+                        className="border-2 border-blue-300"
+                      />
+                      <Label htmlFor="accessPermeath" className="text-gray-700">
+                        Permeath
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="accessCAPD"
+                        checked={recipientForm.rrtDetails?.accessCAPD || false}
+                        onCheckedChange={(checked) =>
+                          handleNestedChange("rrtDetails.accessCAPD", checked)
+                        }
+                        className="border-2 border-blue-300"
+                      />
+                      <Label htmlFor="accessCAPD" className="text-gray-700">
+                        CAPD
+                      </Label>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Complications */}
@@ -1411,9 +1778,9 @@ const handleTransfusionChange = (
                   </Label>
                   <Textarea
                     id="rrtComplications"
-                    value={recipientForm.rrtComplications || ""}
+                    value={recipientForm.rrtDetails?.complications || ""}
                     onChange={(e) =>
-                      handleNestedChange("rrtComplications", e.target.value)
+                      handleNestedChange("rrtDetails.complications", e.target.value)
                     }
                     placeholder="Describe any complications related to RRT..."
                     rows={4}
@@ -1762,76 +2129,73 @@ const handleTransfusionChange = (
                     </table>
                   </div>
                 </div>
+{/* PRA Section */}
+<div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
+  <h3 className="text-lg font-semibold text-blue-900">
+    PRA (Panel Reactive Antibodies)
+  </h3>
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-3">
+      <Label
+        htmlFor="recipientPraPre"
+        className="text-sm font-semibold text-gray-700"
+      >
+        Pre (%)
+      </Label>
+      <Input
+        id="recipientPraPre"
+        value={recipientForm.immunologicalDetails.praPre}
+        onChange={(e) =>
+          handleNestedChange(
+            "immunologicalDetails.praPre",
+            e.target.value
+          )
+        }
+        placeholder="Pre PRA percentage"
+        type="number"
+        min="0"
+        max="100"
+        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+      />
+    </div>
+    <div className="space-y-3">
+      <Label
+        htmlFor="recipientPraPost"
+        className="text-sm font-semibold text-gray-700"
+      >
+        Post (%)
+      </Label>
+      <Input
+        id="recipientPraPost"
+        value={recipientForm.immunologicalDetails.praPost}
+        onChange={(e) =>
+          handleNestedChange(
+            "immunologicalDetails.praPost",
+            e.target.value
+          )
+        }
+        placeholder="Post PRA percentage"
+        type="number"
+        min="0"
+        max="100"
+        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+      />
+    </div>
+  </div>
+</div>
 
-                {/* PRA Section */}
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
-                  <h3 className="text-lg font-semibold text-blue-900">
-                    PRA (Panel Reactive Antibodies)
-                  </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="recipientPraPre"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Pre (%)
-                      </Label>
-                      <Input
-                        id="recipientPraPre"
-                        value={recipientForm.immunologicalDetails.pra.pre}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "immunologicalDetails.pra.pre",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Pre PRA percentage"
-                        type="number"
-                        min="0"
-                        max="100"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="recipientPraPost"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Post (%)
-                      </Label>
-                      <Input
-                        id="recipientPraPost"
-                        value={recipientForm.immunologicalDetails.pra.post}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "immunologicalDetails.pra.post",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Post PRA percentage"
-                        type="number"
-                        min="0"
-                        max="100"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* DSA Section */}
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    DSA (Donor Specific Antibodies)
-                  </h3>
+             {/* DSA and Immunological Risk */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label
-                      htmlFor="recipientDsa"
+                      htmlFor="recipientDSA"
                       className="text-sm font-semibold text-gray-700"
                     >
-                      DSA Details
+                      DSA (Donor Specific Antibodies)
                     </Label>
-                    <Textarea
-                      id="recipientDsa"
+                    <Input
+                      id="recipientDSA"
                       value={recipientForm.immunologicalDetails.dsa}
                       onChange={(e) =>
                         handleNestedChange(
@@ -1839,208 +2203,302 @@ const handleTransfusionChange = (
                           e.target.value
                         )
                       }
-                      placeholder="Enter DSA test results and details..."
-                      rows={3}
-                      className="border-2 border-gray-200 focus:border-blue-500 rounded-lg resize-none"
+                      placeholder="DSA details"
+                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
                     />
                   </div>
-                </div>
-
-                {/* Immunological Risk */}
-                <div className="bg-white p-6 rounded-lg border-2 border-blue-200 space-y-4">
-                  <h3 className="text-lg font-semibold text-blue-900">
-                    Immunological Risk Assessment
-                  </h3>
-                  <RadioGroup
-                    value={recipientForm.immunologicalDetails.immunologicalRisk}
-                    onValueChange={(value) =>
-                      handleNestedChange(
-                        "immunologicalDetails.immunologicalRisk",
-                        value
-                      )
-                    }
-                    className="grid grid-cols-1 md:grid-cols-3 gap-6"
-                  >
-                    <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <RadioGroupItem
-                        value="low"
-                        id="recipientRiskLow"
-                        className="border-2 border-green-400"
-                      />
-                      <Label
-                        htmlFor="recipientRiskLow"
-                        className="text-green-800 font-semibold"
-                      >
-                        Low Risk
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <RadioGroupItem
-                        value="average"
-                        id="recipientRiskAverage"
-                        className="border-2 border-yellow-400"
-                      />
-                      <Label
-                        htmlFor="recipientRiskAverage"
-                        className="text-yellow-800 font-semibold"
-                      >
-                        Average Risk
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg border border-red-200">
-                      <RadioGroupItem
-                        value="high"
-                        id="recipientRiskHigh"
-                        className="border-2 border-red-400"
-                      />
-                      <Label
-                        htmlFor="recipientRiskHigh"
-                        className="text-red-800 font-semibold"
-                      >
-                        High Risk
-                      </Label>
-                    </div>
-                  </RadioGroup>
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="recipientImmunologicalRisk"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      Immunological Risk
+                    </Label>
+                    <Input
+                      id="recipientImmunologicalRisk"
+                      value={recipientForm.immunologicalDetails.immunologicalRisk}
+                      onChange={(e) =>
+                        handleNestedChange(
+                          "immunologicalDetails.immunologicalRisk",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Immunological risk assessment"
+                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 6: Confirmation - Enhanced */}
+          {/* Step 6: Confirmation */}
           {step === 6 && (
             <Card className="shadow-lg border-0 bg-white">
               <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <FileText className="w-6 h-6" />
-                  Final Confirmation
+                  Confirmation & Submission
                 </CardTitle>
                 <CardDescription className="text-blue-100">
-                  Review and confirm all assessment details
+                  Review all information before final submission
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
-                {errors.confirmation && (
-                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                      <p className="text-red-700 font-medium">{errors.confirmation}</p>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Personal Info Summary */}
+                  <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      Personal Information
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Name:</strong> {recipientForm.name || "Not provided"}</p>
+                      <p><strong>Age:</strong> {recipientForm.age || "Not provided"}</p>
+                      <p><strong>Gender:</strong> {recipientForm.gender || "Not provided"}</p>
+                      <p><strong>NIC:</strong> {recipientForm.nicNo || "Not provided"}</p>
+                      <p><strong>Contact:</strong> {recipientForm.contactDetails || "Not provided"}</p>
                     </div>
                   </div>
-                )}
 
-                {/* Donor Summary */}
-                <div className="space-y-3 bg-blue-50 p-4 rounded-lg">
-                  <p><span className="font-medium text-gray-700">Selected Donor:</span> 
-                    {recipientForm.donorId 
-                      ? donorList.find(d => d.id === recipientForm.donorId)?.name 
-                      : "No donor selected"
-                    }
-                  </p>
-                  {recipientForm.donorId && (
-                    <>
-                      <p><span className="font-medium text-gray-700">Relationship Type:</span> {recipientForm.relationType || "Not specified"}</p>
-                      <p><span className="font-medium text-gray-700">Specific Relation:</span> {recipientForm.relationToRecipient || "Not specified"}</p>
-                    </>
-                  )}
-                </div>
+              {/* Donor Summary - COMMENTED OUT */}
+{/*
+<div className="bg-green-50 p-6 rounded-lg border border-green-200">
+  <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
+    <Heart className="w-5 h-5" />
+    Donor Information
+  </h3>
+  {selectedDonor ? (
+    <div className="space-y-2 text-sm">
+      <p><strong>Donor:</strong> {selectedDonor.name}</p>
+      <p><strong>Blood Group:</strong> {selectedDonor.bloodGroup}</p>
+      <p><strong>Relationship:</strong> {selectedDonor.relationToRecipient}</p>
+      <p><strong>Type:</strong> {recipientForm.relationType}</p>
+    </div>
+  ) : (
+    <p className="text-yellow-700 font-medium">No donor selected</p>
+  )}
+</div>
+*/}
 
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-6">
-                  <div className="space-y-4">
-                    <Label htmlFor="recipientFilledBy" className="text-sm font-semibold text-gray-700 flex items-center">
-                      Assessment Completed By <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Input
-                      id="recipientFilledBy"
-                      placeholder="Enter your name or staff ID"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
-                      required
-                    />
+                  {/* Medical Summary */}
+                  <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+                    <h3 className="text-lg font-semibold text-purple-900 mb-4 flex items-center gap-2">
+                      <Activity className="w-5 h-5" />
+                      Medical Summary
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Diabetes:</strong> {recipientForm.comorbidities.dm ? "Yes" : "No"}</p>
+                      <p><strong>Hypertension:</strong> {recipientForm.comorbidities.htn ? "Yes" : "No"}</p>
+                      <p><strong>RRT Modality:</strong> 
+                        {recipientForm.rrtDetails?.modalityHD ? " HD" : ""}
+                        {recipientForm.rrtDetails?.modalityCAPD ? " CAPD" : ""}
+                        {!recipientForm.rrtDetails?.modalityHD && !recipientForm.rrtDetails?.modalityCAPD ? " Not specified" : ""}
+                      </p>
+                      <p><strong>Transfusions:</strong> {transfusions.filter(t => t.date).length} records</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-start space-x-3 p-4 bg-white rounded-lg border border-blue-200">
-                    <Checkbox
-                      id="recipientFinalCheck"
-                      className="border-2 border-blue-300 mt-1"
-                      required
-                    />
-                    <div className="space-y-2">
-                      <Label htmlFor="recipientFinalCheck" className="text-gray-700 font-medium leading-relaxed">
-                        I confirm that all information provided in this recipient assessment is accurate and complete to the best of my knowledge.
-                      </Label>
-                      <p className="text-sm text-gray-600">
-                        By checking this box, I acknowledge that this assessment will be used for medical decision-making and transplant evaluation.
+                  {/* Immunological Summary */}
+                  <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
+                    <h3 className="text-lg font-semibold text-orange-900 mb-4 flex items-center gap-2">
+                      <Shield className="w-5 h-5" />
+                      Immunological
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Blood Group:</strong> {recipientForm.immunologicalDetails.bloodGroup.d} {recipientForm.immunologicalDetails.bloodGroup.r}</p>
+                      <p><strong>PRA Pre:</strong> {recipientForm.immunologicalDetails.praPre || "Not specified"}</p>
+                      <p><strong>Immunological Risk:</strong> {recipientForm.immunologicalDetails.immunologicalRisk || "Not assessed"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Completion Status */}
+                <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                        Assessment Status
+                      </h3>
+                      <p className="text-gray-600">
+                        {isEditing ? "Updating existing assessment" : "Creating new assessment"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="font-semibold">All Steps Completed</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Ready for submission
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Enhanced Summary Section */}
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Assessment Summary</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                    <div className="space-y-3">
-                      <p><span className="font-medium text-gray-700">Patient Name:</span> {recipientForm.name || "Not provided"}</p>
-                      <p><span className="font-medium text-gray-700">Age:</span> {recipientForm.age || "Not provided"}</p>
-                      <p><span className="font-medium text-gray-700">NIC Number:</span> {recipientForm.nicNo || "Not provided"}</p>
-                      <p><span className="font-medium text-gray-700">Gender:</span> {recipientForm.gender || "Not provided"}</p>
+                {/* Final Validation Errors */}
+                {errors.confirmation && (
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <div>
+                        <p className="font-medium text-red-800">Cannot Submit</p>
+                        <p className="text-sm text-red-700">{errors.confirmation}</p>
+                      </div>
                     </div>
-                    <div className="space-y-3">
-                      <p><span className="font-medium text-gray-700">Selected Donor:</span> {recipientForm.donorId ? donorList.find(d => d.id === recipientForm.donorId)?.name : "Not selected"}</p>
-                      <p><span className="font-medium text-gray-700">Relationship Type:</span> {recipientForm.relationType || "Not specified"}</p>
-                      <p><span className="font-medium text-gray-700">Blood Transfusions:</span> {transfusions.filter(t => t.date).length} recorded</p>
-                      <p><span className="font-medium text-gray-700">Assessment Date:</span> {new Date().toLocaleDateString()}</p>
-                    </div>
+                  </div>
+                )}
+
+                {/* Data Status Indicator */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {isEditing ? (
+                      <>
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span className="text-green-700 font-medium">Editing existing assessment</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        <span className="text-blue-700 font-medium">Creating new assessment</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Auto-save: {recipientForm.name ? "Active" : "Waiting for data"}
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Navigation Buttons - FIXED: Added loading state */}
-          <div className="flex justify-between items-center pt-8 pb-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={prevStep}
-              disabled={step === 0}
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
-            </Button>
+          {/* Navigation Controls */}
+          <div className="flex justify-between items-center pt-8 border-t border-gray-200">
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={step === 0}
+                className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              
+              {/* Reset Form Button - Only show on first step */}
+              {step === 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleResetForm}
+                  className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Reset Form
+                </Button>
+              )}
+            </div>
 
             <div className="flex gap-4">
+              {/* Save as Draft Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const draftData = {
+                    form: recipientForm,
+                    transfusions,
+                    step,
+                  };
+                  localStorage.setItem(
+                    "recipient-assessment-draft",
+                    JSON.stringify(draftData)
+                  );
+                  alert("Draft saved successfully!");
+                }}
+                className="flex items-center gap-2 border-green-200 text-green-700 hover:bg-green-50"
+              >
+                <Save className="w-4 h-4" />
+                Save Draft
+              </Button>
+
+              {/* Next/Submit Button */}
               {step < FORM_STEPS.length - 1 ? (
                 <Button
                   type="button"
                   onClick={nextStep}
-                  className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
                 >
                   Next Step
-                  <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Button>
               ) : (
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center gap-2 disabled:opacity-50"
+                  disabled={isSubmitting || Object.keys(errors).length > 0}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Saving...
+                      {isEditing ? "Updating..." : "Submitting..."}
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4" />
-                      Save Assessment
+                      <CheckCircle className="w-4 h-4" />
+                      {isEditing ? "Update Assessment" : "Submit Assessment"}
                     </>
                   )}
                 </Button>
               )}
             </div>
           </div>
+
+          {/* Step Progress Indicator */}
+          <div className="text-center">
+            <div className="flex justify-center items-center gap-4 text-sm text-gray-600">
+              <span className="font-medium">
+                Step {step + 1} of {FORM_STEPS.length}
+              </span>
+              <div className="flex gap-1">
+                {FORM_STEPS.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`w-2 h-2 rounded-full ${
+                      idx === step
+                        ? "bg-blue-600"
+                        : idx < step
+                        ? "bg-green-500"
+                        : "bg-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="font-medium">
+                {Math.round(((step + 1) / FORM_STEPS.length) * 100)}% Complete
+              </span>
+            </div>
+          </div>
         </form>
+
+        {/* Unsaved Changes Warning */}
+        <div className="fixed bottom-4 right-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg max-w-sm">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-yellow-800 text-sm">
+                  Auto-save Active
+                </p>
+                <p className="text-yellow-700 text-xs">
+                  Your progress is automatically saved as you work
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

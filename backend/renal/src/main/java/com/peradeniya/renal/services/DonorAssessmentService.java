@@ -55,6 +55,41 @@ public class DonorAssessmentService {
         repository.deleteById(id);
     }
 
+    // Assignment methods
+    @Transactional
+    public void assignDonorToRecipient(DonorAssignmentDTO assignment) {
+        DonorAssessment donor = repository.findById(Long.parseLong(assignment.getDonorId()))
+                .orElseThrow(() -> new RuntimeException("Donor not found with id: " + assignment.getDonorId()));
+
+        donor.setStatus("assigned");
+        donor.setAssignedRecipientName(assignment.getRecipientName());
+        donor.setAssignedRecipientPhn(assignment.getRecipientPhn());
+
+        repository.save(donor);
+    }
+
+    @Transactional
+    public void unassignDonor(Long donorId) {
+        DonorAssessment donor = repository.findById(donorId)
+                .orElseThrow(() -> new RuntimeException("Donor not found with id: " + donorId));
+
+        donor.setStatus("available");
+        donor.setAssignedRecipientName(null);
+        donor.setAssignedRecipientPhn(null);
+
+        repository.save(donor);
+    }
+
+    @Transactional
+    public void updateDonorStatus(Long donorId, String status) {
+        DonorAssessment donor = repository.findById(donorId)
+                .orElseThrow(() -> new RuntimeException("Donor not found with id: " + donorId));
+
+        donor.setStatus(status);
+        repository.save(donor);
+    }
+
+    // ADD THE MISSING convertToEntity METHOD
     private DonorAssessment convertToEntity(DonorAssessmentDataDTO dto) {
         DonorAssessment entity = new DonorAssessment();
 
@@ -71,6 +106,9 @@ public class DonorAssessmentService {
 
         entity.setRelationToRecipient(dto.getRelationToRecipient());
         entity.setRelationType(dto.getRelationType());
+
+        // Set default status
+        entity.setStatus("available");
 
         // Copy comorbidities
         if (dto.getComorbidities() != null) {
@@ -98,6 +136,7 @@ public class DonorAssessmentService {
         return entity;
     }
 
+    // KEEP ONLY ONE convertToResponseDTO METHOD (remove the duplicate)
     private DonorAssessmentResponseDTO convertToResponseDTO(DonorAssessment entity) {
         DonorAssessmentResponseDTO dto = new DonorAssessmentResponseDTO();
 
@@ -116,6 +155,11 @@ public class DonorAssessmentService {
 
         dto.setRelationToRecipient(entity.getRelationToRecipient());
         dto.setRelationType(entity.getRelationType());
+
+        // Copy status and assignment info
+        dto.setStatus(entity.getStatus());
+        dto.setAssignedRecipientName(entity.getAssignedRecipientName());
+        dto.setAssignedRecipientPhn(entity.getAssignedRecipientPhn());
 
         // Copy comorbidities
         if (entity.getComorbidities() != null) {
@@ -147,6 +191,8 @@ public class DonorAssessmentService {
 
         return dto;
     }
+
+
 
     // ============ CONVERSION METHODS FOR EMBEDDED OBJECTS ============
 
@@ -418,8 +464,8 @@ public class DonorAssessmentService {
         // Convert Respiratory Exam
         if (entity.getRespiratory() != null) {
             RespiratoryExamDTO respExam = new RespiratoryExamDTO();
-            respExam.setRr(entity.getRespiratory().getRr());
-            respExam.setSpo2(entity.getRespiratory().getSpo2());
+            respExam.setRr(entity.getRespiratory().isRr());
+            respExam.setSpo2(entity.getRespiratory().isSpo2());
             respExam.setAuscultation(entity.getRespiratory().isAuscultation());
             respExam.setCrepts(entity.getRespiratory().isCrepts());
             respExam.setRanchi(entity.getRespiratory().isRanchi());

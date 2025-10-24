@@ -187,8 +187,8 @@ public class Examination {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RespExam {
-        private String rr;
-        private String spo2;
+        private boolean rr;
+        private boolean spo2;
         private boolean auscultation;
         private boolean crepts;
         private boolean ranchi;

@@ -28,6 +28,15 @@ public class DonorAssessment {
 	private String relationToRecipient;
 	private String relationType;
 
+	// NEW: Status and assignment fields
+	private String status = "available"; // 'available', 'assigned', 'evaluating', 'rejected'
+
+	@Column(name = "assigned_recipient_name")
+	private String assignedRecipientName;
+
+	@Column(name = "assigned_recipient_phn")
+	private String assignedRecipientPhn;
+
 	@Embedded
 	@AttributeOverrides({
 			@AttributeOverride(name = "dl", column = @Column(name = "donor_dl")),

@@ -5,7 +5,9 @@ import java.time.LocalDate;
 
 @Data
 public class RecipientAssessmentDTO {
-    private String phn; // Patient PHN to associate with
+    private Long id; // ADD THIS FOR UPDATES
+
+    private String phn; // For finding patient
 
     // Basic patient info
     private String name;
@@ -18,17 +20,15 @@ public class RecipientAssessmentDTO {
     private String contactDetails;
     private String emailAddress;
 
-    // Assessment specific fields
     private String donorId;
     private String relationType;
     private String relationToRecipient;
 
-    // Comorbidities
-    private Boolean dm;
-    private String duration;
-    private Boolean psychiatricIllness;
-    private Boolean htn;
-    private Boolean ihd;
+    // Comorbidities - UPDATED STRUCTURE
+    private ComorbiditiesDTO comorbidities;
+
+    // RRT Details - NEW STRUCTURE
+    private RRTDetailsDTO rrtDetails;
 
     // Systemic Inquiry
     private SystemicInquiryDTO systemicInquiry;

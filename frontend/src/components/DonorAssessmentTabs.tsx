@@ -1,166 +1,170 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDonorContext } from '@/context/DonorContext';
+import { DonorDetailsModal } from './DonorDetailsModal';
+import { Donor, DonorAssessmentForm } from '../types/donor';
 
 const DonorAssessmentTabs: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'available' | 'register'>('available');
+  const [showDonorModal, setShowDonorModal] = useState(false);
+  const [selectedDonor, setSelectedDonor] = useState<DonorAssessmentForm | null>(null);
+  const { donors, setSelectedDonor: setContextSelectedDonor } = useDonorContext();
+
+  useEffect(() => {
+    console.log('Donors in DonorAssessmentTabs:', donors);
+  }, [donors]);
+
+  const handleSelectDonor = (donor: Donor) => {
+    setContextSelectedDonor(donor);
+    alert(`Donor ${donor.name} selected! You can now use this donor in recipient assessment.`);
+  };
+
+  const convertDonorToFormData = (donor: Donor): DonorAssessmentForm => {
+    return {
+      name: donor.name || "",
+      age: donor.age || "",
+      gender: donor.gender || "",
+      dateOfBirth: donor.dateOfBirth || "",
+      occupation: donor.occupation || "",
+      address: donor.address || "",
+      nicNo: donor.nicNo || "",
+      contactDetails: donor.contactDetails || "",
+      emailAddress: donor.emailAddress || "",
+      relationToRecipient: donor.relationToRecipient || "",
+      relationType: donor.relationType || "",
+      comorbidities: donor.comorbidities || {
+        dl: false,
+        dm: false,
+        psychiatricIllness: false,
+        htn: false,
+        ihd: false,
+      },
+      complains: "",
+      systemicInquiry: {
+        constitutional: { loa: false, low: false },
+        cvs: { chestPain: false, odema: false, sob: false },
+        respiratory: { cough: false, hemoptysis: false, wheezing: false },
+        git: { constipation: false, diarrhea: false, melena: false, prBleeding: false },
+        renal: { hematuria: false, frothyUrine: false },
+        neuro: { seizures: false, visualDisturbance: false, headache: false, limbWeakness: false },
+        gynecology: { pvBleeding: false, menopause: false, menorrhagia: false, lrmp: false },
+        sexualHistory: "",
+      },
+      drugHistory: "",
+      allergyHistory: { foods: false, drugs: false, p: false },
+      familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
+      substanceUse: { smoking: false, alcohol: false, other: "" },
+      socialHistory: { spouseDetails: "", childrenDetails: "", income: "", other: "" },
+      examination: donor.examination || {
+        height: "",
+        weight: "",
+        bmi: "",
+        pallor: false,
+        icterus: false,
+        oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
+        lymphNodes: { cervical: false, axillary: false, inguinal: false },
+        clubbing: false,
+        ankleOedema: false,
+        cvs: { bp: "", pr: "", murmurs: false },
+        respiratory: { rr: false, spo2: false, auscultation: false, crepts: false, ranchi: false, effusion: false },
+        abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
+        BrcostExamination: "",
+        neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
+      },
+      immunologicalDetails: donor.immunologicalDetails || {
+        bloodGroup: {
+          d: donor.bloodGroup?.charAt(0) || "",
+          r: donor.bloodGroup?.charAt(1) || "",
+        },
+        crossMatch: { tCell: "", bCell: "" },
+        hlaTyping: {
+          donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+          recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+          conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+        },
+        pra: { pre: "", post: "" },
+        dsa: "",
+        immunologicalRisk: "",
+      },
+    };
+  };
+
+  const handleViewDonor = (donor: Donor) => {
+    const donorDetails = convertDonorToFormData(donor);
+    setSelectedDonor(donorDetails);
+    setShowDonorModal(true);
+  };
 
   const renderAvailableDonors = () => (
     <div className="p-6 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Available Donors</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blood Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Donation</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">John Smith</td>
-              <td className="px-6 py-4 whitespace-nowrap">O+</td>
-              <td className="px-6 py-4 whitespace-nowrap">2023-05-15</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  Eligible
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                <button className="mr-2 hover:underline">View</button>
-                <button className="hover:underline">Select</button>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">Maria Garcia</td>
-              <td className="px-6 py-4 whitespace-nowrap">A-</td>
-              <td className="px-6 py-4 whitespace-nowrap">2023-08-22</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  Eligible
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                <button className="mr-2 hover:underline">View</button>
-                <button className="hover:underline">Select</button>
-              </td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">Robert Johnson</td>
-              <td className="px-6 py-4 whitespace-nowrap">B+</td>
-              <td className="px-6 py-4 whitespace-nowrap">2023-01-30</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                  Pending
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                <button className="mr-2 hover:underline">View</button>
-                <button className="hover:underline">Select</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Available Donors ({donors.length})</h2>
+        <div className="text-sm text-gray-500">
+          {donors.length === 0 ? 'No donors registered yet' : `${donors.length} donor(s) available`}
+        </div>
       </div>
-    </div>
-  );
-
-  const renderRegisterForm = () => (
-    <div className="p-6 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Register New Donor</h2>
-      <form className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter first name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter last name"
-            />
+      
+      {donors.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-gray-400 mb-2">No donors available</div>
+          <div className="text-sm text-gray-500">
+            Register a donor to see them listed here
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter email address"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input
-              type="tel"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter phone number"
-            />
-          </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blood Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relation</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {donors.map((donor, index) => (
+                <tr key={donor.id || index}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium text-gray-900">{donor.name}</div>
+                    <div className="text-sm text-gray-500">{donor.gender}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="font-medium">{donor.bloodGroup}</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{donor.age}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{donor.relationToRecipient}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      donor.status === 'assigned' ? 'bg-blue-100 text-blue-800' :
+                      donor.status === 'evaluating' ? 'bg-yellow-100 text-yellow-800' :
+                      donor.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {donor.status ? donor.status.charAt(0).toUpperCase() + donor.status.slice(1) : 'Available'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <button 
+                      onClick={() => handleViewDonor(donor)}
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                    >
+                      View
+                    </button>
+                    <button 
+                      onClick={() => handleSelectDonor(donor)}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      Select
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Blood Type</label>
-            <select className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Select blood type</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Last Donation Date</label>
-            <input
-              type="date"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Health Conditions</label>
-          <textarea
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={3}
-            placeholder="List any health conditions or medications"
-          ></textarea>
-        </div>
-        
-        <div className="flex items-center">
-          <input
-            id="terms"
-            type="checkbox"
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-            I confirm that all information provided is accurate
-          </label>
-        </div>
-        
-        <div className="pt-4">
-          <button
-            type="submit"
-            className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Register Donor
-          </button>
-        </div>
-      </form>
+      )}
     </div>
   );
 
@@ -194,9 +198,24 @@ const DonorAssessmentTabs: React.FC = () => {
         
         <div className="bg-gray-50 p-1 rounded-b-lg shadow">
           {activeTab === 'available' && renderAvailableDonors()}
-          {activeTab === 'register' && renderRegisterForm()}
+          {activeTab === 'register' && (
+            <div className="p-4 text-center">
+              <p className="text-gray-600 mb-4">
+                Please use the full Donor Assessment form to register new donors.
+              </p>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Open Donor Assessment Form
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      <DonorDetailsModal
+        isOpen={showDonorModal}
+        onClose={() => setShowDonorModal(false)}
+        donorData={selectedDonor}
+      />
     </div>
   );
 };
