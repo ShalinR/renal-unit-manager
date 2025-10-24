@@ -58,17 +58,12 @@ const FORM_STEPS = [
 ];
 
 interface DonorAssessmentProps {
-  setActiveView?: (
-    view:
-      | "dashboard"
-      | "donor-assessment"
-      | "recipient-assessment"
-      | "kt"
-      | "follow-up"
-      | "summary"
-  ) => void;
+  donorForm: DonorAssessmentForm;
+  setDonorForm: React.Dispatch<React.SetStateAction<DonorAssessmentForm>>;
+  setActiveView: (view: "dashboard" | "donor-assessment" | "recipient-assessment" | "kt" | "follow-up" | "summary") => void;
+  handleDonorFormChange: (field: string, value: any) => void;
+  handleDonorFormSubmit: (e: React.FormEvent) => void;
 }
-
 const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
   const [currentView, setCurrentView] = useState<"list" | "form">("list");
   const [currentStep, setCurrentStep] = useState(0);
@@ -94,7 +89,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
   // Single source of truth for form data
   const [formData, setFormData] = useState<DonorAssessmentForm>({
     name: "",
-    age: "",
+    age: 0,
     gender: "",
     dateOfBirth: "",
     occupation: "",
@@ -317,8 +312,7 @@ const searchPatientByPhn = useCallback(async () => {
     const patientForForm: Patient = {
       phn: patientData.phn,
       name: patientData.name || "",
-      age: patientData.age || "",
-      gender: patientData.gender || "",
+age: Number(patientData.age) || 0,      gender: patientData.gender || "",
       dateOfBirth: patientData.dateOfBirth || "",
       occupation: patientData.occupation || "",
       address: patientData.address || "",
@@ -365,7 +359,7 @@ const clearSearch = useCallback(() => {
     (donor: Donor): DonorAssessmentForm => {
       return {
         name: donor.name || "",
-        age: donor.age || "",
+      age: Number(donor.age) || 0,
         gender: donor.gender || "",
         dateOfBirth: donor.dateOfBirth || "",
         occupation: donor.occupation || "",
@@ -538,7 +532,7 @@ const clearSearch = useCallback(() => {
   const resetForm = useCallback(() => {
     setFormData({
       name: "",
-      age: "",
+      age: 0,
       gender: "",
       dateOfBirth: "",
       occupation: "",
@@ -764,7 +758,7 @@ const InputField = ({
   type?: string;
   placeholder?: string;
   required?: boolean;
-  value?: string; // Add value to the type definition
+  value?: string | number; // Add value to the type definition
 }) => (
   <div className="space-y-2">
     <Label htmlFor={name} className="text-sm font-medium text-slate-700">
@@ -1076,13 +1070,16 @@ const SearchBar = () => (
                 placeholder="Enter full name"
                 required
               />
-              <InputField
-                name="age"
-                label="Age"
-                value={formData.age}
-                placeholder="Enter age"
-                required
-              />
+              <Input
+            id="age"
+            name="age"
+            type="number"
+            value={formData.age} // This will work since age is now a number
+            onChange={(e) => updateFormField("age", parseInt(e.target.value) || 0)} // ✅ Convert to number
+            placeholder="Enter age"
+            className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+            required
+          />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -1958,7 +1955,7 @@ const SearchBar = () => (
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="font-medium text-slate-600">Age:</span>
                     <span className="text-slate-900">
-                      {formData.age || "Not provided"}
+                {formData.age || formData.age === 0 ? formData.age : "Not provided"} {/* ✅ Handle number display */}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">

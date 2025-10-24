@@ -2,7 +2,7 @@
 export interface PatientBasicDTO {
   phn: string;
   name: string;
-  age: string;
+  age: number;
   gender: string;
   dateOfBirth?: string;
   occupation?: string;
@@ -15,7 +15,7 @@ export interface PatientBasicDTO {
 export interface Patient {
   phn: string;
   name: string;
-  age: string;
+  age: number;
   gender: string;
   dateOfBirth: string;
   occupation: string;

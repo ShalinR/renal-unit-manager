@@ -2,7 +2,7 @@ export interface Donor {
   id: string;
   name: string;
   bloodGroup: string;
-  age: string;
+  age: number;
   gender: string;
   dateOfBirth?: string;
   occupation?: string;
@@ -164,7 +164,7 @@ export interface DonorAssessmentDTO {
 
 export interface DonorAssessmentForm {
   name: string;
-  age: string;
+  age: number;
   gender: string;
   dateOfBirth: string;
   occupation: string;

@@ -240,11 +240,16 @@ public class RecipientAssessmentService {
     }
     // In RecipientAssessmentService
     public RecipientAssessmentResponseDTO getLatestByPatientPhn(String phn) {
+        // Option 1: Use the repository method that returns List (your current approach)
         List<RecipientAssessment> assessments = repository.findByPatientPhnOrderByIdDesc(phn);
         if (assessments.isEmpty()) {
             return null; // No existing assessment
         }
-        return convertToResponseDTO(assessments.get(0)); // Return the latest one
+        return convertToResponseDTO(assessments.get(0)); // Return the first one (latest due to ordering)
+
+        // Option 2: Use the new method that returns Optional (cleaner)
+        // Optional<RecipientAssessment> assessment = repository.findTopByPatientPhnOrderByIdDesc(phn);
+        // return assessment.map(this::convertToResponseDTO).orElse(null);
     }
     // ============ NEW CONVERSION METHODS FOR COMORBIDITIES AND RRT DETAILS ============
 

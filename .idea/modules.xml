@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/backend/renal/config/config.iml" filepath="$PROJECT_DIR$/backend/renal/config/config.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/renal-unit-manager.iml" filepath="$PROJECT_DIR$/.idea/renal-unit-manager.iml" />
     </modules>
   </component>
 </project>

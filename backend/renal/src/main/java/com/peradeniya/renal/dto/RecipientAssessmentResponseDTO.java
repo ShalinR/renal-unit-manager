@@ -23,25 +23,17 @@ public class RecipientAssessmentResponseDTO {
     private String relationToRecipient;
 
     // Comorbidities - Updated with all fields
-    private ComorbiditiesDTO comorbidities;
-
-
-
-    // RRT Details
-    private RRTDetailsDTO rrtDetails;
-
-    // Systemic Inquiry
-    private SystemicInquiryDTO systemicInquiry;
-
+    private ComorbiditiesDTO comorbidities = new ComorbiditiesDTO();
+    private RRTDetailsDTO rrtDetails = new RRTDetailsDTO();
+    private SystemicInquiryDTO systemicInquiry = new SystemicInquiryDTO();
     private String complains;
     private String drugHistory;
-    private AllergyHistoryDTO allergyHistory;
-    private FamilyHistoryDTO familyHistory;
-    private SubstanceUseDTO substanceUse;
-    private SocialHistoryDTO socialHistory;
-    private ExaminationDTO examination;
-    private ImmunologicalDetailsDTO immunologicalDetails;
+    private AllergyHistoryDTO allergyHistory = new AllergyHistoryDTO();
+    private FamilyHistoryDTO familyHistory = new FamilyHistoryDTO();
+    private SubstanceUseDTO substanceUse = new SubstanceUseDTO();
+    private SocialHistoryDTO socialHistory = new SocialHistoryDTO();
+    private ExaminationDTO examination = new ExaminationDTO();
+    private ImmunologicalDetailsDTO immunologicalDetails = new ImmunologicalDetailsDTO();
 
-    // Patient reference without circular dependency
     private String patientPhn;
 }

@@ -1,10 +1,12 @@
 package com.peradeniya.renal.dto;
 
-public class HlaTypingDTO {
-    private HlaDetailsDTO donor;
-    private HlaDetailsDTO recipient;
-    private HlaDetailsDTO conclusion;
 
+public class HlaTypingDTO {
+    private HlaDetailsDTO donor = new HlaDetailsDTO();
+    private HlaDetailsDTO recipient = new HlaDetailsDTO();
+    private HlaDetailsDTO conclusion = new HlaDetailsDTO();
+
+    // Getters and setters
     public HlaDetailsDTO getDonor() {
         return donor;
     }

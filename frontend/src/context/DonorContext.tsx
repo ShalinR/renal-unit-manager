@@ -44,81 +44,81 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [error, setError] = useState<string | null>(null);
 
   const fetchDonors = useCallback(async (patientPhn?: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      let donorsData: DonorAssessmentResponseDTO[];
-      if (patientPhn) {
-        donorsData = await fetchDonorsByPatient(patientPhn);
-      } else {
-        donorsData = await fetchAllDonors();
-      }
-      
-      // Transform backend data to frontend Donor format
-      const transformedDonors: Donor[] = donorsData.map((donor: DonorAssessmentResponseDTO) => ({
-        id: donor.id?.toString() || `donor-${Date.now()}`,
-        name: donor.name || '',
-        bloodGroup: `${donor.immunologicalDetails?.bloodGroup?.d || ''}${donor.immunologicalDetails?.bloodGroup?.r || ''}`,
-        age: donor.age?.toString() || '',
-        gender: donor.gender || '',
-        dateOfBirth: donor.dateOfBirth || '',
-        occupation: donor.occupation || '',
-        address: donor.address || '',
-        nicNo: donor.nicNo || '',
-        contactDetails: donor.contactDetails || '',
-        emailAddress: donor.emailAddress || '',
-        relationType: donor.relationType || '',
-        relationToRecipient: donor.relationToRecipient || '',
-        patientPhn: donor.patientPhn || '',
-        comorbidities: donor.comorbidities || {
-          dl: false,
-          dm: false,
-          psychiatricIllness: false,
-          htn: false,
-          ihd: false,
-        },
-        examination: donor.examination || {
-          height: "",
-          weight: "",
-          bmi: "",
-          pallor: false,
-          icterus: false,
-          oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
-          lymphNodes: { cervical: false, axillary: false, inguinal: false },
-          clubbing: false,
-          ankleOedema: false,
-          cvs: { bp: "", pr: "", murmurs: false },
-          respiratory: { rr: false, spo2: false, auscultation: false, crepts: false, ranchi: false, effusion: false },
-          abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
-          BrcostExamination: "",
-          neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
-        },
-        immunologicalDetails: donor.immunologicalDetails || {
-          bloodGroup: { d: "", r: "" },
-          crossMatch: { tCell: "", bCell: "" },
-          hlaTyping: {
-            donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-            recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-            conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-          },
-          pra: { pre: "", post: "" },
-          dsa: "",
-          immunologicalRisk: "",
-        },
-        status: (donor.status as Donor['status']) || 'available',
-        assignedRecipientPhn: donor.patientPhn, // Map patientPhn to assignedRecipientPhn if assigned
-        assignedRecipientName: '', // This would need to come from backend
-      }));
-
-      setDonors(transformedDonors);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch donors';
-      setError(errorMessage);
-      console.error('Error fetching donors:', err);
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  setError(null);
+  try {
+    let donorsData: DonorAssessmentResponseDTO[];
+    if (patientPhn) {
+      donorsData = await fetchDonorsByPatient(patientPhn);
+    } else {
+      donorsData = await fetchAllDonors();
     }
-  }, []);
+    
+    // Transform backend data to frontend Donor format
+    const transformedDonors: Donor[] = donorsData.map((donor: DonorAssessmentResponseDTO) => ({
+      id: donor.id?.toString() || `donor-${Date.now()}`,
+      name: donor.name || '',
+      bloodGroup: `${donor.immunologicalDetails?.bloodGroup?.d || ''}${donor.immunologicalDetails?.bloodGroup?.r || ''}`,
+      age: Number(donor.age) || 0, // ✅ Convert to number
+      gender: donor.gender || '',
+      dateOfBirth: donor.dateOfBirth || '',
+      occupation: donor.occupation || '',
+      address: donor.address || '',
+      nicNo: donor.nicNo || '',
+      contactDetails: donor.contactDetails || '',
+      emailAddress: donor.emailAddress || '',
+      relationType: donor.relationType || '',
+      relationToRecipient: donor.relationToRecipient || '',
+      patientPhn: donor.patientPhn || '',
+      comorbidities: donor.comorbidities || {
+        dl: false,
+        dm: false,
+        psychiatricIllness: false,
+        htn: false,
+        ihd: false,
+      },
+      examination: donor.examination || {
+        height: "",
+        weight: "",
+        bmi: "",
+        pallor: false,
+        icterus: false,
+        oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
+        lymphNodes: { cervical: false, axillary: false, inguinal: false },
+        clubbing: false,
+        ankleOedema: false,
+        cvs: { bp: "", pr: "", murmurs: false },
+        respiratory: { rr: false, spo2: false, auscultation: false, crepts: false, ranchi: false, effusion: false },
+        abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
+        BrcostExamination: "",
+        neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
+      },
+      immunologicalDetails: donor.immunologicalDetails || {
+        bloodGroup: { d: "", r: "" },
+        crossMatch: { tCell: "", bCell: "" },
+        hlaTyping: {
+          donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+          recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+          conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+        },
+        pra: { pre: "", post: "" },
+        dsa: "",
+        immunologicalRisk: "",
+      },
+      status: (donor.status as Donor['status']) || 'available',
+      assignedRecipientPhn: donor.patientPhn, // Map patientPhn to assignedRecipientPhn if assigned
+      assignedRecipientName: '', // This would need to come from backend
+    }));
+
+    setDonors(transformedDonors);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch donors';
+    setError(errorMessage);
+    console.error('Error fetching donors:', err);
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     fetchDonors();
@@ -131,7 +131,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // Transform frontend DonorAssessmentForm to backend DonorAssessmentDataDTO format
       const apiData: DonorAssessmentDataDTO = {
         name: donorData.name,
-        age: parseInt(donorData.age) || 0,
+        age: donorData.age || 0,
         gender: donorData.gender,
         dateOfBirth: donorData.dateOfBirth,
         occupation: donorData.occupation,
@@ -160,7 +160,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         id: savedDonor.id.toString(),
         name: savedDonor.name,
         bloodGroup: `${savedDonor.immunologicalDetails?.bloodGroup?.d || ''}${savedDonor.immunologicalDetails?.bloodGroup?.r || ''}`,
-        age: savedDonor.age?.toString() || '',
+        age: savedDonor.age,
         gender: savedDonor.gender,
         dateOfBirth: savedDonor.dateOfBirth || '',
         occupation: savedDonor.occupation || '',
