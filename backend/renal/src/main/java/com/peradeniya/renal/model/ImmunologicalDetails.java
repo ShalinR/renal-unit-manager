@@ -23,6 +23,64 @@ public class ImmunologicalDetails {
     private String dsa;
     private String immunologicalRisk;
 
+
+    // ... your embedded classes (BloodGroup, CrossMatch, HLATyping, HLADetails)
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BloodGroup {
+        private String d;
+        private String r;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CrossMatch {
+        private String tCell;
+        private String bCell;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class HLATyping {
+        @Embedded
+        private HLADetails donor;
+        @Embedded
+        private HLADetails recipient;
+        @Embedded
+        private HLADetails conclusion;
+
+        @Embeddable
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class HLADetails {
+            @Column(length = 100)  // Add this annotation
+
+            private String hlaA;
+            @Column(length = 100)  // Add this annotation
+
+            private String hlaB;
+            @Column(length = 100)  // Add this annotation
+
+            private String hlaC;
+            @Column(length = 100)  // Add this annotation
+
+            private String hlaDR;
+            @Column(length = 100)  // Add this annotation
+
+            private String hlaDP;
+            @Column(length = 100)  // Add this annotation
+
+            private String hlaDQ;
+        }
+    }
+
     // Explicit getters/setters if Lombok isn't working
     public BloodGroup getBloodGroup() {
         return bloodGroup;
@@ -80,48 +138,4 @@ public class ImmunologicalDetails {
         this.immunologicalRisk = immunologicalRisk;
     }
 
-    // ... your embedded classes (BloodGroup, CrossMatch, HLATyping, HLADetails)
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class BloodGroup {
-        private String d;
-        private String r;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CrossMatch {
-        private String tCell;
-        private String bCell;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class HLATyping {
-        @Embedded
-        private HLADetails donor;
-        @Embedded
-        private HLADetails recipient;
-        @Embedded
-        private HLADetails conclusion;
-
-        @Embeddable
-        @Data
-        @NoArgsConstructor
-        @AllArgsConstructor
-        public static class HLADetails {
-            private String hlaA;
-            private String hlaB;
-            private String hlaC;
-            private String hlaDR;
-            private String hlaDP;
-            private String hlaDQ;
-        }
-    }
 }

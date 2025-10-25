@@ -109,6 +109,8 @@ public class RecipientAssessmentService {
         entity.setSocialHistory(convertSocialHistoryToEntity(dto.getSocialHistory()));
         entity.setExamination(convertExaminationToEntity(dto.getExamination()));
         entity.setImmunologicalDetails(convertImmunologicalDetailsToEntity(dto.getImmunologicalDetails()));
+        entity.setCompletedBy(convertCompletedByToEntity(dto.getCompletedBy()));
+        entity.setReviewedBy(convertReviewedByToEntity(dto.getReviewedBy()));
     }
 
     // Helper methods for updating embedded objects
@@ -183,7 +185,8 @@ public class RecipientAssessmentService {
         entity.setSocialHistory(convertSocialHistoryToEntity(dto.getSocialHistory()));
         entity.setExamination(convertExaminationToEntity(dto.getExamination()));
         entity.setImmunologicalDetails(convertImmunologicalDetailsToEntity(dto.getImmunologicalDetails()));
-
+        entity.setCompletedBy(convertCompletedByToEntity(dto.getCompletedBy()));
+        entity.setReviewedBy(convertReviewedByToEntity(dto.getReviewedBy()));
         return entity;
     }
 
@@ -230,7 +233,8 @@ public class RecipientAssessmentService {
         dto.setSocialHistory(convertSocialHistoryToDTO(entity.getSocialHistory()));
         dto.setExamination(convertExaminationToDTO(entity.getExamination()));
         dto.setImmunologicalDetails(convertImmunologicalDetailsToDTO(entity.getImmunologicalDetails()));
-
+        dto.setCompletedBy(convertCompletedByToDTO(entity.getCompletedBy()));
+        dto.setReviewedBy(convertReviewedByToDTO(entity.getReviewedBy()));
         // Include patient PHN without circular reference
         if (entity.getPatient() != null) {
             dto.setPatientPhn(entity.getPatient().getPhn());
@@ -332,6 +336,58 @@ public class RecipientAssessmentService {
         dto.setAccessCAPD(entity.isAccessCAPD());
         dto.setComplications(entity.getComplications());
 
+        return dto;
+    }
+
+    // Add these conversion methods to the service class
+
+    private CompletedBy convertCompletedByToEntity(CompletedByDTO dto) {
+        if (dto == null) return null;
+
+        CompletedBy entity = new CompletedBy();
+        entity.setStaffName(dto.getStaffName());
+        entity.setStaffRole(dto.getStaffRole());
+        entity.setStaffId(dto.getStaffId());
+        entity.setDepartment(dto.getDepartment());
+        entity.setSignature(dto.getSignature());
+        entity.setCompletionDate(dto.getCompletionDate());
+        return entity;
+    }
+
+    private CompletedByDTO convertCompletedByToDTO(CompletedBy entity) {
+        if (entity == null) return null;
+
+        CompletedByDTO dto = new CompletedByDTO();
+        dto.setStaffName(entity.getStaffName());
+        dto.setStaffRole(entity.getStaffRole());
+        dto.setStaffId(entity.getStaffId());
+        dto.setDepartment(entity.getDepartment());
+        dto.setSignature(entity.getSignature());
+        dto.setCompletionDate(entity.getCompletionDate());
+        return dto;
+    }
+
+    private ReviewedBy convertReviewedByToEntity(ReviewedByDTO dto) {
+        if (dto == null) return null;
+
+        ReviewedBy entity = new ReviewedBy();
+        entity.setConsultantName(dto.getConsultantName());
+        entity.setConsultantId(dto.getConsultantId());
+        entity.setReviewDate(dto.getReviewDate());
+        entity.setApprovalStatus(dto.getApprovalStatus());
+        entity.setNotes(dto.getNotes());
+        return entity;
+    }
+
+    private ReviewedByDTO convertReviewedByToDTO(ReviewedBy entity) {
+        if (entity == null) return null;
+
+        ReviewedByDTO dto = new ReviewedByDTO();
+        dto.setConsultantName(entity.getConsultantName());
+        dto.setConsultantId(entity.getConsultantId());
+        dto.setReviewDate(entity.getReviewDate());
+        dto.setApprovalStatus(entity.getApprovalStatus());
+        dto.setNotes(entity.getNotes());
         return dto;
     }
     public void deleteById(Long id) {

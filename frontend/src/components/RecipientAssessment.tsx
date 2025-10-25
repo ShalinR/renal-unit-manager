@@ -30,7 +30,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { usePatientContext } from "@/context/PatientContext";
-
+import { useDonorContext } from "@/context/DonorContext";
+import { Donor } from "@/types/donor";
 // Import interfaces from types
 import {
   RecipientAssessmentForm,
@@ -79,11 +80,18 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   const [donorSearchResults, setDonorSearchResults] = useState<any>(null);
   const [searchingDonor, setSearchingDonor] = useState(false);
   const [viewMode, setViewMode] = useState<boolean>(false); // NEW: View mode state
+  const { getAvailableDonors } = useDonorContext();
 
   const [transfusions, setTransfusions] = useState<
     { date: string; indication: string; volume: string }[]
   >([{ date: "", indication: "", volume: "" }]);
-
+  const handleSelectDonor = (donor: Donor) => {
+    handleRecipientFormChange("donorId", donor.id);
+    handleRecipientFormChange("donorPhn", donor.patientPhn || "");
+    handleRecipientFormChange("donorName", donor.name);
+    handleRecipientFormChange("donorBloodGroup", donor.bloodGroup);
+    setDonorSearchResults(donor);
+  };
   // ✅ NEW API service using the proper service
   const apiService = {
     // Search donor by PHN - This should use your donor assessment endpoint
@@ -268,30 +276,62 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   }, [recipientForm.phn]);
 
   // Search donor by PHN
+  // Search donor by PHN - FIXED VERSION
   const searchDonorByPhn = async () => {
-    if (!donorSearchPhn.trim()) return;
+    if (!donorSearchPhn.trim()) {
+      alert("Please enter a PHN to search");
+      return;
+    }
 
     setSearchingDonor(true);
+    setErrors((prev) => ({ ...prev, donorSearch: "" }));
+
     try {
-      const donorData =
-        await recipientApiService.searchDonorByPhn(donorSearchPhn);
-      setDonorSearchResults(donorData);
+      console.log("🔍 Searching for donor with PHN:", donorSearchPhn);
+
+      // Use the API service you defined, not the state variable
+      const donorData = await apiService.searchDonorByPhn(donorSearchPhn);
+      console.log("📋 Donor search results:", donorData);
 
       if (donorData) {
-        // Auto-populate donor information
-        handleRecipientFormChange("donorId", donorData.id);
-        handleRecipientFormChange("donorPhn", donorData.phn);
-        handleRecipientFormChange("donorName", donorData.name);
-        handleRecipientFormChange("donorBloodGroup", donorData.bloodGroup);
+        setDonorSearchResults(donorData);
+
+        // Auto-populate donor information - FIXED: use patientPhn instead of phn
+        handleRecipientFormChange("donorId", donorData.id?.toString() || "");
+        handleRecipientFormChange(
+          "donorPhn",
+          donorData.patientPhn || donorSearchPhn
+        ); // CHANGED: patientPhn
+        handleRecipientFormChange(
+          "donorName",
+          donorData.name || "Unknown Donor"
+        );
+        handleRecipientFormChange(
+          "donorBloodGroup",
+          `${donorData.immunologicalDetails?.bloodGroup?.d || ""}${donorData.immunologicalDetails?.bloodGroup?.r || ""}`
+        );
+
+        // Clear search input
+        setDonorSearchPhn("");
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          donorSearch:
+            "No donor found with this PHN. Please check the PHN and try again.",
+        }));
+        setDonorSearchResults(null);
       }
     } catch (error) {
-      console.error("Error searching donor:", error);
+      console.error("❌ Error searching donor:", error);
+      setErrors((prev) => ({
+        ...prev,
+        donorSearch: "Failed to search for donor. Please try again.",
+      }));
       setDonorSearchResults(null);
     } finally {
       setSearchingDonor(false);
     }
   };
-
   // Clear donor selection
   const clearDonorSelection = () => {
     setDonorSearchPhn("");
@@ -352,6 +392,16 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         if (!recipientForm.name.trim()) {
           newErrors.confirmation =
             "Please complete all required steps before submitting";
+        }
+        // Add validation for medical staff fields
+        if (!recipientForm.completedBy?.staffName?.trim()) {
+          newErrors.staffName = "Staff name is required";
+        }
+        if (!recipientForm.completedBy?.staffRole?.trim()) {
+          newErrors.staffRole = "Staff role is required";
+        }
+        if (!recipientForm.completedBy?.department?.trim()) {
+          newErrors.department = "Department is required";
         }
         break;
     }
@@ -671,6 +721,22 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
           dsa: "",
           immunologicalRisk: "",
         },
+        completedBy: {
+          staffName: "",
+          staffRole: "",
+          staffId: "",
+          department: "",
+          signature: "",
+          completionDate: new Date().toISOString().split("T")[0], // Default to today
+        },
+
+        reviewedBy: {
+          consultantName: "",
+          consultantId: "",
+          reviewDate: "",
+          approvalStatus: "pending",
+          notes: "",
+        },
       };
 
       setRecipientForm(emptyForm);
@@ -719,16 +785,11 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                       ✓ Editing existing assessment
                     </p>
                   )}
-                 
                 </div>
               </div>
             </div>
-                  
+
             <div className="flex gap-2">
-              
-              
-              
-              
               <Button
                 type="button"
                 variant="outline"
@@ -1102,16 +1163,22 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                   Donor Relationship
                 </CardTitle>
                 <CardDescription className="text-blue-100">
-                  Link this recipient to a registered donor using PHN
+                  Link this recipient to an available donor
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
-                {/* Donor Search Section */}
+                {/* Available Donors Section */}
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Search Donor by PHN
-                    </Label>
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Available Donors
+                      </Label>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Select from {getAvailableDonors().length} available
+                        donor(s)
+                      </p>
+                    </div>
                     {recipientForm.donorId && (
                       <Button
                         type="button"
@@ -1125,97 +1192,65 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                     )}
                   </div>
 
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          placeholder="Enter donor PHN number..."
-                          value={donorSearchPhn}
-                          onChange={(e) => setDonorSearchPhn(e.target.value)}
-                          className="pl-10 h-12 border-2 border-gray-200 focus:border-blue-500"
-                          disabled={!!recipientForm.donorId}
-                        />
+                  {/* Available Donors Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {getAvailableDonors().map((donor) => (
+                      <div
+                        key={donor.id}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                          recipientForm.donorId === donor.id
+                            ? "border-green-500 bg-green-50"
+                            : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                        }`}
+                        onClick={() => handleSelectDonor(donor)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">
+                              {donor.name}
+                            </h4>
+                            <div className="mt-2 space-y-1 text-sm">
+                              <p className="text-gray-600">
+                                <span className="font-medium">PHN:</span>{" "}
+                                {donor.patientPhn}
+                              </p>
+                              <p className="text-gray-600">
+                                <span className="font-medium">
+                                  Blood Group:
+                                </span>{" "}
+                                {donor.bloodGroup || "Not specified"}
+                              </p>
+                              <p className="text-gray-500">
+                                <span className="font-medium">Age:</span>{" "}
+                                {donor.age} • {donor.gender}
+                              </p>
+                              {donor.relationType && (
+                                <p className="text-gray-500">
+                                  <span className="font-medium">Relation:</span>{" "}
+                                  {donor.relationType}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {recipientForm.donorId === donor.id && (
+                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 ml-2" />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={searchDonorByPhn}
-                      disabled={
-                        !donorSearchPhn.trim() ||
-                        !!recipientForm.donorId ||
-                        searchingDonor
-                      }
-                      className="h-12 bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      {searchingDonor ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        "Search Donor"
-                      )}
-                    </Button>
+                    ))}
                   </div>
 
-                  {/* Donor Search Results */}
-                  {donorSearchResults && !recipientForm.donorId && (
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <div>
-                            <p className="font-medium text-green-800">
-                              Donor Found
-                            </p>
-                            <p className="text-sm text-green-700">
-                              {donorSearchResults.name} •{" "}
-                              {donorSearchResults.bloodGroup} • PHN:{" "}
-                              {donorSearchResults.phn}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            handleNestedChange(
-                              "donorId",
-                              donorSearchResults.id
-                            );
-                            handleNestedChange(
-                              "donorPhn",
-                              donorSearchResults.phn
-                            );
-                            handleNestedChange(
-                              "donorName",
-                              donorSearchResults.name
-                            );
-                            handleNestedChange(
-                              "donorBloodGroup",
-                              donorSearchResults.bloodGroup
-                            );
-                            setDonorSearchResults(null);
-                            setDonorSearchPhn("");
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          Select Donor
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {!donorSearchResults && donorSearchPhn && !searchingDonor && (
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-600" />
-                        <div>
-                          <p className="font-medium text-yellow-800">
-                            No Donor Found
-                          </p>
-                          <p className="text-sm text-yellow-700">
-                            No registered donor found with PHN: {donorSearchPhn}
-                          </p>
-                        </div>
-                      </div>
+                  {getAvailableDonors().length === 0 && (
+                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
+                      <User className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="font-medium">No available donors found</p>
+                      <p className="text-sm mt-1">
+                        All donors are currently assigned or under evaluation
+                      </p>
+                      <p className="text-xs mt-2 text-gray-400">
+                        You can proceed without linking a donor, or check back
+                        later
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1247,7 +1282,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                           Blood Group
                         </Label>
                         <p className="text-gray-900 font-semibold">
-                          {recipientForm.donorBloodGroup}
+                          {recipientForm.donorBloodGroup || "Not specified"}
                         </p>
                       </div>
                       <div>
@@ -1352,16 +1387,15 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                 )}
 
                 {/* No Donor Selected Message */}
-                {!recipientForm.donorId && (
+                {!recipientForm.donorId && getAvailableDonors().length > 0 && (
                   <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
                     <div className="text-center space-y-3">
                       <p className="text-gray-700 font-medium">
-                        No donor linked to this recipient
+                        No donor selected
                       </p>
                       <p className="text-sm text-gray-600">
-                        You can search for a donor using their PHN number above,
-                        or proceed without linking a donor. Donor information
-                        can be added later if needed.
+                        Click on an available donor above to link them to this
+                        recipient.
                       </p>
                     </div>
                   </div>
@@ -1369,7 +1403,6 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
               </CardContent>
             </Card>
           )}
-
           {/* Steps 2-6 - Your existing medical form sections remain the same */}
           {/* Step 2: Comorbidities */}
           {step === 2 && (
@@ -1782,6 +1815,9 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                             }
                             className="border-2 border-blue-300"
                           />
+                          <Label htmlFor="modalityHD" className="text-gray-700">
+                            CAPD
+                          </Label>
                         </div>
                       </div>
                     </div>
@@ -2050,7 +2086,10 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                       </Label>
                       <Input
                         id="recipientBloodGroupD"
-                        value={recipientForm.immunologicalDetails.bloodGroup.d}
+                        value={
+                          recipientForm.immunologicalDetails?.bloodGroup?.d ||
+                          ""
+                        }
                         onChange={(e) =>
                           handleNestedChange(
                             "immunologicalDetails.bloodGroup.d",
@@ -2070,7 +2109,10 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                       </Label>
                       <Input
                         id="recipientBloodGroupR"
-                        value={recipientForm.immunologicalDetails.bloodGroup.r}
+                        value={
+                          recipientForm.immunologicalDetails?.bloodGroup?.r ||
+                          ""
+                        }
                         onChange={(e) =>
                           handleNestedChange(
                             "immunologicalDetails.bloodGroup.r",
@@ -2078,59 +2120,6 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                           )
                         }
                         placeholder="Enter R value"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cross Match Section */}
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Cross Match
-                  </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="recipientTCell"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        T Cell
-                      </Label>
-                      <Input
-                        id="recipientTCell"
-                        value={
-                          recipientForm.immunologicalDetails.crossMatch.tCell
-                        }
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "immunologicalDetails.crossMatch.tCell",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Enter T cell value"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label
-                        htmlFor="recipientBCell"
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        B Cell
-                      </Label>
-                      <Input
-                        id="recipientBCell"
-                        value={
-                          recipientForm.immunologicalDetails.crossMatch.bCell
-                        }
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "immunologicalDetails.crossMatch.bCell",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Enter B cell value"
                         className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
                       />
                     </div>
@@ -2189,10 +2178,10 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                             >
                               <Input
                                 value={
-                                  recipientForm.immunologicalDetails.hlaTyping
-                                    .donor[
+                                  recipientForm.immunologicalDetails?.hlaTyping
+                                    ?.donor?.[
                                     type as keyof typeof recipientForm.immunologicalDetails.hlaTyping.donor
-                                  ]
+                                  ] || ""
                                 }
                                 onChange={(e) =>
                                   handleNestedChange(
@@ -2206,6 +2195,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                             </td>
                           ))}
                         </tr>
+
                         {/* Recipient HLA */}
                         <tr className="bg-white">
                           <td className="border border-gray-200 p-4 font-semibold text-gray-900">
@@ -2225,10 +2215,10 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                             >
                               <Input
                                 value={
-                                  recipientForm.immunologicalDetails.hlaTyping
-                                    .recipient[
+                                  recipientForm.immunologicalDetails?.hlaTyping
+                                    ?.recipient?.[
                                     type as keyof typeof recipientForm.immunologicalDetails.hlaTyping.recipient
-                                  ]
+                                  ] || ""
                                 }
                                 onChange={(e) =>
                                   handleNestedChange(
@@ -2242,11 +2232,47 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                             </td>
                           ))}
                         </tr>
+
+                        {/* Conclusion HLA */}
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-200 p-4 font-semibold text-gray-900">
+                            Conclusion
+                          </td>
+                          {[
+                            "hlaA",
+                            "hlaB",
+                            "hlaC",
+                            "hlaDR",
+                            "hlaDP",
+                            "hlaDQ",
+                          ].map((type) => (
+                            <td
+                              key={type}
+                              className="border border-gray-200 p-2"
+                            >
+                              <Input
+                                value={
+                                  recipientForm.immunologicalDetails?.hlaTyping
+                                    ?.conclusion?.[
+                                    type as keyof typeof recipientForm.immunologicalDetails.hlaTyping.conclusion
+                                  ] || ""
+                                }
+                                onChange={(e) =>
+                                  handleNestedChange(
+                                    `immunologicalDetails.hlaTyping.conclusion.${type}`,
+                                    e.target.value
+                                  )
+                                }
+                                placeholder={type.replace("hla", "")}
+                                className="h-10 border-gray-300 focus:border-blue-500 text-center"
+                              />
+                            </td>
+                          ))}
+                        </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
-
                 {/* PRA Section */}
                 <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
                   <h3 className="text-lg font-semibold text-blue-900">
@@ -2262,7 +2288,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                       </Label>
                       <Input
                         id="recipientPraPre"
-                        value={recipientForm.immunologicalDetails.praPre}
+                        value={recipientForm.immunologicalDetails?.praPre || ""}
                         onChange={(e) =>
                           handleNestedChange(
                             "immunologicalDetails.praPre",
@@ -2285,7 +2311,9 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                       </Label>
                       <Input
                         id="recipientPraPost"
-                        value={recipientForm.immunologicalDetails.praPost}
+                        value={
+                          recipientForm.immunologicalDetails?.praPost || ""
+                        }
                         onChange={(e) =>
                           handleNestedChange(
                             "immunologicalDetails.praPost",
@@ -2313,7 +2341,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                     </Label>
                     <Input
                       id="recipientDSA"
-                      value={recipientForm.immunologicalDetails.dsa}
+                      value={recipientForm.immunologicalDetails?.dsa || ""}
                       onChange={(e) =>
                         handleNestedChange(
                           "immunologicalDetails.dsa",
@@ -2334,7 +2362,8 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                     <Input
                       id="recipientImmunologicalRisk"
                       value={
-                        recipientForm.immunologicalDetails.immunologicalRisk
+                        recipientForm.immunologicalDetails?.immunologicalRisk ||
+                        ""
                       }
                       onChange={(e) =>
                         handleNestedChange(
@@ -2416,7 +2445,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                         </p>
                         <p>
                           <strong>Relationship:</strong>{" "}
-                          {recipientForm.relationToRecipient}
+                          {recipientForm.relationToRecipient || "Not specified"}
                         </p>
                         <p>
                           <strong>Type:</strong> {recipientForm.relationType}
@@ -2469,20 +2498,252 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                     <div className="space-y-2 text-sm">
                       <p>
                         <strong>Blood Group:</strong>{" "}
-                        {recipientForm.immunologicalDetails.bloodGroup.d}{" "}
-                        {recipientForm.immunologicalDetails.bloodGroup.r}
+                        {recipientForm.immunologicalDetails?.bloodGroup?.d ||
+                          ""}{" "}
+                        {recipientForm.immunologicalDetails?.bloodGroup?.r ||
+                          ""}
                       </p>
                       <p>
                         <strong>PRA Pre:</strong>{" "}
-                        {recipientForm.immunologicalDetails.praPre ||
+                        {recipientForm.immunologicalDetails?.praPre ||
                           "Not specified"}
                       </p>
                       <p>
                         <strong>Immunological Risk:</strong>{" "}
-                        {recipientForm.immunologicalDetails.immunologicalRisk ||
-                          "Not assessed"}
+                        {recipientForm.immunologicalDetails
+                          ?.immunologicalRisk || "Not assessed"}
                       </p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Medical Staff Information */}
+                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Medical Staff Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Completed By{" "}
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input
+                        value={recipientForm.completedBy?.staffName || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "completedBy.staffName",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter staff name"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Staff Role <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input
+                        value={recipientForm.completedBy?.staffRole || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "completedBy.staffRole",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., Transplant Coordinator, Nurse, Doctor"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Staff ID
+                      </Label>
+                      <Input
+                        value={recipientForm.completedBy?.staffId || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "completedBy.staffId",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter staff ID"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Department <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input
+                        value={recipientForm.completedBy?.department || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "completedBy.department",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., Nephrology, Transplant Unit"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Completion Date
+                      </Label>
+                      <Input
+                        type="date"
+                        value={
+                          recipientForm.completedBy?.completionDate ||
+                          new Date().toISOString().split("T")[0]
+                        }
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "completedBy.completionDate",
+                            e.target.value
+                          )
+                        }
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Signature
+                      </Label>
+                      <Input
+                        value={recipientForm.completedBy?.signature || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "completedBy.signature",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Staff signature"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review and Approval Section */}
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                    Review & Approval
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Consultant Review
+                      </Label>
+                      <Input
+                        value={recipientForm.reviewedBy?.consultantName || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "reviewedBy.consultantName",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Consultant name"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Consultant ID
+                      </Label>
+                      <Input
+                        value={recipientForm.reviewedBy?.consultantId || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "reviewedBy.consultantId",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Consultant ID"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Review Date
+                      </Label>
+                      <Input
+                        type="date"
+                        value={recipientForm.reviewedBy?.reviewDate || ""}
+                        onChange={(e) =>
+                          handleNestedChange(
+                            "reviewedBy.reviewDate",
+                            e.target.value
+                          )
+                        }
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Approval Status
+                      </Label>
+                      <RadioGroup
+                        value={
+                          recipientForm.reviewedBy?.approvalStatus || "pending"
+                        }
+                        onValueChange={(value) =>
+                          handleNestedChange("reviewedBy.approvalStatus", value)
+                        }
+                        className="flex gap-4 pt-2"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="pending" id="statusPending" />
+                          <Label
+                            htmlFor="statusPending"
+                            className="text-gray-700"
+                          >
+                            Pending
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value="approved"
+                            id="statusApproved"
+                          />
+                          <Label
+                            htmlFor="statusApproved"
+                            className="text-gray-700"
+                          >
+                            Approved
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value="rejected"
+                            id="statusRejected"
+                          />
+                          <Label
+                            htmlFor="statusRejected"
+                            className="text-gray-700"
+                          >
+                            Rejected
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Additional Notes
+                    </Label>
+                    <Textarea
+                      value={recipientForm.reviewedBy?.notes || ""}
+                      onChange={(e) =>
+                        handleNestedChange("reviewedBy.notes", e.target.value)
+                      }
+                      placeholder="Any additional comments or notes from the consultant..."
+                      rows={3}
+                      className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                    />
                   </div>
                 </div>
 
@@ -2498,6 +2759,12 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                           ? "Updating existing assessment"
                           : "Creating new assessment"}
                       </p>
+                      {recipientForm.completedBy?.staffName && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Completed by: {recipientForm.completedBy.staffName} (
+                          {recipientForm.completedBy.department})
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <div className="flex items-center gap-2 text-green-600">

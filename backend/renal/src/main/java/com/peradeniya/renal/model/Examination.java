@@ -8,9 +8,112 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Examination {
+    @Column(length = 20)  // Add this annotation
 
     private String height;
+    @Column(length = 20)  // Add this annotation
+
     private String weight;
+
+
+    public void setNeurologicalExam(NeurologicalExam neurologicalExam) {
+        this.neurologicalExam = neurologicalExam;
+    }
+    @Column(length = 20)
+    private String bmi;
+    private boolean pallor;
+    private boolean icterus;
+
+    @Embedded
+    private Oral oral;
+
+    @Embedded
+    private LymphNodes lymphNodes;
+
+    private boolean clubbing;
+    private boolean ankleOedema;
+
+    @Embedded
+    private CVSExam cvs;
+
+    @Embedded
+    private RespExam respiratory;
+
+    @Embedded
+    private AbdomenExam abdomen;
+    @Column(length = 100)
+    private String brcostExamination;
+
+    @Embedded
+    private NeurologicalExam neurologicalExam;
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Oral {
+        private boolean dentalCaries;
+        private boolean oralHygiene;
+        private boolean satisfactory;
+        private boolean unsatisfactory;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LymphNodes {
+        private boolean cervical;
+        private boolean axillary;
+        private boolean inguinal;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CVSExam {
+        @Column(length = 50)
+        private String bp;
+        @Column(length = 20)
+        private String pr;
+        private boolean murmurs;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RespExam {
+        private boolean rr;
+        private boolean spo2;
+        private boolean auscultation;
+        private boolean crepts;
+        private boolean ranchi;
+        private boolean effusion;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AbdomenExam {
+        private boolean hepatomegaly;
+        private boolean splenomegaly;
+        private boolean renalMasses;
+        private boolean freeFluid;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NeurologicalExam {
+        private boolean cranialNerves;
+        private boolean upperLimb;
+        private boolean lowerLimb;
+        private boolean coordination;
+    }
 
     public String getHeight() {
         return height;
@@ -120,100 +223,4 @@ public class Examination {
         return neurologicalExam;
     }
 
-    public void setNeurologicalExam(NeurologicalExam neurologicalExam) {
-        this.neurologicalExam = neurologicalExam;
-    }
-
-    private String bmi;
-    private boolean pallor;
-    private boolean icterus;
-
-    @Embedded
-    private Oral oral;
-
-    @Embedded
-    private LymphNodes lymphNodes;
-
-    private boolean clubbing;
-    private boolean ankleOedema;
-
-    @Embedded
-    private CVSExam cvs;
-
-    @Embedded
-    private RespExam respiratory;
-
-    @Embedded
-    private AbdomenExam abdomen;
-
-    private String brcostExamination;
-
-    @Embedded
-    private NeurologicalExam neurologicalExam;
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Oral {
-        private boolean dentalCaries;
-        private boolean oralHygiene;
-        private boolean satisfactory;
-        private boolean unsatisfactory;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class LymphNodes {
-        private boolean cervical;
-        private boolean axillary;
-        private boolean inguinal;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CVSExam {
-        private String bp;
-        private String pr;
-        private boolean murmurs;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RespExam {
-        private boolean rr;
-        private boolean spo2;
-        private boolean auscultation;
-        private boolean crepts;
-        private boolean ranchi;
-        private boolean effusion;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AbdomenExam {
-        private boolean hepatomegaly;
-        private boolean splenomegaly;
-        private boolean renalMasses;
-        private boolean freeFluid;
-    }
-
-    @Embeddable
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class NeurologicalExam {
-        private boolean cranialNerves;
-        private boolean upperLimb;
-        private boolean lowerLimb;
-        private boolean coordination;
-    }
 }

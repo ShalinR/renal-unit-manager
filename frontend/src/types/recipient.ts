@@ -191,6 +191,24 @@ export interface TransfusionHistory {
   volume: string;
 }
 
+// Medical Staff Interfaces
+export interface CompletedBy {
+  staffName: string;
+  staffRole: string;
+  staffId: string;
+  department: string;
+  signature: string;
+  completionDate: string;
+}
+
+export interface ReviewedBy {
+  consultantName: string;
+  consultantId: string;
+  reviewDate: string;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  notes: string;
+}
+
 // Main recipient assessment form
 export interface RecipientAssessmentForm {
   id?: number;
@@ -226,6 +244,10 @@ export interface RecipientAssessmentForm {
   examination: Examination;
   immunologicalDetails: ImmunologicalDetails;
   transfusionHistory?: TransfusionHistory[];
+  
+  // Medical Staff Information
+  completedBy: CompletedBy;
+  reviewedBy: ReviewedBy;
 }
 
 // DTOs for API communication
@@ -256,6 +278,10 @@ export interface RecipientAssessmentDTO {
   examination: Examination;
   immunologicalDetails: ImmunologicalDetails;
   transfusionHistory?: TransfusionHistory[];
+  
+  // Medical Staff Information
+  completedBy: CompletedBy;
+  reviewedBy: ReviewedBy;
 }
 
 export interface RecipientAssessmentResponseDTO {
@@ -274,17 +300,8 @@ export interface RecipientAssessmentResponseDTO {
   relationType?: string;
   relationToRecipient?: string;
   comorbidities: Comorbidities;
-rrtDetails: {
-    modalityHD: false,
-    modalityCAPD: false,
-    startingDate: "",
-    accessFemoral: false,
-    accessIJC: false,
-    accessPermeath: false,
-    accessCAPD: false,
-    complications: "",
-  },
-    systemicInquiry: SystemicInquiry;
+  rrtDetails: RRTDetails;
+  systemicInquiry: SystemicInquiry;
   complains: string;
   drugHistory: string;
   allergyHistory: AllergyHistory;
@@ -295,4 +312,8 @@ rrtDetails: {
   immunologicalDetails: ImmunologicalDetails;
   transfusionHistory?: TransfusionHistory[];
   patientPhn?: string;
+  
+  // Medical Staff Information
+  completedBy: CompletedBy;
+  reviewedBy: ReviewedBy;
 }

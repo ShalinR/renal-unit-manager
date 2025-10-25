@@ -33,6 +33,12 @@ interface DonorContextType {
   // Filtering and queries
   getAvailableDonors: () => Donor[];
   getAssignedDonors: () => Donor[];
+  searchDonors: (criteria: {
+    bloodGroup?: string;
+    relationType?: string;
+    status?: string;
+    patientPhn?: string;
+  }) => Promise<DonorAssessmentResponseDTO[]>;
 }
 
 const DonorContext = createContext<DonorContextType | undefined>(undefined);
@@ -194,6 +200,34 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       donor.id === id ? { ...donor, ...updates } : donor
     ));
   };
+  // In your DonorProvider component, add this function:
+const searchDonors = async (criteria: {
+  bloodGroup?: string;
+  relationType?: string;
+  status?: string;
+  patientPhn?: string;
+}): Promise<DonorAssessmentResponseDTO[]> => {
+  setIsLoading(true);
+  setError(null);
+  try {
+    console.log("🔍 Searching donors with criteria:", criteria);
+    
+    // Use the API function you already have
+    const results = await searchDonors(criteria);
+    console.log("📋 Search results:", results);
+    
+    return results;
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to search donors';
+    setError(errorMessage);
+    console.error('Error searching donors:', err);
+    throw err;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   const removeDonor = async (id: string) => {
     setIsLoading(true);
@@ -335,6 +369,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     updateDonorStatus,
     getAvailableDonors,
     getAssignedDonors,
+    searchDonors
   };
 
   return (
@@ -351,3 +386,5 @@ export const useDonorContext = () => {
   }
   return context;
 };
+
+

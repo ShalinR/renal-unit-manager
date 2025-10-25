@@ -34,6 +34,8 @@ public class RecipientAssessmentResponseDTO {
     private SocialHistoryDTO socialHistory = new SocialHistoryDTO();
     private ExaminationDTO examination = new ExaminationDTO();
     private ImmunologicalDetailsDTO immunologicalDetails = new ImmunologicalDetailsDTO();
+    private CompletedByDTO completedBy = new CompletedByDTO();
+    private ReviewedByDTO reviewedBy = new ReviewedByDTO();
 
     private String patientPhn;
 }
