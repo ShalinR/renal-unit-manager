@@ -135,12 +135,28 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
     setActiveId(entry.id);
   };
 
-  const removeTest = (id: string) => {
-    const next = tests.filter(t => t.id !== id);
-    next.forEach((e, i) => (e.label = `Test ${i + 1}`));
-    setTests(next);
-    if (activeId === id) setActiveId(next[0]?.id ?? null);
-  };
+   const removeTest = (id: string) => {
+  const indexToRemove = tests.findIndex(t => t.id === id);
+  if (indexToRemove === -1) return; 
+
+  const next = tests.filter(t => t.id !== id);
+
+  next.forEach((e, i) => (e.label = `Test ${i + 1}`));
+
+  setTests(next);
+
+  if (activeId === id) {
+    let newActiveId: string | null = null;
+    
+    if (indexToRemove > 0) {
+      newActiveId = next[indexToRemove - 1].id;
+    } else {
+      newActiveId = next[0]?.id ?? null;
+    }
+    
+    setActiveId(newActiveId);
+  }
+};
 
   const updatePayload = <K extends keyof PETData>(id: string, key: K, value: PETData[K]) => {
     setTests(prev =>

@@ -151,11 +151,28 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
   };
 
   const removeTest = (id: string) => {
-    const next = tests.filter(t => t.id !== id);
-    next.forEach((e, i) => (e.label = `Test ${i + 1}`));
-    setTests(next);
-    if (activeId === id) setActiveId(next[0]?.id ?? null); // stay on this page
-  };
+  const indexToRemove = tests.findIndex(t => t.id === id);
+  if (indexToRemove === -1) return; 
+
+  const next = tests.filter(t => t.id !== id);
+
+  next.forEach((e, i) => (e.label = `Test ${i + 1}`));
+
+  setTests(next);
+
+  if (activeId === id) {
+    let newActiveId: string | null = null;
+    
+    if (indexToRemove > 0) {
+      newActiveId = next[indexToRemove - 1].id;
+    } else {
+      newActiveId = next[0]?.id ?? null;
+    }
+    
+    setActiveId(newActiveId);
+  }
+};
+
 
   // update + auto-recalc in one shot (prevents extra rerenders/loops)
   const updatePayload = <K extends keyof AdequacyData>(id: string, key: K, value: AdequacyData[K]) => {

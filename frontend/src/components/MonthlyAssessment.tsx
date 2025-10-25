@@ -13,6 +13,7 @@ interface MonthlyAssessmentProps {
 }
 
 interface AssessmentData {
+  capdPrescription: string;
   id: string;
   date: string;
   levelOfDependency: string;
@@ -30,6 +31,7 @@ interface AssessmentData {
   capdPrescriptionAPDPlan: boolean;
   handWashingTechnique: boolean;
   catheterComponents: string;
+  catheterComponentsInOrder: boolean; // Added this property
 }
 
 const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
@@ -53,7 +55,9 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
       erythropoietin: "",
       capdPrescriptionAPDPlan: false,
       handWashingTechnique: false,
-      catheterComponents: ""
+      catheterComponents: "",
+      capdPrescription: "",
+      catheterComponentsInOrder: false, // Added default value
     };
     setAssessments(prev => [...prev, newAssessment]);
   };
@@ -295,60 +299,64 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                           <CardTitle className="text-lg">Technical Assessment</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <div className="space-y-3">            
+                          
+                          {/* --- 1. Catheter Components in Order --- */}
+                          <div className="space-y-3">
                             <Label>Catheter Components in Order</Label>
                             <RadioGroup
-                              value={assessment.handWashingTechnique ? "yes" : "no"}
-                              onValueChange={(value) => updateAssessment(assessment.id, 'handWashingTechnique', value === "yes")}
+                              // This group controls 'catheterComponentsInOrder'
+                              value={assessment.catheterComponentsInOrder ? "yes" : "no"}
+                              onValueChange={(value) => updateAssessment(assessment.id, 'catheterComponentsInOrder', value === "yes")}
                             >
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="yes" id={`handwash-yes-${assessment.id}`} />
-                                <Label htmlFor={`handwash-yes-${assessment.id}`}>Yes</Label>
+                                <RadioGroupItem value="yes" id={`components-yes-${assessment.id}`} />
+                                <Label htmlFor={`components-yes-${assessment.id}`}>Yes</Label>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="no" id={`handwash-no-${assessment.id}`} />
-                                <Label htmlFor={`handwash-no-${assessment.id}`}>No</Label>
+                                <RadioGroupItem value="no" id={`components-no-${assessment.id}`} />
+                                <Label htmlFor={`components-no-${assessment.id}`}>No</Label>
                               </div>
                             </RadioGroup>
                           </div>
 
+                          {/* --- 2. Hand Washing Technique --- */}
                           <div className="space-y-3">
                             <Label>Hand Washing Technique</Label>
                             <RadioGroup
-                              value={assessment.catheterComponents}
-                              onValueChange={(value) => updateAssessment(assessment.id, 'catheterComponents', value)}
+                              // This group correctly controls 'handWashingTechnique'
+                              value={assessment.handWashingTechnique ? "competent" : "not-competent"}
+                              onValueChange={(value) => updateAssessment(assessment.id, 'handWashingTechnique', value === "competent")}
                             >
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="competent" id={`catheter-competent-${assessment.id}`} />
-                                <Label htmlFor={`catheter-competent-${assessment.id}`}>Competent</Label>
+                                <RadioGroupItem value="competent" id={`handwash-competent-${assessment.id}`} />
+                                <Label htmlFor={`handwash-competent-${assessment.id}`}>Competent</Label>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="not-competent" id={`catheter-not-competent-${assessment.id}`} />
-                                <Label htmlFor={`catheter-not-competent-${assessment.id}`}>Not Competent</Label>
+                                <RadioGroupItem value="not-competent" id={`handwash-not-competent-${assessment.id}`} />
+                                <Label htmlFor={`handwash-not-competent-${assessment.id}`}>Not Competent</Label>
                               </div>
-                           </RadioGroup>
+                            </RadioGroup>
                           </div>
-                           
+
+                          {/* --- 3. CAPD Prescription --- */}
                           <div className="space-y-3">
-                           <Label>CAPD Prescription</Label>
+                            <Label>CAPD Prescription</Label>
                             <RadioGroup
-                              value={assessment.catheterComponents}
-                              onValueChange={(value) => updateAssessment(assessment.id, 'catheterComponents', value)}
+                              // This group correctly controls 'capdPrescription'
+                              value={assessment.capdPrescription}
+                              onValueChange={(value) => updateAssessment(assessment.id, 'capdPrescription', value)}
                             >
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="com" id={`catheter-compet-${assessment.id}`} />
-                                <Label htmlFor={`catheter-competent-${assessment.id}`}>1.5x</Label>
+                                <RadioGroupItem value="1.5x" id={`capd-1.5x-${assessment.id}`} />
+                                <Label htmlFor={`capd-1.5x-${assessment.id}`}>1.5x</Label>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="not-compe" id={`catheter-not-compet-${assessment.id}`} />
-                                <Label htmlFor={`catheter-not-competent-${assessment.id}`}>2.5x</Label>
+                                <RadioGroupItem value="2.5x" id={`capd-2.5x-${assessment.id}`} />
+                                <Label htmlFor={`capd-2.5x-${assessment.id}`}>2.5x</Label>
                               </div>
-                           </RadioGroup>
+                            </RadioGroup>
                           </div>
-                           
 
-
-                          
                         </CardContent>
                       </Card>
                     </CardContent>
@@ -373,3 +381,4 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
 };
 
 export default MonthlyAssessment;
+
