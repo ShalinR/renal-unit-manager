@@ -81,16 +81,36 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   const [searchingDonor, setSearchingDonor] = useState(false);
   const [viewMode, setViewMode] = useState<boolean>(false); // NEW: View mode state
   const { getAvailableDonors } = useDonorContext();
+  const [assignedDonor, setAssignedDonor] = useState<Donor | null>(null);
+  const {
+    donors,
+    fetchDonors,
+    setSelectedDonor: setContextSelectedDonor,
+  } = useDonorContext();
 
   const [transfusions, setTransfusions] = useState<
     { date: string; indication: string; volume: string }[]
   >([{ date: "", indication: "", volume: "" }]);
   const handleSelectDonor = (donor: Donor) => {
+    console.log("🔗 Selecting donor:", {
+      id: donor.id,
+      patientPhn: donor.patientPhn,
+      name: donor.name,
+      bloodGroup: donor.bloodGroup,
+    });
+
     handleRecipientFormChange("donorId", donor.id);
-    handleRecipientFormChange("donorPhn", donor.patientPhn || "");
-    handleRecipientFormChange("donorName", donor.name);
-    handleRecipientFormChange("donorBloodGroup", donor.bloodGroup);
+    handleRecipientFormChange("donorPhn", donor.patientPhn || ""); // ✅ FIXED
+    handleRecipientFormChange("donorName", donor.name || "Unknown Donor"); // ✅ FIXED
+    handleRecipientFormChange("donorBloodGroup", donor.bloodGroup || "");
     setDonorSearchResults(donor);
+
+    console.log("✅ Updated form with donor:", {
+      donorId: recipientForm.donorId,
+      donorPhn: recipientForm.donorPhn,
+      donorName: recipientForm.donorName,
+      donorBloodGroup: recipientForm.donorBloodGroup,
+    });
   };
   // ✅ NEW API service using the proper service
   const apiService = {
@@ -193,6 +213,33 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
       setStep(newStep);
     }
   };
+
+  useEffect(() => {
+    const loadAssignedDonor = async () => {
+      if (patient?.phn) {
+        try {
+          // Fetch donors for this specific recipient
+          await fetchDonors(patient.phn);
+
+          // Find the assigned donor for this recipient
+          const assigned = donors.find(
+            (donor) =>
+              donor.assignedRecipientPhn === patient.phn &&
+              donor.status === "assigned"
+          );
+
+          if (assigned) {
+            setAssignedDonor(assigned);
+            setContextSelectedDonor(assigned);
+          }
+        } catch (error) {
+          console.error("Failed to fetch assigned donor:", error);
+        }
+      }
+    };
+
+    loadAssignedDonor();
+  }, [patient?.phn, donors, fetchDonors, setContextSelectedDonor]);
   useEffect(() => {
     let isMounted = true;
     let hasLoaded = false;
@@ -230,9 +277,28 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         if (isMounted) {
           if (existingAssessment) {
             console.log("✅ Found existing assessment:", existingAssessment);
+
+            // IMPORTANT: Set the entire form with the existing assessment data
             setRecipientForm(existingAssessment);
             setIsEditing(true);
-            setViewMode(true); // NEW: Automatically set to view mode when data exists
+            setViewMode(true);
+
+            // Set donor search results if donor is assigned
+            if (existingAssessment.donorId) {
+              console.log("🔗 Found assigned donor:", {
+                donorId: existingAssessment.donorId,
+                donorName: existingAssessment.donorName,
+                donorPhn: existingAssessment.donorPhn,
+              });
+
+              // Set donor search results to show the selected donor
+              setDonorSearchResults({
+                id: existingAssessment.donorId,
+                name: existingAssessment.donorName,
+                patientPhn: existingAssessment.donorPhn,
+                bloodGroup: existingAssessment.donorBloodGroup,
+              });
+            }
 
             if (existingAssessment.transfusionHistory?.length > 0) {
               setTransfusions(existingAssessment.transfusionHistory);
@@ -241,7 +307,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
             }
           } else {
             setIsEditing(false);
-            setViewMode(false); // NEW: Set to edit mode for new assessments
+            setViewMode(false);
             console.log("📝 No existing assessment found, creating new one");
           }
         }
@@ -264,7 +330,6 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
       isMounted = false;
     };
   }, [patient?.phn]); // Only depend on patient.phn
-
   useEffect(() => {
     if (recipientForm.phn?.trim()) {
       setErrors((prev) => {
@@ -426,7 +491,6 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     e.preventDefault();
 
     if (viewMode) {
-      // If in view mode, switch to edit mode instead of submitting
       setViewMode(false);
       return;
     }
@@ -448,11 +512,24 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         transfusionHistory: transfusions.filter(
           (t) => t.date || t.indication || t.volume
         ),
+        // Ensure donor data is included
+        donorId: recipientForm.donorId,
+        donorPhn: recipientForm.donorPhn,
+        donorName: recipientForm.donorName,
+        donorBloodGroup: recipientForm.donorBloodGroup,
+        relationType: recipientForm.relationType,
+        relationToRecipient: recipientForm.relationToRecipient,
       };
 
       if (!assessmentData.phn) {
         throw new Error("PHN is required");
       }
+
+      console.log("💾 Saving assessment with donor data:", {
+        donorId: assessmentData.donorId,
+        donorName: assessmentData.donorName,
+        donorPhn: assessmentData.donorPhn,
+      });
 
       const savedAssessment = await recipientApiService.saveRecipientAssessment(
         assessmentData,
@@ -461,12 +538,24 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
       );
 
       if (savedAssessment) {
+        console.log("✅ Assessment saved successfully:", savedAssessment);
         setRecipientForm(savedAssessment);
+
+        // Update donor search results after save
+        if (savedAssessment.donorId) {
+          setDonorSearchResults({
+            id: savedAssessment.donorId,
+            name: savedAssessment.donorName,
+            patientPhn: savedAssessment.donorPhn,
+            bloodGroup: savedAssessment.donorBloodGroup,
+          });
+        }
+
         if (savedAssessment.transfusionHistory) {
           setTransfusions(savedAssessment.transfusionHistory);
         }
         setIsEditing(true);
-        setViewMode(true); // NEW: Switch to view mode after successful save
+        setViewMode(true);
         localStorage.removeItem("recipient-assessment-draft");
 
         alert(`Assessment ${isEditing ? "updated" : "created"} successfully!`);
@@ -1193,53 +1282,50 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
                   </div>
 
                   {/* Available Donors Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {getAvailableDonors().map((donor) => (
-                      <div
-                        key={donor.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                          recipientForm.donorId === donor.id
-                            ? "border-green-500 bg-green-50"
-                            : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
-                        }`}
-                        onClick={() => handleSelectDonor(donor)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">
-                              {donor.name}
-                            </h4>
-                            <div className="mt-2 space-y-1 text-sm">
-                              <p className="text-gray-600">
-                                <span className="font-medium">PHN:</span>{" "}
-                                {donor.patientPhn}
-                              </p>
-                              <p className="text-gray-600">
-                                <span className="font-medium">
-                                  Blood Group:
-                                </span>{" "}
-                                {donor.bloodGroup || "Not specified"}
-                              </p>
-                              <p className="text-gray-500">
-                                <span className="font-medium">Age:</span>{" "}
-                                {donor.age} • {donor.gender}
-                              </p>
-                              {donor.relationType && (
-                                <p className="text-gray-500">
-                                  <span className="font-medium">Relation:</span>{" "}
-                                  {donor.relationType}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {recipientForm.donorId === donor.id && (
-                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 ml-2" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {getAvailableDonors().map((donor) => (
+    <div
+      key={donor.id}
+      className={`p-4 border rounded-lg cursor-pointer transition-all ${
+        recipientForm.donorId === donor.id
+          ? "border-green-500 bg-green-50"
+          : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+      }`}
+      onClick={() => handleSelectDonor(donor)}
+    >
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <h4 className="font-semibold text-gray-900">
+            {donor.name || "Unnamed Donor"}
+          </h4>
+          <div className="mt-2 space-y-1 text-sm">
+            <p className="text-gray-600">
+              <span className="font-medium">PHN:</span>{" "}
+              {donor.patientPhn || "Not available"} {/* FIXED: Use patientPhn instead of phn */}
+            </p>
+            <p className="text-gray-600">
+              <span className="font-medium">Blood Group:</span>{" "}
+              {donor.bloodGroup || "Not specified"}
+            </p>
+            <p className="text-gray-500">
+              <span className="font-medium">Age:</span>{" "}
+              {donor.age || "Unknown"} • {donor.gender || "Unknown"}
+            </p>
+            {donor.relationType && (
+              <p className="text-gray-500">
+                <span className="font-medium">Relation:</span>{" "}
+                {donor.relationType}
+              </p>
+            )}
+          </div>
+        </div>
+        {recipientForm.donorId === donor.id && (
+          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 ml-2" />
+        )}
+      </div>
+    </div>
+  ))}
+</div>
                   {getAvailableDonors().length === 0 && (
                     <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
                       <User className="w-12 h-12 mx-auto mb-4 text-gray-300" />

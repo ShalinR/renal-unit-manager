@@ -10,19 +10,11 @@ const DonorAssessmentTabs: React.FC = () => {
   const [showDonorModal, setShowDonorModal] = useState(false);
   const [selectedDonor, setSelectedDonor] =
     useState<DonorAssessmentForm | null>(null);
-  const { donors, setSelectedDonor: setContextSelectedDonor } =
-    useDonorContext();
+  const { donors } = useDonorContext();
 
   useEffect(() => {
     console.log("Donors in DonorAssessmentTabs:", donors);
   }, [donors]);
-
-  const handleSelectDonor = (donor: Donor) => {
-    setContextSelectedDonor(donor);
-    alert(
-      `Donor ${donor.name} selected! You can now use this donor in recipient assessment.`
-    );
-  };
 
   const convertDonorToFormData = (donor: Donor): DonorAssessmentForm => {
     return {
@@ -245,15 +237,9 @@ const DonorAssessmentTabs: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button
                       onClick={() => handleViewDonor(donor)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
+                      className="text-blue-600 hover:text-blue-900"
                     >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleSelectDonor(donor)}
-                      className="text-green-600 hover:text-green-900"
-                    >
-                      Select
+                      View Details
                     </button>
                   </td>
                 </tr>

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { User, Heart, Activity, TestTube, Stethoscope } from 'lucide-react';
+import { User, Heart, Activity, TestTube, Stethoscope, ClipboardList, Pill, Users } from 'lucide-react';
 import { DonorAssessmentForm } from '../types/donor';
 
 interface DonorDetailsModalProps {
@@ -97,12 +97,68 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
     const allergies = [];
     if (donorData.allergyHistory?.foods) allergies.push('Foods');
     if (donorData.allergyHistory?.drugs) allergies.push('Drugs');
-    if (donorData.allergyHistory?.p) allergies.push('Penicillin');
+    if (donorData.allergyHistory?.p) allergies.push('Environmental');
     return allergies.length > 0 ? allergies.join(', ') : 'None';
+  };
+
+  const getOralExaminationList = () => {
+    const oralFindings = [];
+    if (donorData.examination?.oral?.dentalCaries) oralFindings.push('Dental Caries');
+    if (donorData.examination?.oral?.oralHygiene) oralFindings.push('Oral Hygiene Issues');
+    if (donorData.examination?.oral?.satisfactory) oralFindings.push('Satisfactory');
+    if (donorData.examination?.oral?.unsatisfactory) oralFindings.push('Unsatisfactory');
+    return oralFindings.length > 0 ? oralFindings.join(', ') : 'Normal';
+  };
+
+  const getLymphNodesList = () => {
+    const nodes = [];
+    if (donorData.examination?.lymphNodes?.cervical) nodes.push('Cervical');
+    if (donorData.examination?.lymphNodes?.axillary) nodes.push('Axillary');
+    if (donorData.examination?.lymphNodes?.inguinal) nodes.push('Inguinal');
+    return nodes.length > 0 ? `Enlarged: ${nodes.join(', ')}` : 'Normal';
+  };
+
+  const getRespiratoryFindings = () => {
+    const findings = [];
+    if (donorData.examination?.respiratory?.auscultation) findings.push('Abnormal Auscultation');
+    if (donorData.examination?.respiratory?.crepts) findings.push('Crepts');
+    if (donorData.examination?.respiratory?.ranchi) findings.push('Ronchi');
+    if (donorData.examination?.respiratory?.effusion) findings.push('Effusion');
+    return findings.length > 0 ? findings.join(', ') : 'Normal';
+  };
+
+  const getAbdominalFindings = () => {
+    const findings = [];
+    if (donorData.examination?.abdomen?.hepatomegaly) findings.push('Hepatomegaly');
+    if (donorData.examination?.abdomen?.splenomegaly) findings.push('Splenomegaly');
+    if (donorData.examination?.abdomen?.renalMasses) findings.push('Renal Masses');
+    if (donorData.examination?.abdomen?.freeFluid) findings.push('Free Fluid');
+    return findings.length > 0 ? findings.join(', ') : 'Normal';
+  };
+
+  const getNeurologicalFindings = () => {
+    const findings = [];
+    if (donorData.examination?.neurologicalExam?.cranialNerves) findings.push('Cranial Nerves Abnormal');
+    if (donorData.examination?.neurologicalExam?.upperLimb) findings.push('Upper Limb Abnormal');
+    if (donorData.examination?.neurologicalExam?.lowerLimb) findings.push('Lower Limb Abnormal');
+    if (donorData.examination?.neurologicalExam?.coordination) findings.push('Coordination Abnormal');
+    return findings.length > 0 ? findings.join(', ') : 'Normal';
+  };
+
+  const getHlaTyping = (type: 'donor' | 'recipient' | 'conclusion') => {
+    const hla = donorData.immunologicalDetails?.hlaTyping?.[type];
+    if (!hla) return 'N/A';
+    
+    return `A: ${hla.hlaA || '-'}, B: ${hla.hlaB || '-'}, C: ${hla.hlaC || '-'}, DR: ${hla.hlaDR || '-'}, DP: ${hla.hlaDP || '-'}, DQ: ${hla.hlaDQ || '-'}`;
   };
 
   const getStatusBadge = () => {
     return <Badge variant="default" className="bg-green-100 text-green-800">Available</Badge>;
+  };
+
+  // Helper to check if value exists and return it, otherwise return 'N/A'
+  const getValue = (value: any) => {
+    return value || 'N/A';
   };
 
   return (
@@ -112,7 +168,7 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              Donor Assessment Details - {donorData.name}
+              Donor Assessment Details - {getValue(donorData.name)}
             </div>
             {showAssignmentInfo && getStatusBadge()}
           </DialogTitle>
@@ -130,39 +186,39 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-600">Full Name</label>
-                <p className="text-gray-900">{donorData.name || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.name)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Age</label>
-                <p className="text-gray-900">{donorData.age || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.age)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Gender</label>
-                <p className="text-gray-900">{donorData.gender || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.gender)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Date of Birth</label>
-                <p className="text-gray-900">{donorData.dateOfBirth || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.dateOfBirth)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Occupation</label>
-                <p className="text-gray-900">{donorData.occupation || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.occupation)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">NIC Number</label>
-                <p className="text-gray-900">{donorData.nicNo || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.nicNo)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Contact Details</label>
-                <p className="text-gray-900">{donorData.contactDetails || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.contactDetails)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Email Address</label>
-                <p className="text-gray-900">{donorData.emailAddress || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.emailAddress)}</p>
               </div>
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-gray-600">Address</label>
-                <p className="text-gray-900">{donorData.address || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.address)}</p>
               </div>
             </CardContent>
           </Card>
@@ -178,51 +234,47 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-600">Relation to Recipient</label>
-                <p className="text-gray-900">{donorData.relationToRecipient || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.relationToRecipient)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Relation Type</label>
-                <p className="text-gray-900">{donorData.relationType || 'N/A'}</p>
+                <p className="text-gray-900">{getValue(donorData.relationType)}</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Medical Information */}
+          {/* Medical History */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="w-4 h-4" />
-                Medical Information
+                <Users className="w-4 h-4" />
+                Medical History
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
+                <label className="text-sm font-medium text-gray-600">Chief Complaints</label>
+                <p className="text-gray-900">{getValue(donorData.complains)}</p>
+              </div>
+              <div>
                 <label className="text-sm font-medium text-gray-600">Comorbidities</label>
                 <p className="text-gray-900">{getComorbiditiesList()}</p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Systemic Inquiry */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ClipboardList className="w-4 h-4" />
+                Systemic Inquiry
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Current Complaints</label>
-                <p className="text-gray-900">{donorData.complains || 'None'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Systemic Inquiry</label>
+                <label className="text-sm font-medium text-gray-600">Symptoms</label>
                 <p className="text-gray-900">{getSystemicInquiryList()}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Drug History</label>
-                <p className="text-gray-900">{donorData.drugHistory || 'None'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Allergy History</label>
-                <p className="text-gray-900">{getAllergyList()}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Family History</label>
-                <p className="text-gray-900">{getFamilyHistoryList()}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Substance Use</label>
-                <p className="text-gray-900">{getSubstanceUseList()}</p>
               </div>
               {donorData.systemicInquiry?.sexualHistory && (
                 <div>
@@ -233,6 +285,96 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
             </CardContent>
           </Card>
 
+          {/* Drug & Allergy History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Pill className="w-4 h-4" />
+                Drug & Allergy History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Current Medications</label>
+                <p className="text-gray-900">{getValue(donorData.drugHistory)}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Allergy History</label>
+                <p className="text-gray-900">{getAllergyList()}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Family History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Heart className="w-4 h-4" />
+                Family History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Family Medical History</label>
+                <p className="text-gray-900">{getFamilyHistoryList()}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Substance Use */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Activity className="w-4 h-4" />
+                Substance Use
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Substance Use History</label>
+                <p className="text-gray-900">{getSubstanceUseList()}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Social History */}
+          {donorData.socialHistory && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <User className="w-4 h-4" />
+                  Social History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {donorData.socialHistory.spouseDetails && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Spouse Details</label>
+                    <p className="text-gray-900">{donorData.socialHistory.spouseDetails}</p>
+                  </div>
+                )}
+                {donorData.socialHistory.childrenDetails && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Children Details</label>
+                    <p className="text-gray-900">{donorData.socialHistory.childrenDetails}</p>
+                  </div>
+                )}
+                {donorData.socialHistory.income && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Monthly Income</label>
+                    <p className="text-gray-900">{donorData.socialHistory.income}</p>
+                  </div>
+                )}
+                {donorData.socialHistory.other && (
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium text-gray-600">Other Social Information</label>
+                    <p className="text-gray-900">{donorData.socialHistory.other}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Physical Examination */}
           <Card>
             <CardHeader>
@@ -241,78 +383,144 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
                 Physical Examination
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Height (cm)</label>
-                  <p className="text-gray-900">{donorData.examination?.height || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Weight (kg)</label>
-                  <p className="text-gray-900">{donorData.examination?.weight || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">BMI</label>
-                  <p className="text-gray-900">{donorData.examination?.bmi || 'N/A'}</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Pallor</label>
-                  <Badge variant={donorData.examination?.pallor ? 'destructive' : 'secondary'}>
-                    {donorData.examination?.pallor ? 'Present' : 'Absent'}
-                  </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Icterus</label>
-                  <Badge variant={donorData.examination?.icterus ? 'destructive' : 'secondary'}>
-                    {donorData.examination?.icterus ? 'Present' : 'Absent'}
-                  </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Clubbing</label>
-                  <Badge variant={donorData.examination?.clubbing ? 'destructive' : 'secondary'}>
-                    {donorData.examination?.clubbing ? 'Present' : 'Absent'}
-                  </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Ankle Edema</label>
-                  <Badge variant={donorData.examination?.ankleOedema ? 'destructive' : 'secondary'}>
-                    {donorData.examination?.ankleOedema ? 'Present' : 'Absent'}
-                  </Badge>
+            <CardContent className="space-y-6">
+              {/* Anthropometric Measurements */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Anthropometric Measurements</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Height (cm)</label>
+                    <p className="text-gray-900">{getValue(donorData.examination?.height)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Weight (kg)</label>
+                    <p className="text-gray-900">{getValue(donorData.examination?.weight)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">BMI</label>
+                    <p className="text-gray-900">{getValue(donorData.examination?.bmi)}</p>
+                  </div>
                 </div>
               </div>
 
               <Separator />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Blood Pressure</label>
-                  <p className="text-gray-900">{donorData.examination?.cvs?.bp || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Pulse Rate</label>
-                  <p className="text-gray-900">{donorData.examination?.cvs?.pr || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Respiratory Rate</label>
-                  <p className="text-gray-900">{donorData.examination?.respiratory?.rr || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">SpO2</label>
-                  <p className="text-gray-900">{donorData.examination?.respiratory?.spo2 || 'N/A'}</p>
+              {/* General Examination */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">General Examination</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Pallor</label>
+                    <Badge variant={donorData.examination?.pallor ? 'destructive' : 'secondary'}>
+                      {donorData.examination?.pallor ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Icterus</label>
+                    <Badge variant={donorData.examination?.icterus ? 'destructive' : 'secondary'}>
+                      {donorData.examination?.icterus ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Clubbing</label>
+                    <Badge variant={donorData.examination?.clubbing ? 'destructive' : 'secondary'}>
+                      {donorData.examination?.clubbing ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Ankle Edema</label>
+                    <Badge variant={donorData.examination?.ankleOedema ? 'destructive' : 'secondary'}>
+                      {donorData.examination?.ankleOedema ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
+              <Separator />
+
+              {/* Oral Examination */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Oral Examination</h4>
+                <p className="text-gray-900">{getOralExaminationList()}</p>
+              </div>
+
+              <Separator />
+
+              {/* Lymph Nodes */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Lymph Nodes</h4>
+                <p className="text-gray-900">{getLymphNodesList()}</p>
+              </div>
+
+              <Separator />
+
+              {/* Cardiovascular System */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Cardiovascular System (CVS)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Blood Pressure</label>
+                    <p className="text-gray-900">{getValue(donorData.examination?.cvs?.bp)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Pulse Rate</label>
+                    <p className="text-gray-900">{getValue(donorData.examination?.cvs?.pr)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Murmurs</label>
+                    <Badge variant={donorData.examination?.cvs?.murmurs ? 'destructive' : 'secondary'}>
+                      {donorData.examination?.cvs?.murmurs ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Respiratory System */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Respiratory System</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Respiratory Rate</label>
+                    <p className="text-gray-900">{getValue(donorData.examination?.respiratory?.rr)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">SpO2</label>
+                    <p className="text-gray-900">{getValue(donorData.examination?.respiratory?.spo2)}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium text-gray-600">Findings</label>
+                    <p className="text-gray-900">{getRespiratoryFindings()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Abdominal Examination */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Abdominal Examination</h4>
+                <p className="text-gray-900">{getAbdominalFindings()}</p>
+              </div>
+
+              <Separator />
+
+              {/* Breast Examination */}
               {donorData.examination?.BrcostExamination && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Breast Examination</label>
+                  <h4 className="font-medium text-gray-700 mb-3">Breast Examination</h4>
                   <p className="text-gray-900">{donorData.examination.BrcostExamination}</p>
                 </div>
               )}
+
+              <Separator />
+
+              {/* Neurological Examination */}
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Neurological Examination</h4>
+                <p className="text-gray-900">{getNeurologicalFindings()}</p>
+              </div>
             </CardContent>
           </Card>
 
@@ -324,7 +532,8 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
                 Immunological Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Blood Group & Cross Match */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Blood Group</label>
@@ -337,33 +546,54 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">T-Cell Cross Match</label>
-                  <p className="text-gray-900">{donorData.immunologicalDetails?.crossMatch?.tCell || 'N/A'}</p>
+                  <p className="text-gray-900">{getValue(donorData.immunologicalDetails?.crossMatch?.tCell)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">B-Cell Cross Match</label>
-                  <p className="text-gray-900">{donorData.immunologicalDetails?.crossMatch?.bCell || 'N/A'}</p>
+                  <p className="text-gray-900">{getValue(donorData.immunologicalDetails?.crossMatch?.bCell)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Immunological Risk</label>
-                  <p className="text-gray-900">{donorData.immunologicalDetails?.immunologicalRisk || 'N/A'}</p>
+                  <p className="text-gray-900">{getValue(donorData.immunologicalDetails?.immunologicalRisk)}</p>
                 </div>
               </div>
 
               <Separator />
 
+              {/* HLA Typing */}
               <div>
-                <label className="text-sm font-medium text-gray-600">DSA (Donor Specific Antibodies)</label>
-                <p className="text-gray-900">{donorData.immunologicalDetails?.dsa || 'N/A'}</p>
+                <h4 className="font-medium text-gray-700 mb-3">HLA Typing</h4>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Donor HLA</label>
+                    <p className="text-gray-900">{getHlaTyping('donor')}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Recipient HLA</label>
+                    <p className="text-gray-900">{getHlaTyping('recipient')}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Conclusion</label>
+                    <p className="text-gray-900">{getHlaTyping('conclusion')}</p>
+                  </div>
+                </div>
               </div>
 
+              <Separator />
+
+              {/* PRA & DSA */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">PRA Pre-transplant</label>
-                  <p className="text-gray-900">{donorData.immunologicalDetails?.pra?.pre || 'N/A'}</p>
+                  <p className="text-gray-900">{getValue(donorData.immunologicalDetails?.pra?.pre)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">PRA Post-transplant</label>
-                  <p className="text-gray-900">{donorData.immunologicalDetails?.pra?.post || 'N/A'}</p>
+                  <p className="text-gray-900">{getValue(donorData.immunologicalDetails?.pra?.post)}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-600">DSA (Donor Specific Antibodies)</label>
+                  <p className="text-gray-900">{getValue(donorData.immunologicalDetails?.dsa)}</p>
                 </div>
               </div>
             </CardContent>
