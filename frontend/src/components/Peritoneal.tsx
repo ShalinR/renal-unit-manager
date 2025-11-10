@@ -21,6 +21,8 @@ interface CAPDData {
   catheterInsertionDate: string;
   insertionDoneBy: string;
   insertionPlace: string;
+  technique: string;
+  designation: string;
   firstFlushing: string;
   secondFlushing: string;
   thirdFlushing: string;
@@ -35,9 +37,8 @@ interface CAPDData {
     second: { date: string; data: any };
     third: { date: string; data: any };
   };
-  peritonitisHistory: PeritonitisEpisode[];
   exitSiteInfections: ExitSiteEpisode[];
-  tunnelInfections: TunnelEpisode[]; // persisted here
+  tunnelInfections: TunnelEpisode[];
 }
 
 const STORAGE_KEY = "capdSummary";
@@ -45,15 +46,64 @@ const STORAGE_KEY = "capdSummary";
 const Peritoneal = () => {
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
   const [capdData, setCapdData] = useState<CAPDData | null>(null);
+  const patientId = "patient-123"; // Match the patientId from CAPDSummary
+  const CAPD_API_URL = `http://localhost:8081/api/capd-summary/${patientId}`;
+  const REGISTRATION_API_URL = `http://localhost:8081/api/patient-registration/${patientId}`;
 
-  useEffect(() => {
+  // Fetch data from backend when viewing preview or loading component
+  const fetchData = async () => {
     try {
+      // Fetch both patient registration and CAPD summary
+      const [registrationResponse, capdResponse] = await Promise.all([
+        fetch(REGISTRATION_API_URL),
+        fetch(CAPD_API_URL)
+      ]);
+
+      const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
+      const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
+
+      // Combine both datasets
+      if (registrationData || capdSummaryData) {
+        const combinedData = {
+          ...registrationData,
+          ...capdSummaryData,
+        };
+        setCapdData(combinedData);
+        // Also save to localStorage for backward compatibility
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedData));
+        } catch (e) {
+          console.error("Failed to save to localStorage:", e);
+        }
+        return;
+      }
+
+      // Fallback to localStorage if no data from backend
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setCapdData(JSON.parse(raw));
-    } catch (e) {
-      console.error("Failed to load saved CAPD summary:", e);
+    } catch (error) {
+      console.error("Failed to fetch from backend:", error);
+      // Fallback to localStorage
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) setCapdData(JSON.parse(raw));
+      } catch (e) {
+        console.error("Failed to load from localStorage:", e);
+      }
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [CAPD_API_URL, REGISTRATION_API_URL]);
+
+  // Refresh data when switching to preview view
+  useEffect(() => {
+    if (activeView === "preview") {
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView]);
 
   const persistCAPD = (data: CAPDData) => {
     try {
@@ -64,43 +114,45 @@ const Peritoneal = () => {
     setCapdData(data);
   };
 
-  const handleCAPDSubmit = (data: CAPDData) => {
-    persistCAPD(data);
+  const handleCAPDSubmit = async (data: CAPDData) => {
+    // Refresh data from backend when going to preview to get the latest saved data
+    await fetchData();
     setActiveView("preview");
   };
 
-  // ---------- Complications View (Peritonitis + Exit-site + Tunnel all in tabs) ----------
+  // ---------- Complications View (Exit-site + Tunnel all in tabs) ----------
   const ComplicationsView = () => {
-    const [peritonitis, setPeritonitis] = useState<PeritonitisEpisode[]>(capdData?.peritonitisHistory ?? []);
-    const [exitSite, setExitSite] = useState<ExitSiteEpisode[]>(capdData?.exitSiteInfections ?? []);
-    const [tunnel, setTunnel] = useState<TunnelEpisode[]>(capdData?.tunnelInfections ?? []);
+    const [exitSite, setExitSite] = useState<ExitSiteEpisode[]>([]);
+    const [tunnel, setTunnel] = useState<TunnelEpisode[]>([]);
+    const [activeTab, setActiveTab] = useState<string>("exit-site");
 
-    const saveAll = () => {
+    // Auto-save to localStorage when data changes
+    useEffect(() => {
       const base: CAPDData =
         capdData ?? {
           counsellingDate: "",
           catheterInsertionDate: "",
           insertionDoneBy: "",
           insertionPlace: "",
+          technique: "",
+          designation: "",
           firstFlushing: "",
           secondFlushing: "",
           thirdFlushing: "",
           initiationDate: "",
           petResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
           adequacyResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
-          peritonitisHistory: [],
           exitSiteInfections: [],
           tunnelInfections: [],
         };
 
       const updated: CAPDData = {
         ...base,
-        peritonitisHistory: peritonitis,
         exitSiteInfections: exitSite,
         tunnelInfections: tunnel,
       };
       persistCAPD(updated);
-    };
+    }, [exitSite, tunnel]);
 
     return (
       <div className="space-y-8 max-w-6xl mx-auto">
@@ -109,22 +161,26 @@ const Peritoneal = () => {
             <AlertTriangle className="w-6 h-6 text-primary" />
           </div>
           <h2 className="text-3xl font-bold">Complications</h2>
-          <p className="text-muted-foreground">Peritonitis, Exit-site, and Tunnel infection tracking (synced with CAPD Summary)</p>
+          <p className="text-muted-foreground">Peritonitis, Exit-site and Tunnel infection tracking</p>
         </div>
 
-        {/* All three tabs handled inside InfectionTracking */}
+        {/* All tabs handled inside InfectionTracking */}
         <InfectionTracking
-          peritonitisHistory={peritonitis}
+          peritonitisHistory={[]}
           exitSiteInfections={exitSite}
-          tunnelInfections={tunnel}                 // ⬅️ NEW
-          onUpdatePeritonitis={setPeritonitis}
+          tunnelInfections={tunnel}
+          onUpdatePeritonitis={() => {}}
           onUpdateExitSite={setExitSite}
-          onUpdateTunnel={setTunnel}               // ⬅️ NEW
+          onUpdateTunnel={setTunnel}
+          onTabChange={setActiveTab}
+          showPeritonitis={true}
         />
 
-        <div className="flex justify-end gap-3">
-          <Button  variant="default"  onClick={() => setActiveView("dashboard")}>Back</Button>
-          <Button onClick={saveAll}>Save Complications</Button>
+        <div className="flex justify-between items-center gap-3">
+          <Button variant="default" onClick={() => setActiveView("dashboard")}>Back</Button>
+          <p className="text-sm text-muted-foreground">
+            Data is automatically saved. Go to Preview page to save to database.
+          </p>
         </div>
       </div>
     );

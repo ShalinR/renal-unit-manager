@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Calendar, TrendingUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Calendar, TrendingUp, Eye, Trash2, RefreshCw } from "lucide-react";
 
 interface MonthlyAssessmentProps {
   onComplete: () => void;
@@ -31,11 +33,60 @@ interface AssessmentData {
   capdPrescriptionAPDPlan: boolean;
   handWashingTechnique: boolean;
   catheterComponents: string;
-  catheterComponentsInOrder: boolean; // Added this property
+  catheterComponentsInOrder: boolean;
+}
+
+interface SavedAssessment {
+  id: number;
+  patientId: string;
+  assessmentDate: string;
+  exitSite: string;
+  residualUrineOutput: string;
+  pdBalance: string;
+  bodyWeight: string;
+  bloodPressure: string;
+  numberOfExchanges: string;
+  totalBalance: string;
+  shortnessOfBreath: boolean;
+  edema: boolean;
+  ivIron: string;
+  erythropoietin: string;
+  capdPrescriptionAPDPlan: boolean;
+  handWashingTechnique: boolean;
+  capdPrescription: string;
+  catheterComponentsInOrder: boolean;
 }
 
 const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
   const [assessments, setAssessments] = useState<AssessmentData[]>([]);
+  const [savedAssessments, setSavedAssessments] = useState<SavedAssessment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const patientId = "patient-123"; // Match the patientId pattern used in other components
+  const API_URL = `http://localhost:8081/api/monthly-assessment/${patientId}`;
+
+  // Fetch saved assessments on component mount
+  const fetchAssessments = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(API_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedAssessments(data);
+      } else {
+        console.error("Failed to fetch assessments");
+      }
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssessments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addAssessment = () => {
     const newAssessment: AssessmentData = {
@@ -57,7 +108,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
       handWashingTechnique: false,
       catheterComponents: "",
       capdPrescription: "",
-      catheterComponentsInOrder: false, // Added default value
+      catheterComponentsInOrder: false,
     };
     setAssessments(prev => [...prev, newAssessment]);
   };
@@ -74,10 +125,81 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
     setAssessments(prev => prev.filter(assessment => assessment.id !== id));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Monthly Assessments:", assessments);
-    onComplete();
+    setSaving(true);
+    
+    try {
+      // Save each assessment to the backend
+      const savePromises = assessments.map(async (assessment) => {
+        const assessmentDto = {
+          assessmentDate: assessment.date,
+          exitSite: assessment.exitSite,
+          residualUrineOutput: assessment.residualUrineOutput,
+          pdBalance: assessment.pdBalance,
+          bodyWeight: assessment.bodyWeight,
+          bloodPressure: assessment.bloodPressure,
+          numberOfExchanges: assessment.numberOfExchanges,
+          totalBalance: assessment.totalBalance,
+          shortnessOfBreath: assessment.shortnessOfBreath,
+          edema: assessment.edema,
+          ivIron: assessment.ivIron,
+          erythropoietin: assessment.erythropoietin,
+          capdPrescriptionAPDPlan: assessment.capdPrescriptionAPDPlan,
+          handWashingTechnique: assessment.handWashingTechnique,
+          capdPrescription: assessment.capdPrescription,
+          catheterComponentsInOrder: assessment.catheterComponentsInOrder,
+        };
+
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(assessmentDto),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to save assessment: ${response.statusText}`);
+        }
+
+        return response.json();
+      });
+
+      await Promise.all(savePromises);
+      
+      // Clear the form and refresh the saved assessments list
+      setAssessments([]);
+      await fetchAssessments();
+      alert("Monthly assessments saved successfully!");
+    } catch (error) {
+      console.error("Error saving assessments:", error);
+      alert("Failed to save assessments. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAssessment = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this assessment?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await fetchAssessments();
+        alert("Assessment deleted successfully!");
+      } else {
+        throw new Error("Failed to delete assessment");
+      }
+    } catch (error) {
+      console.error("Error deleting assessment:", error);
+      alert("Failed to delete assessment. Please try again.");
+    }
   };
 
   return (
@@ -90,7 +212,14 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
         <p className="text-muted-foreground">Regular monthly evaluation of patient progress and condition</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <Tabs defaultValue="enter" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="enter">Enter Assessment</TabsTrigger>
+          <TabsTrigger value="view">View Assessments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="enter">
+          <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -367,15 +496,211 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onComplete}>
-            Cancel
-          </Button>
-          <Button type="submit">
-            Save Monthly Assessments
-          </Button>
-        </div>
-      </form>
+            <div className="flex justify-end space-x-4">
+              <Button type="button" variant="outline" onClick={onComplete}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save Monthly Assessments"}
+              </Button>
+            </div>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="view">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-primary" />
+                  Saved Monthly Assessments
+                </CardTitle>
+                <Button type="button" variant="outline" size="sm" onClick={fetchAssessments}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <RefreshCw className="w-12 h-12 mx-auto mb-4 opacity-50 animate-spin" />
+                  <p>Loading assessments...</p>
+                </div>
+              ) : savedAssessments.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No monthly assessments found.</p>
+                  <p className="text-sm">Enter assessments in the "Enter Assessment" tab to get started.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Body Weight (kg)</TableHead>
+                          <TableHead>Blood Pressure</TableHead>
+                          <TableHead>Exit Site</TableHead>
+                          <TableHead>PD Balance</TableHead>
+                          <TableHead>Exchanges</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {savedAssessments.map((assessment) => (
+                          <TableRow key={assessment.id}>
+                            <TableCell className="font-medium">
+                              {assessment.assessmentDate || "N/A"}
+                            </TableCell>
+                            <TableCell>{assessment.bodyWeight || "N/A"}</TableCell>
+                            <TableCell>{assessment.bloodPressure || "N/A"}</TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {assessment.exitSite || "N/A"}
+                            </TableCell>
+                            <TableCell>{assessment.pdBalance || "N/A"}</TableCell>
+                            <TableCell>{assessment.numberOfExchanges || "N/A"}</TableCell>
+                            <TableCell>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAssessment(assessment.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Detailed view cards */}
+                  <div className="space-y-4 mt-6">
+                    <h3 className="text-lg font-semibold">Detailed Assessment Records</h3>
+                    {savedAssessments.map((assessment) => (
+                      <Card key={assessment.id} className="border-primary/20">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <Badge>Assessment Date: {assessment.assessmentDate || "N/A"}</Badge>
+                            </CardTitle>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteAssessment(assessment.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Exit Site Condition</Label>
+                              <p className="text-sm text-muted-foreground">{assessment.exitSite || "N/A"}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Residual Urine Output (mL)</Label>
+                              <p className="text-sm text-muted-foreground">{assessment.residualUrineOutput || "N/A"}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">PD Balance</Label>
+                              <p className="text-sm text-muted-foreground">{assessment.pdBalance || "N/A"}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Body Weight (kg)</Label>
+                              <p className="text-sm text-muted-foreground">{assessment.bodyWeight || "N/A"}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Blood Pressure (mmHg)</Label>
+                              <p className="text-sm text-muted-foreground">{assessment.bloodPressure || "N/A"}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Number of Exchanges</Label>
+                              <p className="text-sm text-muted-foreground">{assessment.numberOfExchanges || "N/A"}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-semibold">Total Balance (mL)</Label>
+                              <p className="text-sm text-muted-foreground">{assessment.totalBalance || "N/A"}</p>
+                            </div>
+                          </div>
+
+                          <Card className="bg-muted/20">
+                            <CardHeader>
+                              <CardTitle className="text-base">Volume Status & Symptoms</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox checked={assessment.shortnessOfBreath || false} disabled />
+                                <Label>Shortness of breath (SOB)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox checked={assessment.edema || false} disabled />
+                                <Label>Edema</Label>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-muted/20">
+                            <CardHeader>
+                              <CardTitle className="text-base">Medications & Treatment</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <div>
+                                <Label className="text-sm font-semibold">IV Iron</Label>
+                                <p className="text-sm text-muted-foreground">{assessment.ivIron || "N/A"}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-semibold">Erythropoietin</Label>
+                                <p className="text-sm text-muted-foreground">{assessment.erythropoietin || "N/A"}</p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox checked={assessment.capdPrescriptionAPDPlan || false} disabled />
+                                <Label>CAPD Prescription / APD Plan</Label>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-muted/20">
+                            <CardHeader>
+                              <CardTitle className="text-base">Technical Assessment</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <div>
+                                <Label className="text-sm font-semibold">Catheter Components in Order</Label>
+                                <p className="text-sm text-muted-foreground">
+                                  {assessment.catheterComponentsInOrder ? "Yes" : "No"}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-semibold">Hand Washing Technique</Label>
+                                <p className="text-sm text-muted-foreground">
+                                  {assessment.handWashingTechnique ? "Competent" : "Not Competent"}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-semibold">CAPD Prescription</Label>
+                                <p className="text-sm text-muted-foreground">{assessment.capdPrescription || "N/A"}</p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -58,7 +58,7 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Minimal validation focusing on required core fields
@@ -71,12 +71,50 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
       return;
     }
 
-    // Optional: persist locally so CAPDSummary/DataPreview can pick it up
-    try {
-      localStorage.setItem("patientRegistration", JSON.stringify(formData));
-    } catch {}
+    const patientId = "patient-123"; // Match the patientId from other components
+    const API_URL = `http://localhost:8081/api/patient-registration/${patientId}`;
 
-    onComplete();
+    try {
+      // Prepare patient registration data
+      const registrationData = {
+        counsellingDate: formData.counsellingDate,
+        catheterInsertionDate: formData.catheterInsertionDate,
+        insertionDoneBy: formData.insertionDoneBy,
+        insertionPlace: formData.insertionPlace,
+        technique: formData.Technique,
+        designation: formData.Designation,
+        firstFlushing: formData.firstFlushing,
+        secondFlushing: formData.secondFlushing,
+        thirdFlushing: formData.thirdFlushing,
+        initiationDate: formData.initiationDate,
+      };
+
+      // Save to backend
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(registrationData),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Patient registration data saved successfully.",
+        });
+        onComplete();
+      } else {
+        throw new Error("Failed to save");
+      }
+    } catch (error) {
+      console.error("Error saving patient registration:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save patient registration data.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

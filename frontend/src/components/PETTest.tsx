@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TestTube, Calculator, Plus, Trash2 } from "lucide-react";
+import { TestTube, Plus, Trash2 } from "lucide-react";
 
 interface PETTestProps {
   petResults: {
@@ -81,6 +81,35 @@ const classifyGlucose = (dd0: number): string => {
   return "";
 };
 
+// Helper function to calculate ratios from measurements
+const calculateRatiosFromMeasurements = (measurements: PETData["measurements"]): {
+  dpCreatinine: string;
+  dd0Glucose: string;
+  creatinineClassification: string;
+  glucoseClassification: string;
+} => {
+  const t0Serum = parseFloat(measurements.t0.serumCreatinine);
+  const t4DialC = parseFloat(measurements.t4.dialysateCreatinine);
+  const t0DialG = parseFloat(measurements.t0.dialysateGlucose);
+  const t4DialG = parseFloat(measurements.t4.dialysateGlucose);
+
+  const dp = Number.isFinite(t0Serum) && t0Serum > 0 && Number.isFinite(t4DialC) ? t4DialC / t0Serum : NaN;
+  const dd0 = Number.isFinite(t0DialG) && t0DialG > 0 && Number.isFinite(t4DialG) ? t4DialG / t0DialG : NaN;
+
+  const dpStr = Number.isFinite(dp) ? dp.toFixed(3) : "";
+  const dd0Str = Number.isFinite(dd0) ? dd0.toFixed(3) : "";
+
+  const crClass = Number.isFinite(dp) ? classifyCreatinine(dp) : "";
+  const glClass = Number.isFinite(dd0) ? classifyGlucose(dd0) : "";
+
+  return {
+    dpCreatinine: dpStr,
+    dd0Glucose: dd0Str,
+    creatinineClassification: crClass,
+    glucoseClassification: glClass,
+  };
+};
+
 // Seed from legacy props (if prior data exists)
 function fromPropsToEntries(petResults: PETTestProps["petResults"]): PETEntry[] {
   const seeds = [petResults.first, petResults.second, petResults.third].filter(Boolean);
@@ -91,6 +120,16 @@ function fromPropsToEntries(petResults: PETTestProps["petResults"]): PETEntry[] 
       seed.data && typeof seed.data === "object"
         ? { ...emptyPET(), ...seed.data } // keep old payload if present
         : { ...emptyPET(), date: seed.date || "" };
+    
+    // Recalculate ratios if measurements exist (to ensure they're up to date)
+    if (payload.measurements) {
+      const calculated = calculateRatiosFromMeasurements(payload.measurements);
+      payload.dpCreatinine = calculated.dpCreatinine;
+      payload.dd0Glucose = calculated.dd0Glucose;
+      payload.creatinineClassification = calculated.creatinineClassification;
+      payload.glucoseClassification = calculated.glucoseClassification;
+    }
+    
     const hasAny =
       payload.date ||
       Object.values(payload.measurements).some(
@@ -164,6 +203,8 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
     );
   };
 
+  // ---------- Auto-calculate ratios from measurements ----------
+
   const updateMeasurement = (
     id: string,
     timeKey: keyof PETData["measurements"],
@@ -171,61 +212,30 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
     value: string
   ) => {
     setTests(prev =>
-      prev.map(t =>
-        t.id === id
-          ? {
-              ...t,
-              payload: {
-                ...t.payload,
-                measurements: {
-                  ...t.payload.measurements,
-                  [timeKey]: {
-                    ...t.payload.measurements[timeKey],
-                    [field]: value,
-                  },
-                },
-              },
-            }
-          : t
-      )
-    );
-  };
+      prev.map(t => {
+        if (t.id !== id) return t;
+        
+        // Update the measurement
+        const updatedMeasurements = {
+          ...t.payload.measurements,
+          [timeKey]: {
+            ...t.payload.measurements[timeKey],
+            [field]: value,
+          },
+        };
 
-  // ---------- Calculate + Auto-classify ----------
-  const calculateRatios = (id: string) => {
-    const t = tests.find(x => x.id === id);
-    if (!t) return;
-    const m = t.payload.measurements;
+        // Auto-calculate ratios from updated measurements
+        const calculated = calculateRatiosFromMeasurements(updatedMeasurements);
 
-    const t0Serum = parseFloat(m.t0.serumCreatinine);
-    const t4DialC = parseFloat(m.t4.dialysateCreatinine);
-    const t0DialG = parseFloat(m.t0.dialysateGlucose);
-    const t4DialG = parseFloat(m.t4.dialysateGlucose);
-
-    const dp = Number.isFinite(t0Serum) && t0Serum > 0 && Number.isFinite(t4DialC) ? t4DialC / t0Serum : NaN;
-    const dd0 = Number.isFinite(t0DialG) && t0DialG > 0 && Number.isFinite(t4DialG) ? t4DialG / t0DialG : NaN;
-
-    const dpStr = Number.isFinite(dp) ? dp.toFixed(3) : "";
-    const dd0Str = Number.isFinite(dd0) ? dd0.toFixed(3) : "";
-
-    const crClass = Number.isFinite(dp) ? classifyCreatinine(dp) : "";
-    const glClass = Number.isFinite(dd0) ? classifyGlucose(dd0) : "";
-
-    setTests(prev =>
-      prev.map(x =>
-        x.id === id
-          ? {
-              ...x,
-              payload: {
-                ...x.payload,
-                dpCreatinine: dpStr,
-                dd0Glucose: dd0Str,
-                creatinineClassification: crClass,
-                glucoseClassification: glClass,
-              },
-            }
-          : x
-      )
+        return {
+          ...t,
+          payload: {
+            ...t.payload,
+            measurements: updatedMeasurements,
+            ...calculated,
+          },
+        };
+      })
     );
   };
 
@@ -245,10 +255,10 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
         </Button>
       </div>
 
-      {/* Test selector chips */}
+      {/* Selector chips */}
       {tests.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {tests.map((t) => (
+          {tests.map(t => (
             <Button
               key={t.id}
               type="button"
@@ -268,8 +278,8 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
         </Card>
       )}
 
-      {/* Active test form */}
-      {active && (
+      {/* Active form */}
+      {active ? (
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -343,11 +353,6 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
               </table>
             </div>
 
-            <Button type="button" onClick={() => calculateRatios(active.id)} className="w-full" variant="default">
-              <Calculator className="w-4 h-4 mr-2" />
-              Calculate Ratios
-            </Button>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
@@ -397,6 +402,12 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
                 </CardContent>
               </Card>
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <p>No test is currently active. Add a new test to get started.</p>
           </CardContent>
         </Card>
       )}

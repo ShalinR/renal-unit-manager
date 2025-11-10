@@ -131,7 +131,10 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
     return seeded.map((e) => ({ ...e, payload: computeDerived(e.payload) }));
   });
 
-  const [activeId, setActiveId] = useState<string | null>(() => tests[0]?.id ?? null);
+  const [activeId, setActiveId] = useState<string | null>(() => {
+    const initialTests = fromPropsToEntries(adequacyResults).map((e) => ({ ...e, payload: computeDerived(e.payload) }));
+    return initialTests[0]?.id ?? null;
+  });
 
   // keep parent synced
   useEffect(() => {
@@ -225,7 +228,7 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
       )}
 
       {/* Active form */}
-      {active && (
+      {active ? (
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -393,6 +396,12 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
                 </div>
               </CardContent>
             </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <p>No test is currently active. Add a new test to get started.</p>
           </CardContent>
         </Card>
       )}

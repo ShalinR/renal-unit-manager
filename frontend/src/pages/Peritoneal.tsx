@@ -21,6 +21,8 @@ interface CAPDData {
   catheterInsertionDate: string;
   insertionDoneBy: string;
   insertionPlace: string;
+  technique: string;
+  designation: string;
   firstFlushing: string;
   secondFlushing: string;
   thirdFlushing: string;
@@ -74,14 +76,17 @@ const Peritoneal = () => {
     const [peritonitis, setPeritonitis] = useState<PeritonitisEpisode[]>(capdData?.peritonitisHistory ?? []);
     const [exitSite, setExitSite] = useState<ExitSiteEpisode[]>(capdData?.exitSiteInfections ?? []);
     const [tunnel, setTunnel] = useState<TunnelEpisode[]>(capdData?.tunnelInfections ?? []);
+    const [activeTab, setActiveTab] = useState<string>("peritonitis");
 
-    const saveAll = () => {
+    const savePeritonitis = () => {
       const base: CAPDData =
         capdData ?? {
           counsellingDate: "",
           catheterInsertionDate: "",
           insertionDoneBy: "",
           insertionPlace: "",
+          technique: "",
+          designation: "",
           firstFlushing: "",
           secondFlushing: "",
           thirdFlushing: "",
@@ -96,10 +101,71 @@ const Peritoneal = () => {
       const updated: CAPDData = {
         ...base,
         peritonitisHistory: peritonitis,
+        exitSiteInfections: base.exitSiteInfections,
+        tunnelInfections: base.tunnelInfections,
+      };
+      persistCAPD(updated);
+      alert("Peritonitis history saved successfully!");
+    };
+
+    const saveExitSite = () => {
+      const base: CAPDData =
+        capdData ?? {
+          counsellingDate: "",
+          catheterInsertionDate: "",
+          insertionDoneBy: "",
+          insertionPlace: "",
+          technique: "",
+          designation: "",
+          firstFlushing: "",
+          secondFlushing: "",
+          thirdFlushing: "",
+          initiationDate: "",
+          petResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
+          adequacyResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
+          peritonitisHistory: [],
+          exitSiteInfections: [],
+          tunnelInfections: [],
+        };
+
+      const updated: CAPDData = {
+        ...base,
+        peritonitisHistory: base.peritonitisHistory,
         exitSiteInfections: exitSite,
+        tunnelInfections: base.tunnelInfections,
+      };
+      persistCAPD(updated);
+      alert("Exit site infections saved successfully!");
+    };
+
+    const saveTunnel = () => {
+      const base: CAPDData =
+        capdData ?? {
+          counsellingDate: "",
+          catheterInsertionDate: "",
+          insertionDoneBy: "",
+          insertionPlace: "",
+          technique: "",
+          designation: "",
+          firstFlushing: "",
+          secondFlushing: "",
+          thirdFlushing: "",
+          initiationDate: "",
+          petResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
+          adequacyResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
+          peritonitisHistory: [],
+          exitSiteInfections: [],
+          tunnelInfections: [],
+        };
+
+      const updated: CAPDData = {
+        ...base,
+        peritonitisHistory: base.peritonitisHistory,
+        exitSiteInfections: base.exitSiteInfections,
         tunnelInfections: tunnel,
       };
       persistCAPD(updated);
+      alert("Tunnel infection history saved successfully!");
     };
 
     return (
@@ -120,11 +186,28 @@ const Peritoneal = () => {
           onUpdatePeritonitis={setPeritonitis}
           onUpdateExitSite={setExitSite}
           onUpdateTunnel={setTunnel}               // ⬅️ NEW
+          onTabChange={setActiveTab}                // ⬅️ NEW
         />
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-between items-center gap-3">
           <Button variant="default" onClick={() => setActiveView("dashboard")}>Back</Button>
-          <Button onClick={saveAll}>Save Complications</Button>
+          <div className="flex gap-3">
+            {activeTab === "peritonitis" && (
+              <Button onClick={savePeritonitis} variant="outline">
+                Save Peritonitis History
+              </Button>
+            )}
+            {activeTab === "exitsite" && (
+              <Button onClick={saveExitSite} variant="outline">
+                Save Exit Site Infections
+              </Button>
+            )}
+            {activeTab === "tunnel" && (
+              <Button onClick={saveTunnel} variant="outline">
+                Save Tunnel Infection History
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
