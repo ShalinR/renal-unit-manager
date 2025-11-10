@@ -4,29 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/CapdSummaryController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/CapdSummaryDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PetDataDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PetResultsDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PetTestEntryDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/TimePointMeasurementDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/CapdSummaryEntity.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/PatientP.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/CapdSummaryRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/CapdSummaryService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/CorsConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/CorsConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/AdequacyTest.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/AdequacyTest.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/CAPDSummary.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/CAPDSummary.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/DataPreview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/DataPreview.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/MonthlyAssessment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/MonthlyAssessment.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/PETTest.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/PETTest.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/PatientRegistration.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/PatientRegistration.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/Peritoneal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/Peritoneal.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
