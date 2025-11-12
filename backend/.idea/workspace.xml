@@ -4,7 +4,27 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="" />
+    <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/renal/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientRegistrationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientRegistrationController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/CapdSummaryDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/CapdSummaryDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PatientRegistrationDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PatientRegistrationDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/CapdSummaryEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/CapdSummaryEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/PatientRegistrationEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/PatientRegistrationEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/PatientRegistrationRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/PatientRegistrationRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/CapdSummaryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/CapdSummaryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientRegistrationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientRegistrationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_patient_registration_table.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../create_patient_registration_table.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/AdequacyTest.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/AdequacyTest.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/CAPDSummary.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/CAPDSummary.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/InfectionTracking.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/InfectionTracking.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/MonthlyAssessment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/MonthlyAssessment.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/PatientRegistration.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/PatientRegistration.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/Peritoneal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/Peritoneal.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -42,7 +62,7 @@
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;Spring Boot.RenalApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Haemo&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;D:/renal-unit-manager/backend&quot;,

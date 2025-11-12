@@ -25,3 +25,5 @@ public interface PatientRegistrationRepository extends JpaRepository<PatientRegi
 
 
 
+
+

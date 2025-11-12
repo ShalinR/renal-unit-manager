@@ -14,6 +14,8 @@ import { ScheduleAppointment } from '@/components/hemodialysis/ScheduleAppointme
 import { PatientSummary } from '@/components/hemodialysis/PatientSummary';
 import { WeeklyTimetable } from '@/components/hemodialysis/WeeklyTimetable';
 import { formatDateDisplay } from '@/lib/dateUtils';
+import { createHemodialysisRecord } from '@/services/hemodialysisApi';
+import { usePatientContext } from '@/context/PatientContext';
 
 interface HemodialysisPageProps {
   initialData?: HemodialysisRecord;
@@ -29,6 +31,7 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
   enableAutosave = false,
 }) => {
   const { toast } = useToast();
+  const { patient, globalPatient } = usePatientContext();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Set<string>>(new Set());
@@ -36,6 +39,11 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
   const [filledBy, setFilledBy] = useState('');
   const [activeTab, setActiveTab] = useState('form');
   const [showFloatingTimetable, setShowFloatingTimetable] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Get patient ID from context (use PHN or default)
+  const patientId = patient?.phn || globalPatient?.phn || '123456'; // Default to MRN shown in header
+  const patientName = patient?.name || globalPatient?.name || 'John Doe';
 
   // Form state
   const [formData, setFormData] = useState<HemodialysisRecord>(() => ({
@@ -187,7 +195,7 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
     validateForm();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!filledBy.trim()) {
       setTouched(prev => new Set(prev).add('filledBy'));
       setErrors(prev => ({ ...prev, filledBy: 'Please enter who filled out this form' }));
@@ -199,21 +207,49 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
       return;
     }
 
-    if (validateForm()) {
-      onSave?.(formData);
-      setHasUnsavedChanges(false);
-      toast({
-        title: 'Success',
-        description: 'Hemodialysis record submitted successfully',
-      });
-      setCurrentStep(0);
-      setFilledBy('');
-    } else {
+    if (!validateForm()) {
       toast({
         title: 'Validation Error',
         description: 'Please fix the errors before submitting',
         variant: 'destructive',
       });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Prepare data for API - convert to the format expected by backend
+      const recordToSave = {
+        sessionDate: formData.session.date,
+        prescription: formData.prescription,
+        vascularAccess: formData.vascularAccess,
+        session: formData.session,
+        otherNotes: formData.otherNotes,
+        filledBy: filledBy,
+      };
+
+      // Save to backend
+      const savedRecord = await createHemodialysisRecord(patientId, recordToSave);
+      
+      // Also call the optional onSave callback if provided
+      onSave?.(formData);
+      
+      setHasUnsavedChanges(false);
+      toast({
+        title: 'Success',
+        description: 'Hemodialysis record saved successfully',
+      });
+      setCurrentStep(0);
+      setFilledBy('');
+    } catch (error: any) {
+      console.error('Error saving hemodialysis record:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save hemodialysis record',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -270,7 +306,7 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
             <div>
               <h1 className="text-2xl font-bold text-foreground">Hemodialysis Management</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Patient: John Doe • MRN: 123456 • Last Session: {formatDateDisplay('2025-09-28')}
+                Patient: {patientName} • {patient?.phn ? `PHN: ${patient.phn}` : `MRN: ${patientId}`}
               </p>
             </div>
             <div className="flex gap-2">
@@ -390,10 +426,10 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
                 <Button
                   onClick={handleSubmit}
                   className="bg-primary hover:bg-primary/90"
-                  disabled={!filledBy.trim()}
+                  disabled={!filledBy.trim() || isSaving}
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Submit Record
+                  {isSaving ? 'Saving...' : 'Submit Record'}
                 </Button>
               )}
             </div>

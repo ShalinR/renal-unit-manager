@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, AlertCircle, Stethoscope } from "lucide-react";
+import { usePatientContext } from "@/context/PatientContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface InfectionTrackingProps {
   peritonitisHistory: PeritonitisEpisode[];
@@ -78,17 +80,18 @@ const InfectionTracking = ({
   onTabChange,                  // ⬅️ NEW
 }: InfectionTrackingProps) => {
   // Local mirrors for controlled editing
-  // Start with empty array for peritonitis - don't load saved episodes
+  // Start with empty array for peritonitis and exit site - don't load saved episodes
   const [peritonitisEpisodes, setPeritonitisEpisodes] = useState<PeritonitisEpisode[]>([]);
-  const [exitSiteEpisodes, setExitSiteEpisodes] = useState<ExitSiteEpisode[]>(
-    exitSiteInfections || []
-  );
+  const [exitSiteEpisodes, setExitSiteEpisodes] = useState<ExitSiteEpisode[]>([]);
   const [tunnelEpisodes, setTunnelEpisodes] = useState<TunnelEpisode[]>(
     tunnelInfections || []
   );
+  
+  // Get patient context and toast at component level
+  const { patient } = usePatientContext();
+  const { toast } = useToast();
 
-  // Keep local state in sync with parent updates (except peritonitis - we don't load saved episodes)
-  useEffect(() => setExitSiteEpisodes(exitSiteInfections || []), [exitSiteInfections]);
+  // Keep local state in sync with parent updates (except peritonitis and exit site - we don't load saved episodes)
   useEffect(() => setTunnelEpisodes(tunnelInfections || []), [tunnelInfections]);
 
   // ---------- Peritonitis handlers ----------
@@ -133,9 +136,19 @@ const InfectionTracking = ({
       return;
     }
 
+    const phn = patient?.phn;
+    
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving peritonitis data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const patientId = "patient-123"; // Match the patientId from other components
-      const API_URL = `http://localhost:8081/api/infection-tracking/${patientId}/peritonitis`;
+      const API_URL = `http://localhost:8081/api/infection-tracking/${phn}/peritonitis`;
 
       // Convert episodes to DTOs
       const dtos = peritonitisEpisodes.map(ep => ({
@@ -181,9 +194,19 @@ const InfectionTracking = ({
       return;
     }
 
+    const phn = patient?.phn;
+    
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving exit site infection data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const patientId = "patient-123"; // Match the patientId from other components
-      const API_URL = `http://localhost:8081/api/infection-tracking/${patientId}/exit-site`;
+      const API_URL = `http://localhost:8081/api/infection-tracking/${phn}/exit-site`;
 
       // Convert episodes to DTOs
       const dtos = exitSiteEpisodes.map(ep => ({
@@ -302,9 +325,19 @@ const InfectionTracking = ({
       return;
     }
 
+    const phn = patient?.phn;
+    
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving tunnel infection data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const patientId = "patient-123"; // Match the patientId from other components
-      const API_URL = `http://localhost:8081/api/infection-tracking/${patientId}/tunnel`;
+      const API_URL = `http://localhost:8081/api/infection-tracking/${phn}/tunnel`;
 
       // Convert episodes to DTOs
       const dtos = tunnelEpisodes.map(ep => ({
