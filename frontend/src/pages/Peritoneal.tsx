@@ -191,23 +191,6 @@ const Peritoneal = () => {
 
         <div className="flex justify-between items-center gap-3">
           <Button variant="default" onClick={() => setActiveView("dashboard")}>Back</Button>
-          <div className="flex gap-3">
-            {activeTab === "peritonitis" && (
-              <Button onClick={savePeritonitis} variant="outline">
-                Save Peritonitis History
-              </Button>
-            )}
-            {activeTab === "exitsite" && (
-              <Button onClick={saveExitSite} variant="outline">
-                Save Exit Site Infections
-              </Button>
-            )}
-            {activeTab === "tunnel" && (
-              <Button onClick={saveTunnel} variant="outline">
-                Save Tunnel Infection History
-              </Button>
-            )}
-          </div>
         </div>
       </div>
     );

@@ -1,41 +1,42 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MedicalButton } from "@/components/ui/button-variants";
-import { Stethoscope, UserCheck, Lock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Stethoscope, UserCheck, Lock, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { login, isAuthenticated } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/patient-overview", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username || !password || !role) {
-      toast({
-        title: "Login Failed",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
+    if (!username || !password) {
       return;
     }
 
-    // Store user data in localStorage for demo purposes
-    localStorage.setItem("currentUser", JSON.stringify({ username, role }));
-    
-    toast({
-      title: "Login Successful",
-      description: `Welcome ${username}`,
-    });
-    
-    navigate("/dashboard");
+    setLoading(true);
+    try {
+      await login(username, password);
+      navigate("/patient-overview", { replace: true });
+    } catch (error) {
+      // Error is already handled in AuthContext
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -84,28 +85,21 @@ const Login = () => {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="medical-transition">
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrator</SelectItem>
-                  <SelectItem value="doctor">Doctor</SelectItem>
-                  <SelectItem value="nurse">Nurse</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <MedicalButton 
+            <Button 
               type="submit" 
-              variant="medical" 
               size="lg" 
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90"
+              disabled={loading}
             >
-              Login to System
-            </MedicalButton>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                "Login to System"
+              )}
+            </Button>
           </form>
           
           <div className="mt-6 text-center text-sm text-muted-foreground">

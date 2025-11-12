@@ -3,10 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import React, { Suspense, lazy } from 'react';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import { FullPageSpinner } from "@/components/ui/spinner";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
+const Login = lazy(() => import("./pages/Login"));
 const PatientOverview = lazy(() => import("./pages/PatientOverview"));
 const RegisterPatient = lazy(() => import("./pages/RegisterPatient"));
 const WardManagement = lazy(() => import("./pages/WardManagement"));
@@ -18,36 +20,95 @@ const Medications = lazy(() => import("./pages/Medications"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { PatientProvider } from "./context/PatientContext";
-import { DonorProvider } from "./context/DonorContext"; // Import DonorProvider
+import { DonorProvider } from "./context/DonorContext";
+import { AuthProvider } from "./context/AuthContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <PatientProvider>
-        <DonorProvider> {/* Add DonorProvider here */}
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Suspense fallback={<FullPageSpinner />}>
-              <Routes>
-                <Route path="/" element={<Layout><PatientOverview /></Layout>} />
-                <Route path="/patient-overview" element={<Layout><PatientOverview /></Layout>} />
-                <Route path="/register-patient" element={<Layout><RegisterPatient /></Layout>} />
-                <Route path="/ward-management" element={<Layout><WardManagement /></Layout>} />
-                <Route path="/peritoneal-dialysis" element={<Layout><Peritoneal /></Layout>} />
-                <Route path="/haemodialysis" element={<Layout><HaemoDialysis /></Layout>} />
-                <Route path="/kidney-transplant" element={<Layout><KidneyTransplant /></Layout>} />
-                <Route path="/investigation" element={<Layout><Investigation /></Layout>} />
-                <Route path="/medications" element={<Layout><Medications /></Layout>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </DonorProvider> {/* Close DonorProvider */}
-      </PatientProvider>
+      <AuthProvider>
+        <PatientProvider>
+          <DonorProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Suspense fallback={<FullPageSpinner />}>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={<Navigate to="/patient-overview" replace />} />
+                  <Route 
+                    path="/patient-overview" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><PatientOverview /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/register-patient" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><RegisterPatient /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/ward-management" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><WardManagement /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/peritoneal-dialysis" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><Peritoneal /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/haemodialysis" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><HaemoDialysis /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/kidney-transplant" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><KidneyTransplant /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/investigation" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><Investigation /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/medications" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><Medications /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </DonorProvider>
+        </PatientProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePatientContext } from "@/context/PatientContext";
 
 interface PatientRegistrationProps {
   onComplete: () => void;
@@ -33,6 +34,7 @@ type FormData = {
 
 const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
   const { toast } = useToast();
+  const { patient } = usePatientContext();
 
   const [formData, setFormData] = useState<FormData>({
     // existing
@@ -54,6 +56,53 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
     thirdFlushing: "",
   });
 
+  // Load existing patient registration data when patient is selected
+  useEffect(() => {
+    const loadPatientData = async () => {
+      const phn = patient?.phn;
+      if (!phn) {
+        // Reset form if no patient selected
+        setFormData({
+          Technique: "",
+          Designation: "",
+          counsellingDate: "",
+          initiationDate: "",
+          catheterInsertionDate: "",
+          insertionDoneBy: "",
+          insertionPlace: "",
+          firstFlushing: "",
+          secondFlushing: "",
+          thirdFlushing: "",
+        });
+        return;
+      }
+
+      try {
+        const API_URL = `http://localhost:8081/api/patient-registration/${phn}`;
+        const response = await fetch(API_URL);
+        if (response.ok) {
+          const data = await response.json();
+          setFormData({
+            Technique: data.technique || "",
+            Designation: data.designation || "",
+            counsellingDate: data.counsellingDate || "",
+            initiationDate: data.initiationDate || "",
+            catheterInsertionDate: data.catheterInsertionDate || "",
+            insertionDoneBy: data.insertionDoneBy || "",
+            insertionPlace: data.insertionPlace || "",
+            firstFlushing: data.firstFlushing || "",
+            secondFlushing: data.secondFlushing || "",
+            thirdFlushing: data.thirdFlushing || "",
+          });
+        }
+      } catch (error) {
+        console.error("Error loading patient registration data:", error);
+      }
+    };
+
+    loadPatientData();
+  }, [patient?.phn]);
+
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -71,8 +120,18 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
       return;
     }
 
-    const patientId = "patient-123"; // Match the patientId from other components
-    const API_URL = `http://localhost:8081/api/patient-registration/${patientId}`;
+    // Get PHN from patient context
+    const phn = patient?.phn;
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before registering.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const API_URL = `http://localhost:8081/api/patient-registration/${phn}`;
 
     try {
       // Prepare patient registration data

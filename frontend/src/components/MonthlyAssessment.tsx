@@ -9,6 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Calendar, TrendingUp, Eye, Trash2, RefreshCw } from "lucide-react";
+import { usePatientContext } from "@/context/PatientContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface MonthlyAssessmentProps {
   onComplete: () => void;
@@ -62,13 +64,20 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
   const [savedAssessments, setSavedAssessments] = useState<SavedAssessment[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const patientId = "patient-123"; // Match the patientId pattern used in other components
-  const API_URL = `http://localhost:8081/api/monthly-assessment/${patientId}`;
+  const { patient } = usePatientContext();
+  const { toast } = useToast();
 
   // Fetch saved assessments on component mount
   const fetchAssessments = async () => {
+    const phn = patient?.phn;
+    if (!phn) {
+      setSavedAssessments([]);
+      return;
+    }
+
     setLoading(true);
     try {
+      const API_URL = `http://localhost:8081/api/monthly-assessment/${phn}`;
       const response = await fetch(API_URL);
       if (response.ok) {
         const data = await response.json();
@@ -86,7 +95,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
   useEffect(() => {
     fetchAssessments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [patient?.phn]);
 
   const addAssessment = () => {
     const newAssessment: AssessmentData = {
@@ -127,7 +136,21 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Get PHN from patient context
+    const phn = patient?.phn;
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving monthly assessments.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
+    
+    const API_URL = `http://localhost:8081/api/monthly-assessment/${phn}`;
     
     try {
       // Save each assessment to the backend
@@ -185,7 +208,18 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
       return;
     }
 
+    const phn = patient?.phn;
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      const API_URL = `http://localhost:8081/api/monthly-assessment/${phn}`;
       const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
       });

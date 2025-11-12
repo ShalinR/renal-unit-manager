@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { usePatientContext } from "@/context/PatientContext";
 import PETTest from "./PETTest";
 import AdequacyTest from "./AdequacyTest";
 // Remove the InfectionTracking import if it's not used here, or keep if needed
@@ -82,10 +84,48 @@ const emptyCAPDData: CAPDData = {
 const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
   // Initialize state with the empty object - always start with empty form
   const [formData, setFormData] = useState<CAPDData>(emptyCAPDData);
+  const { patient } = usePatientContext();
+  const { toast } = useToast();
 
-  // --- Configuration for API ---
-  const patientId = "patient-123"; // Hardcode a patient ID for this example
-  const API_URL = `http://localhost:8081/api/capd-summary/${patientId}`;
+  // Load existing CAPD summary data when patient is selected
+  useEffect(() => {
+    const loadPatientData = async () => {
+      const phn = patient?.phn;
+      if (!phn) {
+        // Reset form if no patient selected
+        setFormData(emptyCAPDData);
+        return;
+      }
+
+      try {
+        const API_URL = `http://localhost:8081/api/capd-summary/${phn}`;
+        const response = await fetch(API_URL);
+        if (response.ok) {
+          const data = await response.json();
+          if (data) {
+            setFormData({
+              counsellingDate: data.counsellingDate || "",
+              catheterInsertionDate: data.catheterInsertionDate || "",
+              insertionDoneBy: data.insertionDoneBy || "",
+              insertionPlace: data.insertionPlace || "",
+              technique: data.technique || "",
+              designation: data.designation || "",
+              firstFlushing: data.firstFlushing || "",
+              secondFlushing: data.secondFlushing || "",
+              thirdFlushing: data.thirdFlushing || "",
+              initiationDate: data.initiationDate || "",
+              petResults: data.petResults || emptyCAPDData.petResults,
+              adequacyResults: data.adequacyResults || emptyCAPDData.adequacyResults,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error loading CAPD summary data:", error);
+      }
+    };
+
+    loadPatientData();
+  }, [patient?.phn]);
 
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -102,7 +142,21 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Get PHN from patient context
+    const phn = patient?.phn;
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving CAPD summary.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaveStatus("saving");
+
+    const API_URL = `http://localhost:8081/api/capd-summary/${phn}`;
 
     try {
       // Save all form data including basic information, PET results, and adequacy results
