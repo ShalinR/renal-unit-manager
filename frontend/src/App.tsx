@@ -16,6 +16,9 @@ const Peritoneal = lazy(() => import("./pages/Peritoneal"));
 const HaemoDialysis = lazy(() => import("./pages/HaemoDialysis"));
 const KidneyTransplant = lazy(() => import("./pages/KidneyTransplant"));
 const Investigation = lazy(() => import("./pages/Investigation"));
+const PDInvestigation = lazy(() => import("./pages/PDInvestigation"));
+const KTInvestigation = lazy(() => import("./pages/KTInvestigation"));
+const HDInvestigation = lazy(() => import("./pages/HDInvestigation"));
 const Medications = lazy(() => import("./pages/Medications"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -91,6 +94,30 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Layout><Investigation /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/investigation/pd" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><PDInvestigation /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/investigation/kt" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><KTInvestigation /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/investigation/hd" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><HDInvestigation /></Layout>
                       </ProtectedRoute>
                     } 
                   />

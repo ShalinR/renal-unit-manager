@@ -58,11 +58,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Invalid credentials" }));
-        throw new Error(errorData.error || "Login failed");
+        let errorMessage = "Invalid username or password";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      
+      // Validate response data
+      if (!data.token || !data.username) {
+        throw new Error("Invalid response from server");
+      }
       
       const userData: User = {
         username: data.username,
@@ -82,9 +94,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: `Welcome ${data.fullName || data.username}`,
       });
     } catch (error: any) {
+      // Handle network errors specifically
+      let errorMessage = "Login failed";
+      if (error.message === "Failed to fetch" || error.name === "TypeError") {
+        errorMessage = "Cannot connect to server. Please ensure the backend is running on http://localhost:8081";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.error("Login error:", error);
       toast({
         title: "Login Failed",
-        description: error.message || "Invalid username or password",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
