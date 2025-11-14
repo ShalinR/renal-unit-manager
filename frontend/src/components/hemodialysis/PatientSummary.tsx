@@ -26,13 +26,20 @@ export const PatientSummary: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Get patient ID from context
-  const patientId = patient?.phn || globalPatient?.phn || '123456';
-  const patientName = patient?.name || globalPatient?.name || 'John Doe';
+  // Get patient ID from context (PHN required)
+  const patientId = patient?.phn || globalPatient?.phn;
+  const patientName = patient?.name || globalPatient?.name || '';
 
   // Fetch records from backend
   useEffect(() => {
     const fetchRecords = async () => {
+      if (!patientId) {
+        setRecords([]);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       try {
@@ -88,11 +95,28 @@ export const PatientSummary: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  if (!patientId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Patient Summary</h2>
+        </div>
+        <div className="text-center py-8">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 inline-block">
+            <p className="text-amber-800 text-sm">
+              <strong>Patient Required:</strong> Please search for a patient by PHN number using the global search bar to view their hemodialysis records.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Patient Summary — {patientName}</h2>
+          <h2 className="text-xl font-semibold">Patient Summary — {patientName || 'Loading...'}</h2>
         </div>
         <div className="text-center py-8">
           <p className="text-muted-foreground">Loading records...</p>
@@ -117,7 +141,7 @@ export const PatientSummary: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Patient Summary — {patientName}</h2>
+        <h2 className="text-xl font-semibold">Patient Summary — {patientName} (PHN: {patientId})</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

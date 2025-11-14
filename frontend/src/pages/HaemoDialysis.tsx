@@ -41,9 +41,9 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
   const [showFloatingTimetable, setShowFloatingTimetable] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Get patient ID from context (use PHN or default)
-  const patientId = patient?.phn || globalPatient?.phn || '123456'; // Default to MRN shown in header
-  const patientName = patient?.name || globalPatient?.name || 'John Doe';
+  // Get patient ID from context (use PHN - required)
+  const patientId = patient?.phn || globalPatient?.phn;
+  const patientName = patient?.name || globalPatient?.name || '';
 
   // Form state
   const [formData, setFormData] = useState<HemodialysisRecord>(() => ({
@@ -196,6 +196,16 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Check if patient is selected
+    if (!patientId) {
+      toast({
+        title: 'Patient Not Selected',
+        description: 'Please search for a patient by PHN first before saving hemodialysis record.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!filledBy.trim()) {
       setTouched(prev => new Set(prev).add('filledBy'));
       setErrors(prev => ({ ...prev, filledBy: 'Please enter who filled out this form' }));
@@ -305,9 +315,19 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Hemodialysis Management</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Patient: {patientName} • {patient?.phn ? `PHN: ${patient.phn}` : `MRN: ${patientId}`}
-              </p>
+              {patientId ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="inline-flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                    <span>Patient: {patientName} (PHN: {patientId})</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="inline-flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                    <span>⚠️ Please search for a patient by PHN to begin</span>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleCancel}>
@@ -341,6 +361,14 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
           </TabsList>
 
           <TabsContent value="form" className="space-y-6">
+            {!patientId && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-amber-800 text-sm">
+                  <strong>Patient Required:</strong> Please search for a patient by PHN number using the global search bar before entering hemodialysis data.
+                </p>
+              </div>
+            )}
+
             {/* Progress Indicator */}
             <div className="bg-background rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
@@ -426,7 +454,7 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
                 <Button
                   onClick={handleSubmit}
                   className="bg-primary hover:bg-primary/90"
-                  disabled={!filledBy.trim() || isSaving}
+                  disabled={!patientId || !filledBy.trim() || isSaving}
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {isSaving ? 'Saving...' : 'Submit Record'}

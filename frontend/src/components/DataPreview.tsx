@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, ArrowLeft, AlertCircle, Stethoscope, RefreshCw } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
+import { usePatientContext } from "@/context/PatientContext";
 
 interface CAPDData {
   counsellingDate: string;
@@ -35,29 +36,44 @@ interface DataPreviewProps {
 }
 
 const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
+  const { patient } = usePatientContext();
   const [capdData, setCapdData] = useState<CAPDData | null>(propCapdData);
   const [isLoading, setIsLoading] = useState(!propCapdData);
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh key to force re-render
-  const patientId = "patient-123"; // Match the patientId from other components
-  const CAPD_API_URL = `http://localhost:8081/api/capd-summary/${patientId}`;
-  const REGISTRATION_API_URL = `http://localhost:8081/api/patient-registration/${patientId}`;
+  
+  // Use PHN from patient context
+  const phn = patient?.phn;
+  const CAPD_API_URL = phn ? `http://localhost:8081/api/capd-summary/${phn}` : null;
+  const REGISTRATION_API_URL = phn ? `http://localhost:8081/api/patient-registration/${phn}` : null;
+  const INFECTION_API_URL = phn ? `http://localhost:8081/api/infection-tracking/${phn}` : null;
 
   // Fetch data from backend on mount to ensure we have the latest data
   useEffect(() => {
     const fetchData = async () => {
+      if (!phn) {
+        // If no PHN, use prop data or show empty
+        if (propCapdData) {
+          setCapdData(propCapdData);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        // Fetch both patient registration and CAPD summary
-        const [registrationResponse, capdResponse] = await Promise.all([
-          fetch(REGISTRATION_API_URL),
-          fetch(CAPD_API_URL)
+        // Fetch patient registration, CAPD summary, and infection tracking
+        const [registrationResponse, capdResponse, infectionResponse] = await Promise.all([
+          REGISTRATION_API_URL ? fetch(REGISTRATION_API_URL) : Promise.resolve({ ok: false } as Response),
+          CAPD_API_URL ? fetch(CAPD_API_URL) : Promise.resolve({ ok: false } as Response),
+          INFECTION_API_URL ? fetch(INFECTION_API_URL) : Promise.resolve({ ok: false } as Response),
         ]);
 
         const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
         const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
+        const infectionData = infectionResponse.ok ? await infectionResponse.json() : null;
 
-        // Combine both datasets - basic info from registration, test results from CAPD summary
-        if (registrationData || capdSummaryData) {
+        // Combine all datasets - basic info from registration, test results from CAPD summary, infections from infection tracking
+        if (registrationData || capdSummaryData || infectionData) {
           const combinedData: CAPDData = {
             counsellingDate: registrationData?.counsellingDate || capdSummaryData?.counsellingDate || "",
             catheterInsertionDate: registrationData?.catheterInsertionDate || capdSummaryData?.catheterInsertionDate || "",
@@ -79,11 +95,11 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
               second: { date: "", data: null },
               third: { date: "", data: null },
             },
-            exitSiteInfections: capdSummaryData?.exitSiteInfections || [],
-            tunnelInfections: capdSummaryData?.tunnelInfections || [],
+            exitSiteInfections: infectionData?.exitSiteInfections || capdSummaryData?.exitSiteInfections || [],
+            tunnelInfections: infectionData?.tunnelInfections || capdSummaryData?.tunnelInfections || [],
           };
           setCapdData(combinedData);
-          console.log("DataPreview: Loaded data from backend", combinedData);
+          console.log("DataPreview: Loaded data from backend for PHN:", phn, combinedData);
           // Force refresh of infection tracking section
           setRefreshKey(prev => prev + 1);
         } else if (propCapdData) {
@@ -104,7 +120,7 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
     };
 
     fetchData();
-  }, [CAPD_API_URL, REGISTRATION_API_URL, propCapdData]);
+  }, [phn, propCapdData]);
 
   // Update local state when prop changes
   useEffect(() => {
@@ -487,7 +503,7 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
       </Card>
 
       {/* Infection Tracking */}
-      <InfectionTrackingSection key={refreshKey} patientId={patientId} refreshKey={refreshKey} />
+      {phn && <InfectionTrackingSection key={refreshKey} patientId={phn} refreshKey={refreshKey} />}
 
       {/* Footer actions */}
       <div className="flex justify-center gap-4 pt-6">

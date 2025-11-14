@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateDisplay } from '@/lib/dateUtils';
+import { usePatientContext } from '@/context/PatientContext';
+import { getHemodialysisRecordsByPatientId } from '@/services/hemodialysisApi';
 
 interface DialysisSession {
   date: string; // ISO yyyy-mm-dd
@@ -67,78 +69,105 @@ interface HemodialysisRecord {
   updatedAt?: string;
 }
 
-// Mock sessions - replace with actual data
-const mockSessions: DialysisSession[] = [
-  { date: '2025-09-28', status: 'completed', notes: 'Session completed successfully' },
-  { date: '2025-09-30', status: 'scheduled' },
-  { date: '2025-10-02', status: 'scheduled' },
-  { date: '2025-10-04', status: 'scheduled' },
-];
-
-// Mock full reports keyed by ISO date
-const mockReports: Record<string, HemodialysisRecord> = {
-  '2025-09-28': {
-    id: 'r-20250928',
-    prescription: {
-      access: 'AV Fistula',
-      durationMinutes: 240,
-      dialysisProfile: 'Standard',
-      sodium: 140,
-      bicarbonate: 32,
-      bloodFlowRate: 350,
-      dialysateFlowRate: 500,
-      temperature: 36.5,
-      dryWeightKg: 70,
-      ultrafiltrationVolume: 1200,
-      anticoagulation: 'Heparin 1000 IU bolus',
-      erythropoetinDose: 'EPO 4000 IU',
-      otherTreatment: 'Vitamin D injection'
-    },
-    vascularAccess: {
-      access: 'AV Fistula',
-      dateOfCreation: '2020-03-12',
-      createdBy: 'Dr. Silva',
-      complications: 'None'
-    },
-    session: {
-      date: '2025-09-28',
-      durationMinutes: 240,
-      preDialysisWeightKg: 71.2,
-      postDialysisWeightKg: 70.0,
-      interDialyticWeightGainKg: 1.2,
-      bloodPressure: { systolic: 120, diastolic: 78 },
-      pulseRate: 78,
-      oxygenSaturationPercent: 98,
-      bloodFlowRate: 350,
-      arterialPressure: 120,
-      venousPressure: 180,
-      transmembranePressure: 150,
-      ultrafiltrationVolume: 1200
-    },
-    otherNotes: 'No complications observed',
-    createdBy: 'Nurse Kamal',
-    createdAt: '2025-09-28T08:30:00Z',
-    updatedAt: '2025-09-28T12:45:00Z'
-  },
-  // Add other mock reports as required
-};
-
 export const DialysisCalendar: React.FC = () => {
+  const { patient, globalPatient } = usePatientContext();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showReport, setShowReport] = useState<boolean>(false);
+  const [records, setRecords] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Get patient ID from context (PHN required)
+  const patientId = patient?.phn || globalPatient?.phn;
+
+  // Fetch records from backend
+  useEffect(() => {
+    const fetchRecords = async () => {
+      if (!patientId) {
+        setRecords([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const data = await getHemodialysisRecordsByPatientId(patientId);
+        setRecords(data || []);
+      } catch (err: any) {
+        console.error('Error fetching hemodialysis records:', err);
+        setRecords([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecords();
+  }, [patientId]);
+
+  // Convert backend records to sessions and reports
+  const sessions: DialysisSession[] = records.map(record => ({
+    date: record.sessionDate || record.session?.date || '',
+    status: 'completed' as const,
+    notes: record.otherNotes || 'Session completed'
+  }));
+
+  // Create reports map from backend records
+  const reports: Record<string, HemodialysisRecord> = {};
+  records.forEach(record => {
+    const dateStr = record.sessionDate || record.session?.date;
+    if (dateStr) {
+      reports[dateStr] = {
+        id: record.id?.toString() || '',
+        prescription: record.prescription || {},
+        vascularAccess: record.vascularAccess || {},
+        session: record.session || {},
+        otherNotes: record.otherNotes,
+        createdBy: record.filledBy,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt
+      };
+    }
+  });
 
   // find a session object for a given date
   const findSessionForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return mockSessions.find(s => s.date === dateStr) ?? null;
+    return sessions.find(s => s.date === dateStr) ?? null;
   };
 
   const selectedSession = selectedDate ? findSessionForDate(selectedDate) : null;
 
   // find report for selected date
   const selectedReport = selectedDate
-    ? mockReports[selectedDate.toISOString().split('T')[0]] ?? null
+    ? reports[selectedDate.toISOString().split('T')[0]] ?? null
     : null;
+
+  if (!patientId) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6">
+          <div className="text-center py-8">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 inline-block">
+              <p className="text-amber-800 text-sm">
+                <strong>Patient Required:</strong> Please search for a patient by PHN number using the global search bar to view their dialysis calendar.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading calendar...</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -254,17 +283,22 @@ export const DialysisCalendar: React.FC = () => {
         </Card>
 
         <Card className="p-6 mt-4">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Sessions</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Recent Sessions</h3>
           <div className="space-y-2">
-            {mockSessions
-              .filter(s => s.status === 'scheduled')
-              .slice(0, 3)
-              .map((session, idx) => (
-                <div key={idx} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                  <span className="text-sm">{formatDateDisplay(session.date)}</span>
-                  <Badge variant="secondary">Scheduled</Badge>
-                </div>
-              ))}
+            {sessions.length > 0 ? (
+              sessions
+                .slice(0, 5)
+                .map((session, idx) => (
+                  <div key={idx} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                    <span className="text-sm">{formatDateDisplay(session.date)}</span>
+                    <Badge variant={session.status === 'completed' ? 'default' : session.status === 'scheduled' ? 'secondary' : 'destructive'}>
+                      {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                    </Badge>
+                  </div>
+                ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No sessions recorded yet</p>
+            )}
           </div>
         </Card>
 
@@ -273,19 +307,19 @@ export const DialysisCalendar: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between items-center py-2 border-b last:border-b-0">
               <span className="text-sm">Total Sessions</span>
-              <span className="font-medium">{mockSessions.length}</span>
+              <span className="font-medium">{sessions.length}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b last:border-b-0">
               <span className="text-sm">Completed</span>
-              <span className="font-medium">{mockSessions.filter(s => s.status === 'completed').length}</span>
+              <span className="font-medium">{sessions.filter(s => s.status === 'completed').length}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b last:border-b-0">
               <span className="text-sm">Scheduled</span>
-              <span className="font-medium">{mockSessions.filter(s => s.status === 'scheduled').length}</span>
+              <span className="font-medium">{sessions.filter(s => s.status === 'scheduled').length}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b last:border-b-0">
               <span className="text-sm">Missed</span>
-              <span className="font-medium">{mockSessions.filter(s => s.status === 'missed').length}</span>
+              <span className="font-medium">{sessions.filter(s => s.status === 'missed').length}</span>
             </div>
           </div>
         </Card>
