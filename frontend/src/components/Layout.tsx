@@ -45,6 +45,7 @@ import {
 
 import { useTheme } from "@/hooks/useTheme";
 import GlobalSearch from "./GlobalSearch";
+import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
   { title: "Patient Overview", url: "/patient-overview", icon: Users },
@@ -64,16 +65,18 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cycleTheme, getThemeIcon } = useTheme();
+  const { user, logout } = useAuth();
 
   const currentUser = {
-    name: "Dr. Rajitha Abeysekara",
-    email: "rajitha.abeysekara@hospital.com",
-    role: "Nephrologist",
+    name: user?.fullName || user?.username || "User",
+    email: user?.username ? `${user.username}@hospital.com` : "user@hospital.com",
+    role: user?.role || "USER",
     avatar: null,
   };
 
   const handleLogout = () => {
-    console.log("Logging out...");
+    logout();
+    navigate("/login", { replace: true });
   };
 
   return (

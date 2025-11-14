@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, AlertCircle, Stethoscope } from "lucide-react";
+import { usePatientContext } from "@/context/PatientContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface InfectionTrackingProps {
   peritonitisHistory: PeritonitisEpisode[];
@@ -21,6 +23,9 @@ interface InfectionTrackingProps {
   showPeritonitis?: boolean; // default true
   showExitSite?: boolean;    // default true
   showTunnel?: boolean;      // default true
+
+  // Callback for tab changes
+  onTabChange?: (tab: string) => void;
 }
 
 export interface PeritonitisEpisode {
@@ -72,22 +77,22 @@ const InfectionTracking = ({
   showPeritonitis = true,
   showExitSite = true,
   showTunnel = true,            // ⬅️ NEW
+  onTabChange,                  // ⬅️ NEW
 }: InfectionTrackingProps) => {
   // Local mirrors for controlled editing
-  const [peritonitisEpisodes, setPeritonitisEpisodes] = useState<PeritonitisEpisode[]>(
-    peritonitisHistory || []
-  );
-  const [exitSiteEpisodes, setExitSiteEpisodes] = useState<ExitSiteEpisode[]>(
-    exitSiteInfections || []
-  );
-  const [tunnelEpisodes, setTunnelEpisodes] = useState<TunnelEpisode[]>(   // ⬅️ NEW
+  // Start with empty array for peritonitis and exit site - don't load saved episodes
+  const [peritonitisEpisodes, setPeritonitisEpisodes] = useState<PeritonitisEpisode[]>([]);
+  const [exitSiteEpisodes, setExitSiteEpisodes] = useState<ExitSiteEpisode[]>([]);
+  const [tunnelEpisodes, setTunnelEpisodes] = useState<TunnelEpisode[]>(
     tunnelInfections || []
   );
+  
+  // Get patient context and toast at component level
+  const { patient } = usePatientContext();
+  const { toast } = useToast();
 
-  // Keep local state in sync with parent updates
-  useEffect(() => setPeritonitisEpisodes(peritonitisHistory || []), [peritonitisHistory]);
-  useEffect(() => setExitSiteEpisodes(exitSiteInfections || []), [exitSiteInfections]);
-  useEffect(() => setTunnelEpisodes(tunnelInfections || []), [tunnelInfections]); // ⬅️ NEW
+  // Keep local state in sync with parent updates (except peritonitis and exit site - we don't load saved episodes)
+  useEffect(() => setTunnelEpisodes(tunnelInfections || []), [tunnelInfections]);
 
   // ---------- Peritonitis handlers ----------
   const addPeritonitisEpisode = () => {
@@ -123,6 +128,126 @@ const InfectionTracking = ({
       onUpdatePeritonitis(updated);
       return updated;
     });
+  };
+
+  const handleSavePeritonitis = async () => {
+    if (peritonitisEpisodes.length === 0) {
+      alert("No peritonitis episodes to save.");
+      return;
+    }
+
+    const phn = patient?.phn;
+    
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving peritonitis data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const API_URL = `http://localhost:8081/api/infection-tracking/${phn}/peritonitis`;
+
+      // Convert episodes to DTOs
+      const dtos = peritonitisEpisodes.map(ep => ({
+        infectionType: "PERITONITIS",
+        episodeDate: ep.date || "",
+        capdFullReports: ep.capdFullReports || "",
+        capdCulture: ep.capdCulture || "",
+        antibioticSensitivity: ep.antibioticSensitivity || "",
+        managementAntibiotic: ep.managementAntibiotic || "",
+        managementType: ep.managementType || "",
+        managementDuration: ep.managementDuration || "",
+        outcome: ep.outcome || "",
+        reasonForPeritonitis: ep.reasonForPeritonitis || "",
+        assessmentByNO: ep.assessmentByNO || "",
+      }));
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dtos),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save: ${response.status} - ${errorText}`);
+      }
+
+      const savedData = await response.json();
+      console.log("✅ Peritonitis episodes saved successfully:", savedData);
+      alert(`✅ Peritonitis history saved successfully! ${savedData.length} episode(s) have been saved to the database.`);
+    } catch (error) {
+      console.error("❌ Error saving peritonitis history:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      alert(`❌ Failed to save peritonitis history: ${errorMessage}\n\nPlease check the console for more details and try again.`);
+    }
+  };
+
+  const handleSaveExitSite = async () => {
+    if (exitSiteEpisodes.length === 0) {
+      alert("No exit site infection episodes to save.");
+      return;
+    }
+
+    const phn = patient?.phn;
+    
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving exit site infection data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const API_URL = `http://localhost:8081/api/infection-tracking/${phn}/exit-site`;
+
+      // Convert episodes to DTOs
+      const dtos = exitSiteEpisodes.map(ep => ({
+        infectionType: "EXIT_SITE",
+        episodeDate: ep.dateOnset || "",
+        dateOnset: ep.dateOnset || "",
+        numberOfEpisodes: ep.numberOfEpisodes || "",
+        investigationCulture: ep.investigationCulture || "",
+        investigationExitSite: ep.investigationExitSite || "",
+        investigationOther: ep.investigationOther || "",
+        managementAntibiotic: ep.managementAntibiotic || "",
+        managementType: ep.managementType || "",
+        managementDuration: ep.managementDuration || "",
+        hospitalizationDuration: ep.hospitalizationDuration || "",
+        reasonForInfection: ep.reasonForInfection || "",
+        specialRemarks: ep.specialRemarks || "",
+        assessmentByNO: ep.assessmentByNO || "",
+        assessmentByDoctor: ep.assessmentByDoctor || "",
+      }));
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dtos),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save: ${response.status} - ${errorText}`);
+      }
+
+      const savedData = await response.json();
+      console.log("✅ Exit site infection episodes saved successfully:", savedData);
+      alert(`✅ Exit site infection episodes saved successfully! ${savedData.length} episode(s) have been saved to the database.`);
+    } catch (error) {
+      console.error("❌ Error saving exit site infection episodes:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      alert(`❌ Failed to save exit site infection episodes: ${errorMessage}\n\nPlease check the console for more details and try again.`);
+    }
   };
 
   // ---------- Exit-site handlers ----------
@@ -194,12 +319,70 @@ const InfectionTracking = ({
     });
   };
 
+  const handleSaveTunnel = async () => {
+    if (tunnelEpisodes.length === 0) {
+      alert("No tunnel infection episodes to save.");
+      return;
+    }
+
+    const phn = patient?.phn;
+    
+    if (!phn) {
+      toast({
+        title: "Patient Not Selected",
+        description: "Please search for a patient by PHN first before saving tunnel infection data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const API_URL = `http://localhost:8081/api/infection-tracking/${phn}/tunnel`;
+
+      // Convert episodes to DTOs
+      const dtos = tunnelEpisodes.map(ep => ({
+        infectionType: "TUNNEL",
+        episodeDate: ep.date || "",
+        cultureReport: ep.cultureReport || "",
+        treatment: ep.treatment || "",
+        remarks: ep.remarks || "",
+      }));
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dtos),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save: ${response.status} - ${errorText}`);
+      }
+
+      const savedData = await response.json();
+      console.log("✅ Tunnel infection episodes saved successfully:", savedData);
+      alert(`✅ Tunnel infection episodes saved successfully! ${savedData.length} episode(s) have been saved to the database.`);
+    } catch (error) {
+      console.error("❌ Error saving tunnel infection episodes:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      alert(`❌ Failed to save tunnel infection episodes: ${errorMessage}\n\nPlease check the console for more details and try again.`);
+    }
+  };
+
   // Compute default tab based on visibility flags
   const defaultTab = showPeritonitis ? "peritonitis" : showExitSite ? "exitsite" : "tunnel";
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    onTabChange?.(value);
+  };
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList
           className={`grid w-full ${
             showPeritonitis && showExitSite && showTunnel
@@ -219,10 +402,20 @@ const InfectionTracking = ({
           <TabsContent value="peritonitis" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-destructive" />
-                  Peritonitis Episode History
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-destructive" />
+                    Peritonitis Episode History
+                  </CardTitle>
+                  <Button 
+                    type="button" 
+                    onClick={handleSavePeritonitis} 
+                    variant="default"
+                    disabled={peritonitisEpisodes.length === 0}
+                  >
+                    Save Peritonitis
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Button type="button" onClick={addPeritonitisEpisode} className="mb-4">
@@ -384,10 +577,20 @@ const InfectionTracking = ({
           <TabsContent value="exitsite" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Stethoscope className="w-5 h-5 text-amber-600" />
-                  Exit Site Infection Episodes
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Stethoscope className="w-5 h-5 text-amber-600" />
+                    Exit Site Infection Episodes
+                  </CardTitle>
+                  <Button 
+                    type="button" 
+                    onClick={handleSaveExitSite} 
+                    variant="default"
+                    disabled={exitSiteEpisodes.length === 0}
+                  >
+                    Save Exit Site Infections
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Button type="button" onClick={addExitSiteEpisode} className="mb-4">
@@ -620,10 +823,20 @@ const InfectionTracking = ({
           <TabsContent value="tunnel" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Stethoscope className="w-5 h-5 text-primary" />
-                  Tunnel Infection History
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Stethoscope className="w-5 h-5 text-primary" />
+                    Tunnel Infection History
+                  </CardTitle>
+                  <Button 
+                    type="button" 
+                    onClick={handleSaveTunnel} 
+                    variant="default"
+                    disabled={tunnelEpisodes.length === 0}
+                  >
+                    Save Tunnel Infections
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Button type="button" variant="default" className="mb-4" onClick={addTunnelEpisode}>

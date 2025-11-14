@@ -10,6 +10,7 @@ import {
 } from '../services/donorApi';
 
 import { Donor, DonorAssessmentForm, DonorAssessmentResponseDTO, DonorAssessmentDataDTO, DonorAssignmentDTO } from '../types/donor';
+import { useAuth } from './AuthContext';
 
 interface DonorContextType {
   donors: Donor[];
@@ -49,6 +50,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   const fetchDonors = useCallback(async (patientPhn?: string) => {
   setIsLoading(true);
@@ -128,8 +130,11 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 }, []);
 
   useEffect(() => {
-    fetchDonors();
-  }, [fetchDonors]);
+    // Only fetch donors if user is authenticated
+    if (isAuthenticated) {
+      fetchDonors();
+    }
+  }, [fetchDonors, isAuthenticated]);
 
   const addDonor = async (donorData: DonorAssessmentForm, patientPhn: string) => {
     setIsLoading(true);

@@ -1,8 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { formatDateDisplay } from '@/lib/dateUtils';
 import { ChartContainer } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+import { getHemodialysisRecordsByPatientId } from '@/services/hemodialysisApi';
+import { usePatientContext } from '@/context/PatientContext';
+import { HemodialysisDataPreview } from './HemodialysisDataPreview';
+import { Eye } from 'lucide-react';
 
 interface RecordItem {
   date: string; // ISO date
@@ -13,24 +18,60 @@ interface RecordItem {
   bloodFlowRate: number;
 }
 
-const mockHistory: Record<string, RecordItem[]> = {
-  'John Doe': [
-    { date: '2025-09-01', preWeight: 72.1, postWeight: 70.5, systolic: 128, diastolic: 80, bloodFlowRate: 350 },
-    { date: '2025-09-08', preWeight: 72.5, postWeight: 70.8, systolic: 130, diastolic: 82, bloodFlowRate: 350 },
-    { date: '2025-09-15', preWeight: 71.8, postWeight: 70.0, systolic: 125, diastolic: 79, bloodFlowRate: 360 },
-    { date: '2025-09-22', preWeight: 72.0, postWeight: 70.2, systolic: 127, diastolic: 80, bloodFlowRate: 355 },
-    { date: '2025-09-29', preWeight: 71.6, postWeight: 69.9, systolic: 124, diastolic: 78, bloodFlowRate: 350 },
-  ],
-  'Kamal Perera': [
-    { date: '2025-09-02', preWeight: 68.2, postWeight: 66.3, systolic: 120, diastolic: 76, bloodFlowRate: 340 },
-    { date: '2025-09-09', preWeight: 68.5, postWeight: 66.6, systolic: 122, diastolic: 78, bloodFlowRate: 340 },
-  ],
-};
-
 export const PatientSummary: React.FC = () => {
-  // Hardcode to John Doe only
-  const patient = 'John Doe';
-  const history = useMemo(() => mockHistory[patient] ?? [], [patient]);
+  const { patient, globalPatient } = usePatientContext();
+  const [records, setRecords] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Get patient ID from context (PHN required)
+  const patientId = patient?.phn || globalPatient?.phn;
+  const patientName = patient?.name || globalPatient?.name || '';
+
+  // Fetch records from backend
+  useEffect(() => {
+    const fetchRecords = async () => {
+      if (!patientId) {
+        setRecords([]);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getHemodialysisRecordsByPatientId(patientId);
+        setRecords(data || []);
+      } catch (err: any) {
+        console.error('Error fetching hemodialysis records:', err);
+        setError(err.message || 'Failed to load records');
+        setRecords([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecords();
+  }, [patientId]);
+
+  // Transform backend records to RecordItem format
+  const history: RecordItem[] = useMemo(() => {
+    return records.map((record) => {
+      const session = record.session || {};
+      const bloodPressure = session.bloodPressure || {};
+      return {
+        date: record.sessionDate || session.date || '',
+        preWeight: session.preDialysisWeightKg || 0,
+        postWeight: session.postDialysisWeightKg || 0,
+        systolic: bloodPressure.systolic || 0,
+        diastolic: bloodPressure.diastolic || 0,
+        bloodFlowRate: session.bloodFlowRate || 0,
+      };
+    }).filter((item) => item.date); // Filter out invalid records
+  }, [records]);
 
   const weightSeries = history.map(h => ({ date: formatDateDisplay(h.date), pre: h.preWeight, post: h.postWeight }));
   const systolicSeries = history.map(h => ({ date: formatDateDisplay(h.date), systolic: h.systolic }));
@@ -49,15 +90,58 @@ export const PatientSummary: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${patient.replace(/\s+/g, '_')}_history.csv`;
+    a.download = `${patientName.replace(/\s+/g, '_')}_history.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  if (!patientId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Patient Summary</h2>
+        </div>
+        <div className="text-center py-8">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 inline-block">
+            <p className="text-amber-800 text-sm">
+              <strong>Patient Required:</strong> Please search for a patient by PHN number using the global search bar to view their hemodialysis records.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Patient Summary — {patientName || 'Loading...'}</h2>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Loading records...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Patient Summary — {patientName}</h2>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-destructive">Error: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Patient Summary — {patient}</h2>
+        <h2 className="text-xl font-semibold">Patient Summary — {patientName} (PHN: {patientId})</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -80,31 +164,56 @@ export const PatientSummary: React.FC = () => {
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Recent Records</h3>
             {history.length ? (
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left">
-                    <th className="py-1">Date</th>
-                    <th className="py-1">Pre</th>
-                    <th className="py-1">Post</th>
-                    <th className="py-1">BP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((r) => (
-                    <tr key={r.date} className="border-t">
-                      <td className="py-1">{formatDateDisplay(r.date)}</td>
-                      <td className="py-1">{r.preWeight} kg</td>
-                      <td className="py-1">{r.postWeight} kg</td>
-                      <td className="py-1">{r.systolic}/{r.diastolic}</td>
+              <div className="space-y-2">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left">
+                      <th className="py-1">Date</th>
+                      <th className="py-1">Pre</th>
+                      <th className="py-1">Post</th>
+                      <th className="py-1">BP</th>
+                      <th className="py-1">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {records.map((record, index) => {
+                      const session = record.session || {};
+                      const bloodPressure = session.bloodPressure || {};
+                      return (
+                        <tr key={record.id || index} className="border-t hover:bg-muted/50">
+                          <td className="py-1">{formatDateDisplay(record.sessionDate || session.date || '')}</td>
+                          <td className="py-1">{session.preDialysisWeightKg || '—'} kg</td>
+                          <td className="py-1">{session.postDialysisWeightKg || '—'} kg</td>
+                          <td className="py-1">
+                            {bloodPressure.systolic || '—'}/{bloodPressure.diastolic || '—'}
+                          </td>
+                          <td className="py-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedRecord(record);
+                                setShowPreview(true);
+                              }}
+                              className="h-7 px-2"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">No historical records available</p>
             )}
             <div className="flex justify-end mt-3">
-              <button onClick={exportCSV} className="px-3 py-1 bg-primary text-white rounded">Export CSV</button>
+              <Button onClick={exportCSV} variant="outline" size="sm">
+                Export CSV
+              </Button>
             </div>
           </Card>
         </div>
@@ -152,6 +261,18 @@ export const PatientSummary: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Data Preview Modal */}
+      {showPreview && (
+        <HemodialysisDataPreview
+          record={selectedRecord}
+          onClose={() => {
+            setShowPreview(false);
+            setSelectedRecord(null);
+          }}
+          patientName={patientName}
+        />
+      )}
     </div>
   );
 };

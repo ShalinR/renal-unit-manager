@@ -4,9 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TestTube, Calculator, Plus, Trash2, Search, UserCheck, Loader2 } from "lucide-react";
+import { TestTube, Plus, Trash2, Loader2 } from "lucide-react";
 import { usePatientContext } from "@/context/PatientContext";
-
 interface PETTestProps {
   petResults: {
     first: { date: string; data: any };
@@ -80,6 +79,36 @@ const classifyGlucose = (dd0: number): string => {
   return "";
 };
 
+// Helper function to calculate ratios from measurements
+const calculateRatiosFromMeasurements = (measurements: PETData["measurements"]): {
+  dpCreatinine: string;
+  dd0Glucose: string;
+  creatinineClassification: string;
+  glucoseClassification: string;
+} => {
+  const t0Serum = parseFloat(measurements.t0.serumCreatinine);
+  const t4DialC = parseFloat(measurements.t4.dialysateCreatinine);
+  const t0DialG = parseFloat(measurements.t0.dialysateGlucose);
+  const t4DialG = parseFloat(measurements.t4.dialysateGlucose);
+
+  const dp = Number.isFinite(t0Serum) && t0Serum > 0 && Number.isFinite(t4DialC) ? t4DialC / t0Serum : NaN;
+  const dd0 = Number.isFinite(t0DialG) && t0DialG > 0 && Number.isFinite(t4DialG) ? t4DialG / t0DialG : NaN;
+
+  const dpStr = Number.isFinite(dp) ? dp.toFixed(3) : "";
+  const dd0Str = Number.isFinite(dd0) ? dd0.toFixed(3) : "";
+
+  const crClass = Number.isFinite(dp) ? classifyCreatinine(dp) : "";
+  const glClass = Number.isFinite(dd0) ? classifyGlucose(dd0) : "";
+
+  return {
+    dpCreatinine: dpStr,
+    dd0Glucose: dd0Str,
+    creatinineClassification: crClass,
+    glucoseClassification: glClass,
+  };
+};
+
+// Seed from legacy props (if prior data exists)
 function fromPropsToEntries(petResults: PETTestProps["petResults"]): PETEntry[] {
   const seeds = [petResults.first, petResults.second, petResults.third].filter(Boolean);
   const entries: PETEntry[] = [];
@@ -89,6 +118,16 @@ function fromPropsToEntries(petResults: PETTestProps["petResults"]): PETEntry[] 
       seed.data && typeof seed.data === "object"
         ? { ...emptyPET(), ...seed.data }
         : { ...emptyPET(), date: seed.date || "" };
+    
+    // Recalculate ratios if measurements exist (to ensure they're up to date)
+    if (payload.measurements) {
+      const calculated = calculateRatiosFromMeasurements(payload.measurements);
+      payload.dpCreatinine = calculated.dpCreatinine;
+      payload.dd0Glucose = calculated.dd0Glucose;
+      payload.creatinineClassification = calculated.creatinineClassification;
+      payload.glucoseClassification = calculated.glucoseClassification;
+    }
+    
     const hasAny =
       payload.date ||
       Object.values(payload.measurements).some(
@@ -161,18 +200,36 @@ export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps
     setActiveId(entry.id);
   };
 
-  const removeTest = (id: string) => {
-    const next = tests.filter(t => t.id !== id);
-    next.forEach((e, i) => (e.label = `Test ${i + 1}`));
-    setTests(next);
-    if (activeId === id) setActiveId(next[0]?.id ?? null);
-  };
+   const removeTest = (id: string) => {
+  const indexToRemove = tests.findIndex(t => t.id === id);
+  if (indexToRemove === -1) return; 
+
+  const next = tests.filter(t => t.id !== id);
+
+  next.forEach((e, i) => (e.label = `Test ${i + 1}`));
+
+  setTests(next);
+
+  if (activeId === id) {
+    let newActiveId: string | null = null;
+    
+    if (indexToRemove > 0) {
+      newActiveId = next[indexToRemove - 1].id;
+    } else {
+      newActiveId = next[0]?.id ?? null;
+    }
+    
+    setActiveId(newActiveId);
+  }
+};
 
   const updatePayload = <K extends keyof PETData>(id: string, key: K, value: PETData[K]) => {
     setTests(prev =>
       prev.map(t => (t.id === id ? { ...t, payload: { ...t.payload, [key]: value } } : t))
     );
   };
+
+  // ---------- Auto-calculate ratios from measurements ----------
 
   const updateMeasurement = (
     id: string,
@@ -181,60 +238,30 @@ export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps
     value: string
   ) => {
     setTests(prev =>
-      prev.map(t =>
-        t.id === id
-          ? {
-              ...t,
-              payload: {
-                ...t.payload,
-                measurements: {
-                  ...t.payload.measurements,
-                  [timeKey]: {
-                    ...t.payload.measurements[timeKey],
-                    [field]: value,
-                  },
-                },
-              },
-            }
-          : t
-      )
-    );
-  };
+      prev.map(t => {
+        if (t.id !== id) return t;
+        
+        // Update the measurement
+        const updatedMeasurements = {
+          ...t.payload.measurements,
+          [timeKey]: {
+            ...t.payload.measurements[timeKey],
+            [field]: value,
+          },
+        };
 
-  const calculateRatios = (id: string) => {
-    const t = tests.find(x => x.id === id);
-    if (!t) return;
-    const m = t.payload.measurements;
+        // Auto-calculate ratios from updated measurements
+        const calculated = calculateRatiosFromMeasurements(updatedMeasurements);
 
-    const t0Serum = parseFloat(m.t0.serumCreatinine);
-    const t4DialC = parseFloat(m.t4.dialysateCreatinine);
-    const t0DialG = parseFloat(m.t0.dialysateGlucose);
-    const t4DialG = parseFloat(m.t4.dialysateGlucose);
-
-    const dp = Number.isFinite(t0Serum) && t0Serum > 0 && Number.isFinite(t4DialC) ? t4DialC / t0Serum : NaN;
-    const dd0 = Number.isFinite(t0DialG) && t0DialG > 0 && Number.isFinite(t4DialG) ? t4DialG / t0DialG : NaN;
-
-    const dpStr = Number.isFinite(dp) ? dp.toFixed(3) : "";
-    const dd0Str = Number.isFinite(dd0) ? dd0.toFixed(3) : "";
-
-    const crClass = Number.isFinite(dp) ? classifyCreatinine(dp) : "";
-    const glClass = Number.isFinite(dd0) ? classifyGlucose(dd0) : "";
-
-    setTests(prev =>
-      prev.map(x =>
-        x.id === id
-          ? {
-              ...x,
-              payload: {
-                ...x.payload,
-                dpCreatinine: dpStr,
-                dd0Glucose: dd0Str,
-                creatinineClassification: crClass,
-                glucoseClassification: glClass,
-              },
-            }
-          : x
-      )
+        return {
+          ...t,
+          payload: {
+            ...t.payload,
+            measurements: updatedMeasurements,
+            ...calculated,
+          },
+        };
+      })
     );
   };
 
@@ -242,17 +269,58 @@ export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps
 
   return (
     <div className="space-y-6">
-      {/* Patient Search Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5" />
-            Search Patient
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+      {/* Header + KEEP THIS BUTTON UNCHANGED */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TestTube className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Peritoneal Equilibration Tests</h3>
+        </div>
+        <Button type="button" onClick={addTest}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add PET Test
+        </Button>
+      </div>
+
+      {/* Selector chips */}
+      {tests.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {tests.map(t => (
+            <Button
+              key={t.id}
+              type="button"
+              size="sm"
+              variant={t.id === activeId ? "default" : "default"}
+              onClick={() => setActiveId(t.id)}
+            >
+              {t.label}
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No PET tests yet. Click <span className="font-medium">Add PET Test</span> to begin.
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active form */}
+      {active ? (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <TestTube className="w-5 h-5 text-primary" />
+              {active.label}
+            </CardTitle>
+            <Button type="button" variant="destructive" size="sm" onClick={() => removeTest(active.id)}>
+              <Trash2 className="w-4 h-4 mr-1" />
+              Remove
+            </Button>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label>Test Date</Label>
               <Input
                 value={searchPhn}
                 onChange={(e) => setSearchPhn(e.target.value)}
@@ -272,212 +340,115 @@ export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps
                 </div>
               )}
             </div>
-            
-            <Button
-              type="button"
-              onClick={handleSearch}
-              disabled={isLoading || !searchPhn.trim()}
-              className="h-10 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 disabled:opacity-50 min-w-[120px]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4" />
-                  Search
-                </>
-              )}
-            </Button>
-          </div>
-          
-          {/* Patient Found Indicator */}
-          {patient?.phn && (
-            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg mt-3">
-              <UserCheck className="w-4 h-4" />
-              <div>
-                <span className="font-medium">Patient Found:</span> {patient.name} (PHN: {patient.phn})
-              </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-border">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="border border-border p-2 text-left">Time</th>
+                    <th className="border border-border p-2 text-left">Dialysate Creatinine</th>
+                    <th className="border border-border p-2 text-left">Dialysate Glucose</th>
+                    <th className="border border-border p-2 text-left">Serum Creatinine</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timePoints.map((tp) => (
+                    <tr key={tp.key}>
+                      <td className="border border-border p-2 font-medium">{tp.label}</td>
+                      <td className="border border-border p-2">
+                        <Input
+                          placeholder="mg/dL"
+                          value={active.payload.measurements[tp.key].dialysateCreatinine}
+                          onChange={(e) =>
+                            updateMeasurement(active.id, tp.key, "dialysateCreatinine", e.target.value)
+                          }
+                        />
+                      </td>
+                      <td className="border border-border p-2">
+                        <Input
+                          placeholder="mg/dL"
+                          value={active.payload.measurements[tp.key].dialysateGlucose}
+                          onChange={(e) =>
+                            updateMeasurement(active.id, tp.key, "dialysateGlucose", e.target.value)
+                          }
+                        />
+                      </td>
+                      <td className="border border-border p-2">
+                        {tp.showSerum ? (
+                          <Input
+                            placeholder="mg/dL"
+                            value={active.payload.measurements[tp.key].serumCreatinine}
+                            onChange={(e) =>
+                              updateMeasurement(active.id, tp.key, "serumCreatinine", e.target.value)
+                            }
+                          />
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* PET Tests Section - Only show if patient is selected */}
-      {patient?.phn && (
-        <>
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TestTube className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold">
-                PET Tests for {patient.name}
-              </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Creatinine Analysis</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label>D/P Creatinine = Dialysate creatinine (T4) / Serum creatinine (T0)</Label>
+                    <div className="mt-1">
+                      <Badge variant={active.payload.dpCreatinine ? "default" : "secondary"}>
+                        {active.payload.dpCreatinine || "Not calculated"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Classification</Label>
+                    <div>
+                      <Badge variant={active.payload.creatinineClassification ? "default" : "secondary"}>
+                        {active.payload.creatinineClassification || "—"}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Glucose Analysis</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label>D/D0 Glucose = Dialysate glucose (T4) / Dialysate glucose (T0)</Label>
+                    <div className="mt-1">
+                      <Badge variant={active.payload.dd0Glucose ? "default" : "secondary"}>
+                        {active.payload.dd0Glucose || "Not calculated"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Classification</Label>
+                    <div>
+                      <Badge variant={active.payload.glucoseClassification ? "default" : "secondary"}>
+                        {active.payload.glucoseClassification || "—"}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <Button type="button" onClick={addTest}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add PET Test
-            </Button>
-          </div>
-
-          {/* Test selector chips */}
-          {tests.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {tests.map((t) => (
-                <Button
-                  key={t.id}
-                  type="button"
-                  size="sm"
-                  variant={t.id === activeId ? "default" : "outline"}
-                  onClick={() => setActiveId(t.id)}
-                >
-                  {t.label}
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                No PET tests for this patient. Click <span className="font-medium">Add PET Test</span> to begin.
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Active test form */}
-          {active && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <TestTube className="w-5 h-5 text-primary" />
-                  {active.label}
-                </CardTitle>
-                <Button type="button" variant="destructive" size="sm" onClick={() => removeTest(active.id)}>
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Remove
-                </Button>
-              </CardHeader>
-
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Test Date</Label>
-                  <Input
-                    type="date"
-                    value={active.payload.date}
-                    onChange={(e) => updatePayload(active.id, "date", e.target.value)}
-                  />
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-border">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="border border-border p-2 text-left">Time</th>
-                        <th className="border border-border p-2 text-left">Dialysate Creatinine</th>
-                        <th className="border border-border p-2 text-left">Dialysate Glucose</th>
-                        <th className="border border-border p-2 text-left">Serum Creatinine</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {timePoints.map((tp) => (
-                        <tr key={tp.key}>
-                          <td className="border border-border p-2 font-medium">{tp.label}</td>
-                          <td className="border border-border p-2">
-                            <Input
-                              placeholder="mg/dL"
-                              value={active.payload.measurements[tp.key].dialysateCreatinine}
-                              onChange={(e) =>
-                                updateMeasurement(active.id, tp.key, "dialysateCreatinine", e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="border border-border p-2">
-                            <Input
-                              placeholder="mg/dL"
-                              value={active.payload.measurements[tp.key].dialysateGlucose}
-                              onChange={(e) =>
-                                updateMeasurement(active.id, tp.key, "dialysateGlucose", e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="border border-border p-2">
-                            {tp.showSerum ? (
-                              <Input
-                                placeholder="mg/dL"
-                                value={active.payload.measurements[tp.key].serumCreatinine}
-                                onChange={(e) =>
-                                  updateMeasurement(active.id, tp.key, "serumCreatinine", e.target.value)
-                                }
-                              />
-                            ) : (
-                              <span className="text-muted-foreground">N/A</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <Button type="button" onClick={() => calculateRatios(active.id)} className="w-full">
-                  <Calculator className="w-4 h-4 mr-2" />
-                  Calculate Ratios
-                </Button>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Creatinine Analysis</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <Label>D/P Creatinine = Dialysate creatinine (T4) / Serum creatinine (T0)</Label>
-                        <div className="mt-1">
-                          <Badge variant={active.payload.dpCreatinine ? "default" : "secondary"}>
-                            {active.payload.dpCreatinine || "Not calculated"}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Classification</Label>
-                        <div>
-                          <Badge variant={active.payload.creatinineClassification ? "default" : "secondary"}>
-                            {active.payload.creatinineClassification || "—"}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Glucose Analysis</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <Label>D/D0 Glucose = Dialysate glucose (T4) / Dialysate glucose (T0)</Label>
-                        <div className="mt-1">
-                          <Badge variant={active.payload.dd0Glucose ? "default" : "secondary"}>
-                            {active.payload.dd0Glucose || "Not calculated"}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Classification</Label>
-                        <div>
-                          <Badge variant={active.payload.glucoseClassification ? "default" : "secondary"}>
-                            {active.payload.glucoseClassification || "—"}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <p>No test is currently active. Add a new test to get started.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

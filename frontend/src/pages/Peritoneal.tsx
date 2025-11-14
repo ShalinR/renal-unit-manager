@@ -7,6 +7,7 @@ import DataPreview from "@/components/DataPreview";
 import CAPDSummary from "@/components/CAPDSummary";
 import MonthlyAssessment from "@/components/MonthlyAssessment";
 import InfectionTracking, { PeritonitisEpisode, ExitSiteEpisode, TunnelEpisode } from "@/components/InfectionTracking";
+import { usePatientContext } from "@/context/PatientContext";
 
 type ActiveView =
   | "dashboard"
@@ -21,6 +22,8 @@ interface CAPDData {
   catheterInsertionDate: string;
   insertionDoneBy: string;
   insertionPlace: string;
+  technique: string;
+  designation: string;
   firstFlushing: string;
   secondFlushing: string;
   thirdFlushing: string;
@@ -40,32 +43,126 @@ interface CAPDData {
   tunnelInfections: TunnelEpisode[]; // persisted here
 }
 
-const STORAGE_KEY = "capdSummary";
-
 const Peritoneal = () => {
+  const { patient } = usePatientContext();
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
   const [capdData, setCapdData] = useState<CAPDData | null>(null);
 
+  // Load data based on PHN when patient is selected
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setCapdData(JSON.parse(raw));
-    } catch (e) {
-      console.error("Failed to load saved CAPD summary:", e);
-    }
-  }, []);
+    const loadPatientData = async () => {
+      const phn = patient?.phn;
+      if (!phn) {
+        setCapdData(null);
+        return;
+      }
+
+      try {
+        // Fetch all data for this patient
+        const [registrationResponse, capdResponse, infectionResponse] = await Promise.all([
+          fetch(`http://localhost:8081/api/patient-registration/${phn}`),
+          fetch(`http://localhost:8081/api/capd-summary/${phn}`),
+          fetch(`http://localhost:8081/api/infection-tracking/${phn}`),
+        ]);
+
+        const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
+        const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
+        const infectionData = infectionResponse.ok ? await infectionResponse.json() : null;
+
+        // Combine all data
+        if (registrationData || capdSummaryData || infectionData) {
+          const combinedData: CAPDData = {
+            counsellingDate: registrationData?.counsellingDate || capdSummaryData?.counsellingDate || "",
+            catheterInsertionDate: registrationData?.catheterInsertionDate || capdSummaryData?.catheterInsertionDate || "",
+            insertionDoneBy: registrationData?.insertionDoneBy || capdSummaryData?.insertionDoneBy || "",
+            insertionPlace: registrationData?.insertionPlace || capdSummaryData?.insertionPlace || "",
+            technique: registrationData?.technique || capdSummaryData?.technique || "",
+            designation: registrationData?.designation || capdSummaryData?.designation || "",
+            firstFlushing: registrationData?.firstFlushing || capdSummaryData?.firstFlushing || "",
+            secondFlushing: registrationData?.secondFlushing || capdSummaryData?.secondFlushing || "",
+            thirdFlushing: registrationData?.thirdFlushing || capdSummaryData?.thirdFlushing || "",
+            initiationDate: registrationData?.initiationDate || capdSummaryData?.initiationDate || "",
+            petResults: capdSummaryData?.petResults || {
+              first: { date: "", data: null },
+              second: { date: "", data: null },
+              third: { date: "", data: null },
+            },
+            adequacyResults: capdSummaryData?.adequacyResults || {
+              first: { date: "", data: null },
+              second: { date: "", data: null },
+              third: { date: "", data: null },
+            },
+            peritonitisHistory: infectionData?.peritonitisHistory || [],
+            exitSiteInfections: infectionData?.exitSiteInfections || [],
+            tunnelInfections: infectionData?.tunnelInfections || [],
+          };
+          setCapdData(combinedData);
+        } else {
+          setCapdData(null);
+        }
+      } catch (error) {
+        console.error("Failed to load patient data:", error);
+        setCapdData(null);
+      }
+    };
+
+    loadPatientData();
+  }, [patient?.phn]);
 
   const persistCAPD = (data: CAPDData) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.error("Failed to save CAPD summary:", e);
-    }
+    // Data is now saved via API calls in individual components (CAPDSummary, InfectionTracking, etc.)
+    // This function is kept for backward compatibility but data is persisted via backend
     setCapdData(data);
   };
 
-  const handleCAPDSubmit = (data: CAPDData) => {
-    persistCAPD(data);
+  const handleCAPDSubmit = async (data: CAPDData) => {
+    // Data is saved via API in CAPDSummary component
+    // Refresh data from backend when going to preview
+    const phn = patient?.phn;
+    if (phn) {
+      try {
+        const [registrationResponse, capdResponse, infectionResponse] = await Promise.all([
+          fetch(`http://localhost:8081/api/patient-registration/${phn}`),
+          fetch(`http://localhost:8081/api/capd-summary/${phn}`),
+          fetch(`http://localhost:8081/api/infection-tracking/${phn}`),
+        ]);
+
+        const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
+        const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
+        const infectionData = infectionResponse.ok ? await infectionResponse.json() : null;
+
+        if (registrationData || capdSummaryData || infectionData) {
+          const combinedData: CAPDData = {
+            counsellingDate: registrationData?.counsellingDate || capdSummaryData?.counsellingDate || "",
+            catheterInsertionDate: registrationData?.catheterInsertionDate || capdSummaryData?.catheterInsertionDate || "",
+            insertionDoneBy: registrationData?.insertionDoneBy || capdSummaryData?.insertionDoneBy || "",
+            insertionPlace: registrationData?.insertionPlace || capdSummaryData?.insertionPlace || "",
+            technique: registrationData?.technique || capdSummaryData?.technique || "",
+            designation: registrationData?.designation || capdSummaryData?.designation || "",
+            firstFlushing: registrationData?.firstFlushing || capdSummaryData?.firstFlushing || "",
+            secondFlushing: registrationData?.secondFlushing || capdSummaryData?.secondFlushing || "",
+            thirdFlushing: registrationData?.thirdFlushing || capdSummaryData?.thirdFlushing || "",
+            initiationDate: registrationData?.initiationDate || capdSummaryData?.initiationDate || "",
+            petResults: capdSummaryData?.petResults || {
+              first: { date: "", data: null },
+              second: { date: "", data: null },
+              third: { date: "", data: null },
+            },
+            adequacyResults: capdSummaryData?.adequacyResults || {
+              first: { date: "", data: null },
+              second: { date: "", data: null },
+              third: { date: "", data: null },
+            },
+            peritonitisHistory: infectionData?.peritonitisHistory || [],
+            exitSiteInfections: infectionData?.exitSiteInfections || [],
+            tunnelInfections: infectionData?.tunnelInfections || [],
+          };
+          setCapdData(combinedData);
+        }
+      } catch (error) {
+        console.error("Failed to refresh data:", error);
+      }
+    }
     setActiveView("preview");
   };
 
@@ -74,33 +171,43 @@ const Peritoneal = () => {
     const [peritonitis, setPeritonitis] = useState<PeritonitisEpisode[]>(capdData?.peritonitisHistory ?? []);
     const [exitSite, setExitSite] = useState<ExitSiteEpisode[]>(capdData?.exitSiteInfections ?? []);
     const [tunnel, setTunnel] = useState<TunnelEpisode[]>(capdData?.tunnelInfections ?? []);
+    const [activeTab, setActiveTab] = useState<string>("peritonitis");
 
-    const saveAll = () => {
-      const base: CAPDData =
-        capdData ?? {
-          counsellingDate: "",
-          catheterInsertionDate: "",
-          insertionDoneBy: "",
-          insertionPlace: "",
-          firstFlushing: "",
-          secondFlushing: "",
-          thirdFlushing: "",
-          initiationDate: "",
-          petResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
-          adequacyResults: { first: { date: "", data: null }, second: { date: "", data: null }, third: { date: "", data: null } },
-          peritonitisHistory: [],
-          exitSiteInfections: [],
-          tunnelInfections: [],
-        };
+    // Load infection data when patient changes
+    useEffect(() => {
+      const phn = patient?.phn;
+      if (!phn) {
+        setPeritonitis([]);
+        setExitSite([]);
+        setTunnel([]);
+        return;
+      }
 
-      const updated: CAPDData = {
-        ...base,
-        peritonitisHistory: peritonitis,
-        exitSiteInfections: exitSite,
-        tunnelInfections: tunnel,
+      const loadInfectionData = async () => {
+        try {
+          const response = await fetch(`http://localhost:8081/api/infection-tracking/${phn}`);
+          if (response.ok) {
+            const data = await response.json();
+            setPeritonitis(data.peritonitisHistory || []);
+            setExitSite(data.exitSiteInfections || []);
+            setTunnel(data.tunnelInfections || []);
+          }
+        } catch (error) {
+          console.error("Failed to load infection data:", error);
+        }
       };
-      persistCAPD(updated);
-    };
+
+      loadInfectionData();
+    }, [patient?.phn]);
+
+    // Update local state when capdData changes
+    useEffect(() => {
+      if (capdData) {
+        setPeritonitis(capdData.peritonitisHistory || []);
+        setExitSite(capdData.exitSiteInfections || []);
+        setTunnel(capdData.tunnelInfections || []);
+      }
+    }, [capdData]);
 
     return (
       <div className="space-y-8 max-w-6xl mx-auto">
@@ -120,11 +227,11 @@ const Peritoneal = () => {
           onUpdatePeritonitis={setPeritonitis}
           onUpdateExitSite={setExitSite}
           onUpdateTunnel={setTunnel}               // ⬅️ NEW
+          onTabChange={setActiveTab}                // ⬅️ NEW
         />
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-between items-center gap-3">
           <Button variant="default" onClick={() => setActiveView("dashboard")}>Back</Button>
-          <Button onClick={saveAll}>Save Complications</Button>
         </div>
       </div>
     );
@@ -155,6 +262,15 @@ const Peritoneal = () => {
                 <Activity className="w-8 h-8 text-primary " />
               </div>
               <h1 className="text-4xl font-bold text-foreground dark:text-slate-200">Peritoneal Dialysis</h1>
+              {patient?.phn ? (
+                <div className="inline-flex items-center justify-center gap-2 text-lg text-green-600 bg-green-50 px-4 py-2 rounded-full">
+                  <span>Patient: {patient.name} (PHN: {patient.phn})</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center justify-center gap-2 text-lg text-amber-600 bg-amber-50 px-4 py-2 rounded-full">
+                  <span>⚠️ Please search for a patient by PHN to begin</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -194,8 +310,18 @@ const Peritoneal = () => {
                   <CardDescription>Open the latest saved CAPD summary &amp; reports</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline" disabled={!capdData}>
-                    {capdData ? "Open Preview" : "No Saved Results"}
+                  <Button 
+                    className="w-full bg-blue-500" 
+                    variant="outline" 
+                    disabled={!patient?.phn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (patient?.phn) {
+                        setActiveView("preview");
+                      }
+                    }}
+                  >
+                    {patient?.phn ? (capdData ? "Open Preview" : "No Saved Results") : "Search Patient First"}
                   </Button>
                 </CardContent>
               </Card>
