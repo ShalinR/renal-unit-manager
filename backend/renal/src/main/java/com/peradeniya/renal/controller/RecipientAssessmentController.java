@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recipient-assessment")
@@ -69,7 +70,19 @@ public class RecipientAssessmentController {
             return ResponseEntity.notFound().build();
         }
     }
+    @PostMapping("/{phn}/assign-donor")
+    public ResponseEntity<Void> assignDonorToRecipient(
+            @PathVariable String phn,
+            @RequestBody Map<String, String> assignmentRequest) {
 
+        String donorId = assignmentRequest.get("donorId");
+        if (donorId == null || donorId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        service.assignDonorToRecipient(phn, donorId);
+        return ResponseEntity.ok().build();
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.deleteById(id);

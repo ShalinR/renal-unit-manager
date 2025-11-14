@@ -3,6 +3,7 @@ package com.peradeniya.renal.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "recipient_assessment")
@@ -184,6 +185,19 @@ public class RecipientAssessment {
             @AttributeOverride(name = "notes", column = @Column(name = "reviewed_by_notes", columnDefinition = "TEXT")) // CONVERT TO TEXT
     })
     private ReviewedBy reviewedBy;
+
+    // ✅ CORRECT: transfusionHistory is a COLLECTION, so it uses @ElementCollection
+    @ElementCollection
+    @CollectionTable(
+            name = "recipient_transfusion_history",
+            joinColumns = @JoinColumn(name = "recipient_assessment_id")
+    )
+    @AttributeOverrides({
+            @AttributeOverride(name = "date", column = @Column(name = "transfusion_date")),
+            @AttributeOverride(name = "indication", column = @Column(name = "transfusion_indication", columnDefinition = "TEXT")),
+            @AttributeOverride(name = "volume", column = @Column(name = "transfusion_volume", length = 50))
+    })
+    private List<TransfusionHistory> transfusionHistory;
 
     @ManyToOne
     @JoinColumn(name = "patient_id")

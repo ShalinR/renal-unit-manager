@@ -66,6 +66,11 @@ public class DonorAssessmentService {
         donor.setAssignedRecipientPhn(assignment.getRecipientPhn());
 
         repository.save(donor);
+
+        // Also update the recipient assessment with the donor ID
+        // This ensures the recipient knows which donor is assigned
+        // Note: You might need to inject RecipientAssessmentService here
+        // or create a separate service method that coordinates both updates
     }
 
     @Transactional

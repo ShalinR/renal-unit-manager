@@ -12,6 +12,7 @@ interface FollowUpFormProps {
   setActiveView: React.Dispatch<
     React.SetStateAction<"dashboard" | "donor-assessment" | "recipient-assessment" | "kt" | "follow-up">
   >;
+  patientName?: string;
 }
 
 interface FollowUpVisit {
@@ -119,7 +120,7 @@ const initialVisit: FollowUpVisit = {
   }
 };
 
-const FollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
+const FollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView, patientName = "Patient Name" }) => {
   const [visits, setVisits] = useState<FollowUpVisit[]>([]);
   const [activeVisitIdx, setActiveVisitIdx] = useState<number | null>(null);
   const [visitForm, setVisitForm] = useState<FollowUpVisit>(initialVisit);
@@ -172,6 +173,27 @@ const FollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
         </div>
       </div>
 
+      {/* Patient Header */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 p-2 rounded-full">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">{patientName}</h2>
+                <p className="text-sm text-slate-600">Follow-up Visits & Medical Records</p>
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">
+              <Activity className="w-3 h-3 mr-1" />
+              {visits.length} {visits.length === 1 ? 'Visit' : 'Visits'} Recorded
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Visits list */}
         <Card className="lg:col-span-1">
@@ -212,24 +234,33 @@ const FollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
         {/* Form */}
         <Card className="lg:col-span-3">
           <CardHeader className="bg-slate-50">
-            <CardTitle className="flex items-center gap-2 text-slate-700">
-              {activeVisitIdx !== null ? (
-                <>
-                  <Save className="w-5 h-5" />
-                  Edit Visit
-                </>
-              ) : (
-                <>
-                  <Calendar className="w-5 h-5" />
-                  New Visit
-                </>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-slate-700">
+                  {activeVisitIdx !== null ? (
+                    <>
+                      <Save className="w-5 h-5" />
+                      Edit Visit
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-5 h-5" />
+                      New Visit
+                    </>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  {activeVisitIdx !== null 
+                    ? `Update the details of this patient visit for ${patientName}` 
+                    : `Record a new follow-up visit for ${patientName}`}
+                </CardDescription>
+              </div>
+              {activeVisitIdx !== null && (
+                <Badge variant="secondary" className="bg-amber-50 text-amber-700">
+                  Editing Visit
+                </Badge>
               )}
-            </CardTitle>
-            <CardDescription>
-              {activeVisitIdx !== null 
-                ? "Update the details of this patient visit" 
-                : "Record a new follow-up visit for the patient"}
-            </CardDescription>
+            </div>
           </CardHeader>
           <CardContent className="pt-6">
             <Tabs defaultValue="basic" className="w-full">
@@ -849,7 +880,12 @@ const FollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
                   {visits[viewIdx].postKTDuration}
                 </Badge>
               </CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setViewIdx(null)}>Close</Button>
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-slate-600">
+                  Patient: <span className="font-semibold text-slate-800">{patientName}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setViewIdx(null)}>Close</Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
