@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { User, Heart, Activity, TestTube, Stethoscope, ClipboardList, Pill, Users } from 'lucide-react';
 import { DonorAssessmentForm } from '../types/donor';
-
+// ERROR: These imports are missing
 interface DonorDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,7 +20,22 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
   donorData,
   showAssignmentInfo = false,
 }) => {
-  if (!donorData) return null;
+  
+  React.useEffect(() => {
+    if (isOpen && donorData) {
+      console.log('🔍 DonorDetailsModal received data:', donorData);
+      console.log('📋 Name:', donorData.name);
+      console.log('📋 Age:', donorData.age);
+      console.log('📋 Examination data:', donorData.examination);
+      console.log('📋 Immunological details:', donorData.immunologicalDetails);
+    }
+  }, [isOpen, donorData]);
+  
+    if (!donorData) {
+    console.log('❌ DonorDetailsModal: No donorData provided');
+    return null;
+  }
+
 
   // Safe accessor functions with null checks
   const getComorbiditiesList = () => {

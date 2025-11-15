@@ -37,15 +37,37 @@ export interface KTFormData  {
   inductionTherapy: string;
   maintenance: string;
   maintenanceOther: string;
+  maintenancePred?: boolean;
+  maintenanceMMF?: boolean;
+  maintenanceTac?: boolean;
+  maintenanceEverolimus?: boolean;
+  maintenanceOtherText?: string;
+  immunologicalDetails?: ImmunologicalDetails;
+
+  // Infection Screen
+  cmvDonor: string;
+  cmvRecipient: string;
+  ebvDonor: string;
+  ebvRecipient: string;
+  cmvRiskCategory: string;
+  ebvRiskCategory: string;
+  tbMantoux: string;
+  hivAb: string;
+  hepBsAg: string;
+  hepCAb: string;
+  infectionRiskCategory: string;
   
   // Prophylaxis
-  cotrimoxazole: string;
+  cotrimoxazoleYes: boolean;
   cotriDuration: string;
   cotriStopped: string;
-  valganciclovir: string;
+  valganciclovirYes: boolean;
   valganDuration: string;
   valganStopped: string;
-  vaccination: string;
+  vaccinationCOVID: boolean;
+  vaccinationInfluenza: boolean;
+  vaccinationPneumococcal: boolean;
+  vaccinationVaricella: boolean;
   
   // Pre-operative
   preOpStatus: string;
@@ -55,9 +77,10 @@ export interface KTFormData  {
   // Immediate Post-Transplant
   preKTCreatinine: string;
   postKTCreatinine: string;
-  delayedGraft: string;
-  postKTDialysis: string;
-  acuteRejection: string;
+  delayedGraftYes: boolean;
+  postKTDialysisYes: boolean;
+  postKTPDYes: boolean;
+  acuteRejectionYes: boolean;
   acuteRejectionDetails: string;
   otherComplications: string;
   
@@ -70,7 +93,7 @@ export interface KTFormData  {
   postKTComp6: string;
   
   // Current Management
-  currentMeds: string;
+  medications: { name: string; dosage: string }[];
   
   // Final
   recommendations: string;

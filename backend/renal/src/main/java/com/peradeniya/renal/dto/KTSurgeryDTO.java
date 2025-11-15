@@ -1,7 +1,8 @@
 package com.peradeniya.renal.dto;
 
-import java.time.LocalDate;
+import com.peradeniya.renal.model.ImmunologicalDetails;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class KTSurgeryDTO {
     private Long id;
@@ -37,20 +38,46 @@ public class KTSurgeryDTO {
     private String peritonealPosition;
     private String sideOfKT;
 
-    // Immunological Details
+    // Immunosuppression
     private String preKT;
     private String inductionTherapy;
     private String maintenance;
     private String maintenanceOther;
+    private Boolean maintenancePred = false;
+    private Boolean maintenanceMMF = false;
+    private Boolean maintenanceTac = false;
+    private Boolean maintenanceEverolimus = false;
+    private String maintenanceOtherText;
+
+    // Immunological Details
+    private ImmunologicalDetails immunologicalDetails;
+
+    // Infection Screen
+    private String cmvDonor;
+    private String cmvRecipient;
+    private String ebvDonor;
+    private String ebvRecipient;
+    private String cmvRiskCategory;
+    private String ebvRiskCategory;
+    private String tbMantoux;
+    private String hivAb;
+    private String hepBsAg;
+    private String hepCAb;
+    private String infectionRiskCategory;
 
     // Prophylaxis
-    private String cotrimoxazole;
+    private Boolean cotrimoxazoleYes = false;
     private String cotriDuration;
     private String cotriStopped;
-    private String valganciclovir;
+    private Boolean valganciclovirYes = false;
     private String valganDuration;
     private String valganStopped;
-    private String vaccination;
+
+    // Vaccination
+    private Boolean vaccinationCOVID = false;
+    private Boolean vaccinationInfluenza = false;
+    private Boolean vaccinationPneumococcal = false;
+    private Boolean vaccinationVaricella = false;
 
     // Pre-operative
     private String preOpStatus;
@@ -60,9 +87,10 @@ public class KTSurgeryDTO {
     // Immediate Post-Transplant
     private String preKTCreatinine;
     private String postKTCreatinine;
-    private String delayedGraft;
-    private String postKTDialysis;
-    private String acuteRejection;
+    private Boolean delayedGraftYes = false;
+    private Boolean postKTDialysisYes = false;
+    private Boolean postKTPDYes = false;
+    private Boolean acuteRejectionYes = false;
     private String acuteRejectionDetails;
     private String otherComplications;
 
@@ -74,8 +102,8 @@ public class KTSurgeryDTO {
     private String postKTComp5;
     private String postKTComp6;
 
-    // Current Management
-    private String currentMeds;
+    // Medications
+    private List<MedicationDTO> medications;
 
     // Final
     private String recommendations;
@@ -84,7 +112,9 @@ public class KTSurgeryDTO {
     private LocalDateTime updatedAt;
 
     // Constructors
-    public KTSurgeryDTO() {}
+    public KTSurgeryDTO() {
+        this.immunologicalDetails = new ImmunologicalDetails();
+    }
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -177,8 +207,59 @@ public class KTSurgeryDTO {
     public String getMaintenanceOther() { return maintenanceOther; }
     public void setMaintenanceOther(String maintenanceOther) { this.maintenanceOther = maintenanceOther; }
 
-    public String getCotrimoxazole() { return cotrimoxazole; }
-    public void setCotrimoxazole(String cotrimoxazole) { this.cotrimoxazole = cotrimoxazole; }
+    public Boolean getMaintenancePred() { return maintenancePred; }
+    public void setMaintenancePred(Boolean maintenancePred) { this.maintenancePred = maintenancePred; }
+
+    public Boolean getMaintenanceMMF() { return maintenanceMMF; }
+    public void setMaintenanceMMF(Boolean maintenanceMMF) { this.maintenanceMMF = maintenanceMMF; }
+
+    public Boolean getMaintenanceTac() { return maintenanceTac; }
+    public void setMaintenanceTac(Boolean maintenanceTac) { this.maintenanceTac = maintenanceTac; }
+
+    public Boolean getMaintenanceEverolimus() { return maintenanceEverolimus; }
+    public void setMaintenanceEverolimus(Boolean maintenanceEverolimus) { this.maintenanceEverolimus = maintenanceEverolimus; }
+
+    public String getMaintenanceOtherText() { return maintenanceOtherText; }
+    public void setMaintenanceOtherText(String maintenanceOtherText) { this.maintenanceOtherText = maintenanceOtherText; }
+
+    public ImmunologicalDetails getImmunologicalDetails() { return immunologicalDetails; }
+    public void setImmunologicalDetails(ImmunologicalDetails immunologicalDetails) { this.immunologicalDetails = immunologicalDetails; }
+
+    public String getCmvDonor() { return cmvDonor; }
+    public void setCmvDonor(String cmvDonor) { this.cmvDonor = cmvDonor; }
+
+    public String getCmvRecipient() { return cmvRecipient; }
+    public void setCmvRecipient(String cmvRecipient) { this.cmvRecipient = cmvRecipient; }
+
+    public String getEbvDonor() { return ebvDonor; }
+    public void setEbvDonor(String ebvDonor) { this.ebvDonor = ebvDonor; }
+
+    public String getEbvRecipient() { return ebvRecipient; }
+    public void setEbvRecipient(String ebvRecipient) { this.ebvRecipient = ebvRecipient; }
+
+    public String getCmvRiskCategory() { return cmvRiskCategory; }
+    public void setCmvRiskCategory(String cmvRiskCategory) { this.cmvRiskCategory = cmvRiskCategory; }
+
+    public String getEbvRiskCategory() { return ebvRiskCategory; }
+    public void setEbvRiskCategory(String ebvRiskCategory) { this.ebvRiskCategory = ebvRiskCategory; }
+
+    public String getTbMantoux() { return tbMantoux; }
+    public void setTbMantoux(String tbMantoux) { this.tbMantoux = tbMantoux; }
+
+    public String getHivAb() { return hivAb; }
+    public void setHivAb(String hivAb) { this.hivAb = hivAb; }
+
+    public String getHepBsAg() { return hepBsAg; }
+    public void setHepBsAg(String hepBsAg) { this.hepBsAg = hepBsAg; }
+
+    public String getHepCAb() { return hepCAb; }
+    public void setHepCAb(String hepCAb) { this.hepCAb = hepCAb; }
+
+    public String getInfectionRiskCategory() { return infectionRiskCategory; }
+    public void setInfectionRiskCategory(String infectionRiskCategory) { this.infectionRiskCategory = infectionRiskCategory; }
+
+    public Boolean getCotrimoxazoleYes() { return cotrimoxazoleYes; }
+    public void setCotrimoxazoleYes(Boolean cotrimoxazoleYes) { this.cotrimoxazoleYes = cotrimoxazoleYes; }
 
     public String getCotriDuration() { return cotriDuration; }
     public void setCotriDuration(String cotriDuration) { this.cotriDuration = cotriDuration; }
@@ -186,8 +267,8 @@ public class KTSurgeryDTO {
     public String getCotriStopped() { return cotriStopped; }
     public void setCotriStopped(String cotriStopped) { this.cotriStopped = cotriStopped; }
 
-    public String getValganciclovir() { return valganciclovir; }
-    public void setValganciclovir(String valganciclovir) { this.valganciclovir = valganciclovir; }
+    public Boolean getValganciclovirYes() { return valganciclovirYes; }
+    public void setValganciclovirYes(Boolean valganciclovirYes) { this.valganciclovirYes = valganciclovirYes; }
 
     public String getValganDuration() { return valganDuration; }
     public void setValganDuration(String valganDuration) { this.valganDuration = valganDuration; }
@@ -195,8 +276,17 @@ public class KTSurgeryDTO {
     public String getValganStopped() { return valganStopped; }
     public void setValganStopped(String valganStopped) { this.valganStopped = valganStopped; }
 
-    public String getVaccination() { return vaccination; }
-    public void setVaccination(String vaccination) { this.vaccination = vaccination; }
+    public Boolean getVaccinationCOVID() { return vaccinationCOVID; }
+    public void setVaccinationCOVID(Boolean vaccinationCOVID) { this.vaccinationCOVID = vaccinationCOVID; }
+
+    public Boolean getVaccinationInfluenza() { return vaccinationInfluenza; }
+    public void setVaccinationInfluenza(Boolean vaccinationInfluenza) { this.vaccinationInfluenza = vaccinationInfluenza; }
+
+    public Boolean getVaccinationPneumococcal() { return vaccinationPneumococcal; }
+    public void setVaccinationPneumococcal(Boolean vaccinationPneumococcal) { this.vaccinationPneumococcal = vaccinationPneumococcal; }
+
+    public Boolean getVaccinationVaricella() { return vaccinationVaricella; }
+    public void setVaccinationVaricella(Boolean vaccinationVaricella) { this.vaccinationVaricella = vaccinationVaricella; }
 
     public String getPreOpStatus() { return preOpStatus; }
     public void setPreOpStatus(String preOpStatus) { this.preOpStatus = preOpStatus; }
@@ -213,14 +303,17 @@ public class KTSurgeryDTO {
     public String getPostKTCreatinine() { return postKTCreatinine; }
     public void setPostKTCreatinine(String postKTCreatinine) { this.postKTCreatinine = postKTCreatinine; }
 
-    public String getDelayedGraft() { return delayedGraft; }
-    public void setDelayedGraft(String delayedGraft) { this.delayedGraft = delayedGraft; }
+    public Boolean getDelayedGraftYes() { return delayedGraftYes; }
+    public void setDelayedGraftYes(Boolean delayedGraftYes) { this.delayedGraftYes = delayedGraftYes; }
 
-    public String getPostKTDialysis() { return postKTDialysis; }
-    public void setPostKTDialysis(String postKTDialysis) { this.postKTDialysis = postKTDialysis; }
+    public Boolean getPostKTDialysisYes() { return postKTDialysisYes; }
+    public void setPostKTDialysisYes(Boolean postKTDialysisYes) { this.postKTDialysisYes = postKTDialysisYes; }
 
-    public String getAcuteRejection() { return acuteRejection; }
-    public void setAcuteRejection(String acuteRejection) { this.acuteRejection = acuteRejection; }
+    public Boolean getPostKTPDYes() { return postKTPDYes; }
+    public void setPostKTPDYes(Boolean postKTPDYes) { this.postKTPDYes = postKTPDYes; }
+
+    public Boolean getAcuteRejectionYes() { return acuteRejectionYes; }
+    public void setAcuteRejectionYes(Boolean acuteRejectionYes) { this.acuteRejectionYes = acuteRejectionYes; }
 
     public String getAcuteRejectionDetails() { return acuteRejectionDetails; }
     public void setAcuteRejectionDetails(String acuteRejectionDetails) { this.acuteRejectionDetails = acuteRejectionDetails; }
@@ -246,8 +339,8 @@ public class KTSurgeryDTO {
     public String getPostKTComp6() { return postKTComp6; }
     public void setPostKTComp6(String postKTComp6) { this.postKTComp6 = postKTComp6; }
 
-    public String getCurrentMeds() { return currentMeds; }
-    public void setCurrentMeds(String currentMeds) { this.currentMeds = currentMeds; }
+    public List<MedicationDTO> getMedications() { return medications; }
+    public void setMedications(List<MedicationDTO> medications) { this.medications = medications; }
 
     public String getRecommendations() { return recommendations; }
     public void setRecommendations(String recommendations) { this.recommendations = recommendations; }

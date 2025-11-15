@@ -59,32 +59,48 @@ const FORM_STEPS = [
 interface DonorAssessmentProps {
   donorForm: DonorAssessmentForm;
   setDonorForm: React.Dispatch<React.SetStateAction<DonorAssessmentForm>>;
-  setActiveView: (view: "dashboard" | "donor-assessment" | "recipient-assessment" | "kt" | "follow-up" | "summary") => void;
+  setActiveView: (
+    view:
+      | "dashboard"
+      | "donor-assessment"
+      | "recipient-assessment"
+      | "kt"
+      | "follow-up"
+      | "summary"
+  ) => void;
   handleDonorFormChange: (field: string, value: any) => void;
   handleDonorFormSubmit: (e: React.FormEvent) => void;
 }
 
-const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
+const DonorAssessment: React.FC<DonorAssessmentProps> = ({
+  donorForm,
+  setDonorForm,
+  setActiveView,
+  handleDonorFormChange,
+  handleDonorFormSubmit,
+}) => {
   const [currentView, setCurrentView] = useState<"list" | "form">("list");
   const [currentStep, setCurrentStep] = useState(0);
   const [showDonorModal, setShowDonorModal] = useState(false);
-  const [selectedDonor, setSelectedDonor] = useState<DonorAssessmentForm | null>(null);
+  const [selectedDonor, setSelectedDonor] =
+    useState<DonorAssessmentForm | null>(null);
   const [searchPhn, setSearchPhn] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchedPatient, setSearchedPatient] = useState<Patient | null>(null);
   const [donorType, setDonorType] = useState<"new" | "existing">("new");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { patient } = usePatientContext();
+
   const {
     donors,
     addDonor,
     setSelectedDonor: setContextSelectedDonor,
     isLoading,
     error,
-    fetchDonors,
+    fetchAllDonors,
   } = useDonorContext();
-
   // Single source of truth for form data
   const [formData, setFormData] = useState<DonorAssessmentForm>({
     name: "",
@@ -227,7 +243,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
 
     try {
       const response = await fetch(`/api/patient/${searchPhn}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error("Patient not found with this PHN");
@@ -236,7 +252,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
       }
 
       const patientData: PatientBasicDTO = await response.json();
-      
+
       // Convert PatientBasicDTO to Patient type for the form
       const patientForForm: Patient = {
         phn: patientData.phn,
@@ -248,14 +264,14 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
         address: patientData.address || "",
         nicNo: patientData.nicNo || "",
         contactDetails: patientData.contactDetails || "",
-        emailAddress: patientData.emailAddress || ""
+        emailAddress: patientData.emailAddress || "",
       };
 
       setSearchedPatient(patientForForm);
       setDonorType("existing");
-      
+
       // Auto-populate personal information fields using direct state updates
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         name: patientForForm.name,
         age: patientForForm.age,
@@ -265,16 +281,17 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
         address: patientForForm.address,
         nicNo: patientForForm.nicNo,
         contactDetails: patientForForm.contactDetails,
-        emailAddress: patientForForm.emailAddress
+        emailAddress: patientForForm.emailAddress,
       }));
 
       if (currentStep !== 0) {
         setCurrentStep(0);
       }
-
     } catch (err) {
-      console.error('API Error:', err);
-      setSearchError("Cannot connect to server. Make sure the backend is running.");
+      console.error("API Error:", err);
+      setSearchError(
+        "Cannot connect to server. Make sure the backend is running."
+      );
     } finally {
       setIsSearching(false);
     }
@@ -289,146 +306,174 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
   }, []);
 
   // Helper function to convert Donor to DonorAssessmentForm
-  const convertDonorToFormData = useCallback((donor: Donor): DonorAssessmentForm => {
-    return {
-      name: donor.name || "",
-      age: Number(donor.age) || 0,
-      gender: donor.gender || "",
-      dateOfBirth: donor.dateOfBirth || "",
-      occupation: donor.occupation || "",
-      address: donor.address || "",
-      nicNo: donor.nicNo || "",
-      contactDetails: donor.contactDetails || "",
-      emailAddress: donor.emailAddress || "",
-      relationToRecipient: donor.relationToRecipient || "",
-      relationType: donor.relationType || "",
-      comorbidities: donor.comorbidities || {
-        dl: false,
-        dm: false,
-        psychiatricIllness: false,
-        htn: false,
-        ihd: false,
-      },
-      complains: "",
-      systemicInquiry: {
-        constitutional: { loa: false, low: false },
-        cvs: { chestPain: false, odema: false, sob: false },
-        respiratory: { cough: false, hemoptysis: false, wheezing: false },
-        git: {
-          constipation: false,
-          diarrhea: false,
-          melena: false,
-          prBleeding: false,
+  // Fixed convertDonorToFormData function
+  const convertDonorToFormData = useCallback(
+    (donor: Donor): DonorAssessmentForm => {
+      return {
+        // Basic information
+        name: donor.name || "",
+        age: donor.age || 0,
+        gender: donor.gender || "",
+        dateOfBirth: donor.dateOfBirth || "",
+        occupation: donor.occupation || "",
+        address: donor.address || "",
+        nicNo: donor.nicNo || "",
+        contactDetails: donor.contactDetails || "",
+        emailAddress: donor.emailAddress || "",
+        relationToRecipient: donor.relationToRecipient || "",
+        relationType: donor.relationType || "",
+
+        // Medical history - these now exist in the updated Donor type
+        comorbidities: donor.comorbidities || {
+          dl: false,
+          dm: false,
+          psychiatricIllness: false,
+          htn: false,
+          ihd: false,
         },
-        renal: { hematuria: false, frothyUrine: false },
-        neuro: {
-          seizures: false,
-          visualDisturbance: false,
-          headache: false,
-          limbWeakness: false,
-        },
-        gynecology: {
-          pvBleeding: false,
-          menopause: false,
-          menorrhagia: false,
-          lrmp: false,
-        },
-        sexualHistory: "",
-      },
-      drugHistory: "",
-      allergyHistory: { foods: false, drugs: false, p: false },
-      familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
-      substanceUse: { smoking: false, alcohol: false, other: "" },
-      socialHistory: {
-        spouseDetails: "",
-        childrenDetails: "",
-        income: "",
-        other: "",
-      },
-      examination: donor.examination || {
-        height: "",
-        weight: "",
-        bmi: "",
-        pallor: false,
-        icterus: false,
-        oral: {
-          dentalCaries: false,
-          oralHygiene: false,
-          satisfactory: false,
-          unsatisfactory: false,
-        },
-        lymphNodes: { cervical: false, axillary: false, inguinal: false },
-        clubbing: false,
-        ankleOedema: false,
-        cvs: { bp: "", pr: "", murmurs: false },
-        respiratory: {
-          rr: false,
-          spo2: false,
-          auscultation: false,
-          crepts: false,
-          ranchi: false,
-          effusion: false,
-        },
-        abdomen: {
-          hepatomegaly: false,
-          splenomegaly: false,
-          renalMasses: false,
-          freeFluid: false,
-        },
-        BrcostExamination: "",
-        neurologicalExam: {
-          cranialNerves: false,
-          upperLimb: false,
-          lowerLimb: false,
-          coordination: false,
-        },
-      },
-      immunologicalDetails: donor.immunologicalDetails || {
-        bloodGroup: {
-          d: donor.bloodGroup?.charAt(0) || "",
-          r: donor.bloodGroup?.charAt(1) || "",
-        },
-        crossMatch: { tCell: "", bCell: "" },
-        hlaTyping: {
-          donor: {
-            hlaA: "",
-            hlaB: "",
-            hlaC: "",
-            hlaDR: "",
-            hlaDP: "",
-            hlaDQ: "",
+        complains: donor.complains || "",
+
+        // Systemic inquiry
+        systemicInquiry: donor.systemicInquiry || {
+          constitutional: { loa: false, low: false },
+          cvs: { chestPain: false, odema: false, sob: false },
+          respiratory: { cough: false, hemoptysis: false, wheezing: false },
+          git: {
+            constipation: false,
+            diarrhea: false,
+            melena: false,
+            prBleeding: false,
           },
-          recipient: {
-            hlaA: "",
-            hlaB: "",
-            hlaC: "",
-            hlaDR: "",
-            hlaDP: "",
-            hlaDQ: "",
+          renal: { hematuria: false, frothyUrine: false },
+          neuro: {
+            seizures: false,
+            visualDisturbance: false,
+            headache: false,
+            limbWeakness: false,
           },
-          conclusion: {
-            hlaA: "",
-            hlaB: "",
-            hlaC: "",
-            hlaDR: "",
-            hlaDP: "",
-            hlaDQ: "",
+          gynecology: {
+            pvBleeding: false,
+            menopause: false,
+            menorrhagia: false,
+            lrmp: false,
+          },
+          sexualHistory: "",
+        },
+
+        // Drug & allergy
+        drugHistory: donor.drugHistory || "",
+        allergyHistory: donor.allergyHistory || {
+          foods: false,
+          drugs: false,
+          p: false,
+        },
+
+        // Family history
+        familyHistory: donor.familyHistory || {
+          dm: "",
+          htn: "",
+          ihd: "",
+          stroke: "",
+          renal: "",
+        },
+
+        // Substance use
+        substanceUse: donor.substanceUse || {
+          smoking: false,
+          alcohol: false,
+          other: "",
+        },
+
+        // Social history
+        socialHistory: donor.socialHistory || {
+          spouseDetails: "",
+          childrenDetails: "",
+          income: "",
+          other: "",
+        },
+
+        // Examination
+        examination: donor.examination || {
+          height: "",
+          weight: "",
+          bmi: "",
+          pallor: false,
+          icterus: false,
+          oral: {
+            dentalCaries: false,
+            oralHygiene: false,
+            satisfactory: false,
+            unsatisfactory: false,
+          },
+          lymphNodes: { cervical: false, axillary: false, inguinal: false },
+          clubbing: false,
+          ankleOedema: false,
+          cvs: { bp: "", pr: "", murmurs: false },
+          respiratory: {
+            rr: false,
+            spo2: false,
+            auscultation: false,
+            crepts: false,
+            ranchi: false,
+            effusion: false,
+          },
+          abdomen: {
+            hepatomegaly: false,
+            splenomegaly: false,
+            renalMasses: false,
+            freeFluid: false,
+          },
+          BrcostExamination: "",
+          neurologicalExam: {
+            cranialNerves: false,
+            upperLimb: false,
+            lowerLimb: false,
+            coordination: false,
           },
         },
-        pra: { pre: "", post: "" },
-        dsa: "",
-        immunologicalRisk: "",
-      },
-    };
-  }, []);
+
+        // Immunological details
+        immunologicalDetails: donor.immunologicalDetails || {
+          bloodGroup: { d: "", r: "" },
+          crossMatch: { tCell: "", bCell: "" },
+          hlaTyping: {
+            donor: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+            recipient: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+            conclusion: {
+              hlaA: "",
+              hlaB: "",
+              hlaC: "",
+              hlaDR: "",
+              hlaDP: "",
+              hlaDQ: "",
+            },
+          },
+          pra: { pre: "", post: "" },
+          dsa: "",
+          immunologicalRisk: "",
+        },
+      };
+    },
+    []
+  );
 
   useEffect(() => {
-    if (patient?.phn) {
-      fetchDonors(patient.phn);
-    } else {
-      fetchDonors();
-    }
-  }, [patient?.phn, fetchDonors]);
+    fetchAllDonors();
+  }, [fetchAllDonors]);
 
   // Calculate BMI function
   const calculateBMI = useCallback(() => {
@@ -437,23 +482,27 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
 
     if (height && weight && height > 0 && weight > 0) {
       const bmi = (weight / (height / 100) ** 2).toFixed(2);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         examination: {
           ...prev.examination,
-          bmi: bmi
-        }
+          bmi: bmi,
+        },
       }));
     } else if (formData.examination.bmi && (!height || !weight)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         examination: {
           ...prev.examination,
-          bmi: ""
-        }
+          bmi: "",
+        },
       }));
     }
-  }, [formData.examination.height, formData.examination.weight, formData.examination.bmi]);
+  }, [
+    formData.examination.height,
+    formData.examination.weight,
+    formData.examination.bmi,
+  ]);
 
   const nextStep = useCallback(() => {
     if (currentStep < FORM_STEPS.length - 1) {
@@ -467,6 +516,25 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
     }
   }, [currentStep]);
 
+  const handleHlaChange = (
+    type: "donor" | "recipient" | "conclusion",
+    hla: string,
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      immunologicalDetails: {
+        ...prev.immunologicalDetails,
+        hlaTyping: {
+          ...prev.immunologicalDetails.hlaTyping,
+          [type]: {
+            ...prev.immunologicalDetails.hlaTyping[type],
+            [hla]: value,
+          },
+        },
+      },
+    }));
+  };
   const resetForm = useCallback(() => {
     setFormData({
       name: "",
@@ -598,88 +666,95 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!formData.name || !formData.nicNo) {
-      alert("Please fill in at least the donor's name and NIC number, or search for an existing patient first.");
-      return;
-    }
+  if (!formData.name || !formData.nicNo) {
+    alert(
+      "Please fill in at least the donor's name and NIC number, or search for an existing patient first."
+    );
+    return;
+  }
 
-    const requiredFields = [
-      { field: formData.name, name: "Full Name" },
-      { field: formData.age, name: "Age" },
-      { field: formData.gender, name: "Gender" },
-      { field: formData.nicNo, name: "NIC Number" },
-      { field: formData.contactDetails, name: "Contact Details" },
-    ];
+  const requiredFields = [
+    { field: formData.name, name: "Full Name" },
+    { field: formData.age, name: "Age" },
+    { field: formData.gender, name: "Gender" },
+    { field: formData.nicNo, name: "NIC Number" },
+    { field: formData.contactDetails, name: "Contact Details" },
+  ];
 
-    const missingFields = requiredFields.filter((item) => !item.field);
-    if (missingFields.length > 0) {
-      const fieldNames = missingFields.map((item) => item.name).join(", ");
-      alert(`Please fill in the following required fields: ${fieldNames}`);
-      return;
-    }
+  const missingFields = requiredFields.filter((item) => !item.field);
+  if (missingFields.length > 0) {
+    const fieldNames = missingFields.map((item) => item.name).join(", ");
+    alert(`Please fill in the following required fields: ${fieldNames}`);
+    return;
+  }
 
-    try {
-      const patientPhn = searchedPatient?.phn || formData.nicNo;
-      await addDonor(formData, patientPhn);
+  setIsSubmitting(true);
 
-      alert("Donor registration submitted successfully! The donor is now available for selection.");
-      setCurrentStep(0);
-      setCurrentView("list");
-      clearSearch();
-    } catch (err) {
-      console.error("Failed to submit donor:", err);
-      alert("Failed to submit donor. Please try again.");
-    }
-  };
+  try {
+    const patientPhn = searchedPatient?.phn || formData.nicNo;
+    await addDonor(formData, patientPhn);
 
-  const handleSelectDonor = useCallback((donor: Donor) => {
-    setContextSelectedDonor(donor);
-    alert(`Donor ${donor.name} selected! You can now use this donor in recipient assessment.`);
+    alert(
+      "Donor registration submitted successfully! The donor is now available for selection."
+    );
+    setCurrentStep(0);
+    setCurrentView("list");
+    clearSearch();
+  } catch (err) {
+    console.error("Failed to submit donor:", err);
+    alert("Failed to submit donor. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-    if (setActiveView) {
-      setActiveView("recipient-assessment");
-    }
-  }, [setContextSelectedDonor, setActiveView]);
+  const CheckboxField = useCallback(
+    ({
+      name,
+      label,
+      checked,
+      onChange,
+    }: {
+      name: string;
+      label: string;
+      checked: boolean;
+      onChange: (checked: boolean) => void;
+    }) => (
+      <label className="flex items-start gap-3 cursor-pointer group">
+        <Checkbox
+          checked={checked}
+          onCheckedChange={(checked) => onChange(checked === true)}
+          className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+        />
+        <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
+          {label}
+        </span>
+      </label>
+    ),
+    []
+  );
 
-  const CheckboxField = useCallback(({
-    name,
-    label,
-    checked,
-    onChange,
-  }: {
-    name: string;
-    label: string;
-    checked: boolean;
-    onChange: (checked: boolean) => void;
-  }) => (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(checked) => onChange(checked === true)}
-        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-      />
-      <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
-        {label}
-      </span>
-    </label>
-  ), []);
-
-  const SectionCard = useCallback(({
-    title,
-    children,
-    className = "",
-  }: {
-    title: string;
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <div className={`bg-white border border-slate-200 rounded-lg p-6 ${className}`}>
-      <h4 className="text-base font-medium text-slate-900 mb-4">{title}</h4>
-      {children}
-    </div>
-  ), []);
+  const SectionCard = useCallback(
+    ({
+      title,
+      children,
+      className = "",
+    }: {
+      title: string;
+      children: React.ReactNode;
+      className?: string;
+    }) => (
+      <div
+        className={`bg-white border border-slate-200 rounded-lg p-6 ${className}`}
+      >
+        <h4 className="text-base font-medium text-slate-900 mb-4">{title}</h4>
+        {children}
+      </div>
+    ),
+    []
+  );
 
   // Search Bar Component
   const SearchBar = () => (
@@ -687,7 +762,9 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-medium text-slate-900">Search Existing Patient</h3>
+            <h3 className="text-lg font-medium text-slate-900">
+              Search Existing Patient
+            </h3>
             <p className="text-sm text-slate-600">
               Search by PHN to auto-populate personal information
             </p>
@@ -698,10 +775,13 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
             </Badge>
           )}
         </div>
-        
+
         <div className="flex gap-4">
           <div className="flex-1">
-            <Label htmlFor="phn-search" className="text-sm font-medium text-slate-700 mb-2 block">
+            <Label
+              htmlFor="phn-search"
+              className="text-sm font-medium text-slate-700 mb-2 block"
+            >
               PHN Number
             </Label>
             <div className="flex gap-2">
@@ -713,7 +793,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 onChange={(e) => setSearchPhn(e.target.value)}
                 className="flex-1 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     searchPatientByPhn();
                   }
                 }}
@@ -750,15 +830,19 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
               <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-blue-900">{searchedPatient.name}</p>
+                    <p className="font-medium text-blue-900">
+                      {searchedPatient.name}
+                    </p>
                     <p className="text-sm text-blue-700">
-                      PHN: {searchedPatient.phn} | Age: {searchedPatient.age} | Gender: {searchedPatient.gender}
+                      PHN: {searchedPatient.phn} | Age: {searchedPatient.age} |
+                      Gender: {searchedPatient.gender}
                     </p>
                   </div>
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <p className="text-xs text-blue-600 mt-2">
-                  Personal information has been auto-populated from your database.
+                  Personal information has been auto-populated from your
+                  database.
                 </p>
               </div>
             )}
@@ -797,7 +881,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
               <span>Error loading donors: {error}</span>
             </div>
             <Button
-              onClick={() => fetchDonors(patient?.phn)}
+              onClick={() => fetchAllDonors()}
               variant="outline"
               size="sm"
               className="mt-2"
@@ -901,33 +985,24 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                           }`}
                         >
                           {donor.status
-                            ? donor.status.charAt(0).toUpperCase() + donor.status.slice(1)
+                            ? donor.status.charAt(0).toUpperCase() +
+                              donor.status.slice(1)
                             : "Available"}
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-slate-600 border-slate-300 hover:bg-slate-50"
-                            onClick={() => {
-                              setSelectedDonor(convertDonorToFormData(donor));
-                              setShowDonorModal(true);
-                            }}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => handleSelectDonor(donor)}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Select
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-slate-600 border-slate-300 hover:bg-slate-50"
+                          onClick={() => {
+                            setSelectedDonor(convertDonorToFormData(donor));
+                            setShowDonorModal(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Details
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -948,34 +1023,47 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
             <SearchBar />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="name"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Full Name <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   placeholder="Enter full name"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="age" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="age"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Age <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Input
                   id="age"
                   type="number"
                   value={formData.age}
-                  onChange={(e) => setFormData(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      age: parseInt(e.target.value) || 0,
+                    }))
+                  }
                   placeholder="Enter age"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
@@ -983,7 +1071,9 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <select
                   value={formData.gender}
-                  onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, gender: e.target.value }))
+                  }
                   className="w-full px-3 py-2 border border-slate-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select gender</option>
@@ -993,85 +1083,127 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dateOfBirth" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="dateOfBirth"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Date of Birth <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Input
                   id="dateOfBirth"
                   type="date"
                   value={formData.dateOfBirth}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      dateOfBirth: e.target.value,
+                    }))
+                  }
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="occupation" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="occupation"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Occupation
                 </Label>
                 <Input
                   id="occupation"
                   value={formData.occupation}
-                  onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      occupation: e.target.value,
+                    }))
+                  }
                   placeholder="Enter occupation"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nicNo" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="nicNo"
+                  className="text-sm font-medium text-slate-700"
+                >
                   NIC Number <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Input
                   id="nicNo"
                   value={formData.nicNo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nicNo: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, nicNo: e.target.value }))
+                  }
                   placeholder="Enter NIC number"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="address" className="text-sm font-medium text-slate-700">
+              <Label
+                htmlFor="address"
+                className="text-sm font-medium text-slate-700"
+              >
                 Address
               </Label>
               <Textarea
                 id="address"
                 value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, address: e.target.value }))
+                }
                 rows={3}
                 className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Enter full address"
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="contactDetails" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="contactDetails"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Phone Number <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Input
                   id="contactDetails"
                   value={formData.contactDetails}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contactDetails: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contactDetails: e.target.value,
+                    }))
+                  }
                   placeholder="Enter phone number"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emailAddress" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="emailAddress"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Email Address
                 </Label>
                 <Input
                   id="emailAddress"
                   type="email"
                   value={formData.emailAddress}
-                  onChange={(e) => setFormData(prev => ({ ...prev, emailAddress: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      emailAddress: e.target.value,
+                    }))
+                  }
                   placeholder="Enter email address"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1080,25 +1212,41 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="relationToRecipient" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="relationToRecipient"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Relation to Recipient
                 </Label>
                 <Input
                   id="relationToRecipient"
                   value={formData.relationToRecipient}
-                  onChange={(e) => setFormData(prev => ({ ...prev, relationToRecipient: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      relationToRecipient: e.target.value,
+                    }))
+                  }
                   placeholder="e.g., Mother, Father, Sibling"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="relationType" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="relationType"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Relation Type
                 </Label>
                 <Input
                   id="relationType"
                   value={formData.relationType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, relationType: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      relationType: e.target.value,
+                    }))
+                  }
                   placeholder="e.g., Biological, Emotional"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1117,7 +1265,12 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Textarea
                   value={formData.complains}
-                  onChange={(e) => setFormData(prev => ({ ...prev, complains: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      complains: e.target.value,
+                    }))
+                  }
                   rows={4}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Enter chief complaints and details about current symptoms, duration, severity, etc."
@@ -1131,46 +1284,59 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="comorbidities.dm"
                   label="Diabetes Mellitus (DM)"
                   checked={formData.comorbidities.dm}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    comorbidities: { ...prev.comorbidities, dm: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, dm: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.htn"
                   label="Hypertension (HTN)"
                   checked={formData.comorbidities.htn}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    comorbidities: { ...prev.comorbidities, htn: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, htn: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.ihd"
                   label="Ischemic Heart Disease (IHD)"
                   checked={formData.comorbidities.ihd}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    comorbidities: { ...prev.comorbidities, ihd: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, ihd: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.psychiatricIllness"
                   label="Psychiatric Illness"
                   checked={formData.comorbidities.psychiatricIllness}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    comorbidities: { ...prev.comorbidities, psychiatricIllness: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: {
+                        ...prev.comorbidities,
+                        psychiatricIllness: checked,
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.dl"
                   label="Dyslipidemia (DL)"
                   checked={formData.comorbidities.dl}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    comorbidities: { ...prev.comorbidities, dl: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, dl: checked },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1186,25 +1352,35 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="systemicInquiry.constitutional.loa"
                   label="Loss of Appetite"
                   checked={formData.systemicInquiry.constitutional.loa}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      constitutional: { ...prev.systemicInquiry.constitutional, loa: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        constitutional: {
+                          ...prev.systemicInquiry.constitutional,
+                          loa: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.constitutional.low"
                   label="Loss of Weight"
                   checked={formData.systemicInquiry.constitutional.low}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      constitutional: { ...prev.systemicInquiry.constitutional, low: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        constitutional: {
+                          ...prev.systemicInquiry.constitutional,
+                          low: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1215,37 +1391,46 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="systemicInquiry.cvs.chestPain"
                   label="Chest Pain"
                   checked={formData.systemicInquiry.cvs.chestPain}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      cvs: { ...prev.systemicInquiry.cvs, chestPain: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        cvs: {
+                          ...prev.systemicInquiry.cvs,
+                          chestPain: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.cvs.odema"
                   label="Edema"
                   checked={formData.systemicInquiry.cvs.odema}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      cvs: { ...prev.systemicInquiry.cvs, odema: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        cvs: { ...prev.systemicInquiry.cvs, odema: checked },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.cvs.sob"
                   label="Shortness of Breath (SOB)"
                   checked={formData.systemicInquiry.cvs.sob}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      cvs: { ...prev.systemicInquiry.cvs, sob: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        cvs: { ...prev.systemicInquiry.cvs, sob: checked },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1256,37 +1441,52 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="systemicInquiry.respiratory.cough"
                   label="Cough"
                   checked={formData.systemicInquiry.respiratory.cough}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      respiratory: { ...prev.systemicInquiry.respiratory, cough: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        respiratory: {
+                          ...prev.systemicInquiry.respiratory,
+                          cough: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.respiratory.hemoptysis"
                   label="Hemoptysis"
                   checked={formData.systemicInquiry.respiratory.hemoptysis}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      respiratory: { ...prev.systemicInquiry.respiratory, hemoptysis: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        respiratory: {
+                          ...prev.systemicInquiry.respiratory,
+                          hemoptysis: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.respiratory.wheezing"
                   label="Wheezing"
                   checked={formData.systemicInquiry.respiratory.wheezing}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      respiratory: { ...prev.systemicInquiry.respiratory, wheezing: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        respiratory: {
+                          ...prev.systemicInquiry.respiratory,
+                          wheezing: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1297,49 +1497,63 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="systemicInquiry.git.constipation"
                   label="Constipation"
                   checked={formData.systemicInquiry.git.constipation}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      git: { ...prev.systemicInquiry.git, constipation: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: {
+                          ...prev.systemicInquiry.git,
+                          constipation: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.git.diarrhea"
                   label="Diarrhea"
                   checked={formData.systemicInquiry.git.diarrhea}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      git: { ...prev.systemicInquiry.git, diarrhea: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: { ...prev.systemicInquiry.git, diarrhea: checked },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.git.melena"
                   label="Melena"
                   checked={formData.systemicInquiry.git.melena}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      git: { ...prev.systemicInquiry.git, melena: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: { ...prev.systemicInquiry.git, melena: checked },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.git.prBleeding"
                   label="PR Bleeding"
                   checked={formData.systemicInquiry.git.prBleeding}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      git: { ...prev.systemicInquiry.git, prBleeding: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: {
+                          ...prev.systemicInquiry.git,
+                          prBleeding: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1350,25 +1564,35 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="systemicInquiry.renal.hematuria"
                   label="Hematuria"
                   checked={formData.systemicInquiry.renal.hematuria}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      renal: { ...prev.systemicInquiry.renal, hematuria: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        renal: {
+                          ...prev.systemicInquiry.renal,
+                          hematuria: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.renal.frothyUrine"
                   label="Frothy Urine"
                   checked={formData.systemicInquiry.renal.frothyUrine}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      renal: { ...prev.systemicInquiry.renal, frothyUrine: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        renal: {
+                          ...prev.systemicInquiry.renal,
+                          frothyUrine: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1379,49 +1603,69 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="systemicInquiry.neuro.seizures"
                   label="Seizures"
                   checked={formData.systemicInquiry.neuro.seizures}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      neuro: { ...prev.systemicInquiry.neuro, seizures: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          seizures: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.neuro.visualDisturbance"
                   label="Visual Disturbance"
                   checked={formData.systemicInquiry.neuro.visualDisturbance}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      neuro: { ...prev.systemicInquiry.neuro, visualDisturbance: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          visualDisturbance: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.neuro.headache"
                   label="Headache"
                   checked={formData.systemicInquiry.neuro.headache}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      neuro: { ...prev.systemicInquiry.neuro, headache: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          headache: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.neuro.limbWeakness"
                   label="Limb Weakness"
                   checked={formData.systemicInquiry.neuro.limbWeakness}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      neuro: { ...prev.systemicInquiry.neuro, limbWeakness: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          limbWeakness: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1432,49 +1676,69 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="systemicInquiry.gynecology.pvBleeding"
                   label="PV Bleeding"
                   checked={formData.systemicInquiry.gynecology.pvBleeding}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      gynecology: { ...prev.systemicInquiry.gynecology, pvBleeding: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          pvBleeding: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.gynecology.menopause"
                   label="Menopause"
                   checked={formData.systemicInquiry.gynecology.menopause}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      gynecology: { ...prev.systemicInquiry.gynecology, menopause: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          menopause: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.gynecology.menorrhagia"
                   label="Menorrhagia"
                   checked={formData.systemicInquiry.gynecology.menorrhagia}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      gynecology: { ...prev.systemicInquiry.gynecology, menorrhagia: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          menorrhagia: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.gynecology.lrmp"
                   label="LRMP"
                   checked={formData.systemicInquiry.gynecology.lrmp}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      gynecology: { ...prev.systemicInquiry.gynecology, lrmp: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          lrmp: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
               <div className="mt-4 space-y-2">
@@ -1483,13 +1747,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Textarea
                   value={formData.systemicInquiry.sexualHistory}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    systemicInquiry: {
-                      ...prev.systemicInquiry,
-                      sexualHistory: e.target.value
-                    }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        sexualHistory: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Enter sexual history details"
@@ -1508,7 +1774,12 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
               </Label>
               <Textarea
                 value={formData.drugHistory}
-                onChange={(e) => setFormData(prev => ({ ...prev, drugHistory: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    drugHistory: e.target.value,
+                  }))
+                }
                 rows={4}
                 className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 placeholder="List current medications, dosages, and duration"
@@ -1520,28 +1791,40 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="allergyHistory.foods"
                   label="Food Allergies"
                   checked={formData.allergyHistory.foods}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    allergyHistory: { ...prev.allergyHistory, foods: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      allergyHistory: {
+                        ...prev.allergyHistory,
+                        foods: checked,
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="allergyHistory.drugs"
                   label="Drug Allergies"
                   checked={formData.allergyHistory.drugs}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    allergyHistory: { ...prev.allergyHistory, drugs: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      allergyHistory: {
+                        ...prev.allergyHistory,
+                        drugs: checked,
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="allergyHistory.p"
                   label="Environmental Allergies"
                   checked={formData.allergyHistory.p}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    allergyHistory: { ...prev.allergyHistory, p: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      allergyHistory: { ...prev.allergyHistory, p: checked },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1558,10 +1841,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Input
                   value={formData.familyHistory.dm}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    familyHistory: { ...prev.familyHistory, dm: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        dm: e.target.value,
+                      },
+                    }))
+                  }
                   placeholder="Family member relationship"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1572,10 +1860,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Input
                   value={formData.familyHistory.htn}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    familyHistory: { ...prev.familyHistory, htn: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        htn: e.target.value,
+                      },
+                    }))
+                  }
                   placeholder="Family member relationship"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1586,10 +1879,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Input
                   value={formData.familyHistory.ihd}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    familyHistory: { ...prev.familyHistory, ihd: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        ihd: e.target.value,
+                      },
+                    }))
+                  }
                   placeholder="Family member relationship"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1600,10 +1898,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Input
                   value={formData.familyHistory.stroke}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    familyHistory: { ...prev.familyHistory, stroke: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        stroke: e.target.value,
+                      },
+                    }))
+                  }
                   placeholder="Family member relationship"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1614,10 +1917,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Input
                   value={formData.familyHistory.renal}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    familyHistory: { ...prev.familyHistory, renal: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        renal: e.target.value,
+                      },
+                    }))
+                  }
                   placeholder="Family member relationship"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1636,19 +1944,29 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                     name="substanceUse.smoking"
                     label="Smoking"
                     checked={formData.substanceUse.smoking}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      substanceUse: { ...prev.substanceUse, smoking: checked }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        substanceUse: {
+                          ...prev.substanceUse,
+                          smoking: checked,
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="substanceUse.alcohol"
                     label="Alcohol"
                     checked={formData.substanceUse.alcohol}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      substanceUse: { ...prev.substanceUse, alcohol: checked }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        substanceUse: {
+                          ...prev.substanceUse,
+                          alcohol: checked,
+                        },
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -1657,10 +1975,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Textarea
                     value={formData.substanceUse.other}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      substanceUse: { ...prev.substanceUse, other: e.target.value }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        substanceUse: {
+                          ...prev.substanceUse,
+                          other: e.target.value,
+                        },
+                      }))
+                    }
                     rows={3}
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Describe any other substance use"
@@ -1681,10 +2004,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Textarea
                   value={formData.socialHistory.spouseDetails}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    socialHistory: { ...prev.socialHistory, spouseDetails: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        spouseDetails: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Spouse information"
@@ -1696,10 +2024,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Textarea
                   value={formData.socialHistory.childrenDetails}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    socialHistory: { ...prev.socialHistory, childrenDetails: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        childrenDetails: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Children information"
@@ -1713,10 +2046,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Input
                   value={formData.socialHistory.income}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    socialHistory: { ...prev.socialHistory, income: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        income: e.target.value,
+                      },
+                    }))
+                  }
                   placeholder="Monthly income"
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -1727,10 +2065,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                 </Label>
                 <Textarea
                   value={formData.socialHistory.other}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    socialHistory: { ...prev.socialHistory, other: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        other: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Other relevant social information"
@@ -1751,10 +2094,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.examination.height}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      examination: { ...prev.examination, height: e.target.value }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          height: e.target.value,
+                        },
+                      }))
+                    }
                     placeholder="Height in cm"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -1765,10 +2113,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.examination.weight}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      examination: { ...prev.examination, weight: e.target.value }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          weight: e.target.value,
+                        },
+                      }))
+                    }
                     placeholder="Weight in kg"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -1779,10 +2132,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.examination.bmi}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      examination: { ...prev.examination, bmi: e.target.value }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          bmi: e.target.value,
+                        },
+                      }))
+                    }
                     placeholder="Auto-calculated"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -1805,37 +2163,48 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="examination.pallor"
                   label="Pallor"
                   checked={formData.examination.pallor}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: { ...prev.examination, pallor: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: { ...prev.examination, pallor: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.icterus"
                   label="Icterus"
                   checked={formData.examination.icterus}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: { ...prev.examination, icterus: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: { ...prev.examination, icterus: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.clubbing"
                   label="Clubbing"
                   checked={formData.examination.clubbing}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: { ...prev.examination, clubbing: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: { ...prev.examination, clubbing: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.ankleOedema"
                   label="Ankle Edema"
                   checked={formData.examination.ankleOedema}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: { ...prev.examination, ankleOedema: checked }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        ankleOedema: checked,
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1846,49 +2215,69 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="examination.oral.dentalCaries"
                   label="Dental Caries"
                   checked={formData.examination.oral.dentalCaries}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      oral: { ...prev.examination.oral, dentalCaries: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          dentalCaries: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.oral.oralHygiene"
                   label="Oral Hygiene"
                   checked={formData.examination.oral.oralHygiene}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      oral: { ...prev.examination.oral, oralHygiene: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          oralHygiene: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.oral.satisfactory"
                   label="Satisfactory"
                   checked={formData.examination.oral.satisfactory}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      oral: { ...prev.examination.oral, satisfactory: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          satisfactory: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.oral.unsatisfactory"
                   label="Unsatisfactory"
                   checked={formData.examination.oral.unsatisfactory}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      oral: { ...prev.examination.oral, unsatisfactory: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          unsatisfactory: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1899,37 +2288,52 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="examination.lymphNodes.cervical"
                   label="Cervical"
                   checked={formData.examination.lymphNodes.cervical}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      lymphNodes: { ...prev.examination.lymphNodes, cervical: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        lymphNodes: {
+                          ...prev.examination.lymphNodes,
+                          cervical: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.lymphNodes.axillary"
                   label="Axillary"
                   checked={formData.examination.lymphNodes.axillary}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      lymphNodes: { ...prev.examination.lymphNodes, axillary: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        lymphNodes: {
+                          ...prev.examination.lymphNodes,
+                          axillary: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.lymphNodes.inguinal"
                   label="Inguinal"
                   checked={formData.examination.lymphNodes.inguinal}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      lymphNodes: { ...prev.examination.lymphNodes, inguinal: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        lymphNodes: {
+                          ...prev.examination.lymphNodes,
+                          inguinal: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1942,13 +2346,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.examination.cvs.bp}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        cvs: { ...prev.examination.cvs, bp: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          cvs: { ...prev.examination.cvs, bp: e.target.value },
+                        },
+                      }))
+                    }
                     placeholder="e.g., 120/80"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -1959,13 +2365,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.examination.cvs.pr}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        cvs: { ...prev.examination.cvs, pr: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          cvs: { ...prev.examination.cvs, pr: e.target.value },
+                        },
+                      }))
+                    }
                     placeholder="e.g., 72 bpm"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -1975,13 +2383,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                     name="examination.cvs.murmurs"
                     label="Murmurs"
                     checked={formData.examination.cvs.murmurs}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        cvs: { ...prev.examination.cvs, murmurs: checked }
-                      }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          cvs: { ...prev.examination.cvs, murmurs: checked },
+                        },
+                      }))
+                    }
                   />
                 </div>
               </div>
@@ -1994,25 +2404,35 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                     name="examination.respiratory.rr"
                     label="Respiratory Rate (RR)"
                     checked={formData.examination.respiratory.rr}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        respiratory: { ...prev.examination.respiratory, rr: checked }
-                      }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            rr: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.spo2"
                     label="SpO2"
                     checked={formData.examination.respiratory.spo2}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        respiratory: { ...prev.examination.respiratory, spo2: checked }
-                      }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            spo2: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2020,49 +2440,69 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                     name="examination.respiratory.auscultation"
                     label="Abnormal Auscultation"
                     checked={formData.examination.respiratory.auscultation}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        respiratory: { ...prev.examination.respiratory, auscultation: checked }
-                      }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            auscultation: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.crepts"
                     label="Crepts"
                     checked={formData.examination.respiratory.crepts}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        respiratory: { ...prev.examination.respiratory, crepts: checked }
-                      }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            crepts: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.ranchi"
                     label="Ronchi"
                     checked={formData.examination.respiratory.ranchi}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        respiratory: { ...prev.examination.respiratory, ranchi: checked }
-                      }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            ranchi: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.effusion"
                     label="Effusion"
                     checked={formData.examination.respiratory.effusion}
-                    onChange={(checked) => setFormData(prev => ({
-                      ...prev,
-                      examination: {
-                        ...prev.examination,
-                        respiratory: { ...prev.examination.respiratory, effusion: checked }
-                      }
-                    }))}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            effusion: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                 </div>
               </div>
@@ -2074,49 +2514,69 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="examination.abdomen.hepatomegaly"
                   label="Hepatomegaly"
                   checked={formData.examination.abdomen.hepatomegaly}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      abdomen: { ...prev.examination.abdomen, hepatomegaly: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          hepatomegaly: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.abdomen.splenomegaly"
                   label="Splenomegaly"
                   checked={formData.examination.abdomen.splenomegaly}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      abdomen: { ...prev.examination.abdomen, splenomegaly: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          splenomegaly: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.abdomen.renalMasses"
                   label="Renal Masses"
                   checked={formData.examination.abdomen.renalMasses}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      abdomen: { ...prev.examination.abdomen, renalMasses: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          renalMasses: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.abdomen.freeFluid"
                   label="Free Fluid"
                   checked={formData.examination.abdomen.freeFluid}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      abdomen: { ...prev.examination.abdomen, freeFluid: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          freeFluid: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -2125,10 +2585,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
               <div className="space-y-2">
                 <Textarea
                   value={formData.examination.BrcostExamination}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    examination: { ...prev.examination, BrcostExamination: e.target.value }
-                  }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        BrcostExamination: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Describe examination findings"
@@ -2142,49 +2607,69 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   name="examination.neurologicalExam.cranialNerves"
                   label="Cranial Nerves Abnormal"
                   checked={formData.examination.neurologicalExam.cranialNerves}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      neurologicalExam: { ...prev.examination.neurologicalExam, cranialNerves: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          cranialNerves: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.neurologicalExam.upperLimb"
                   label="Upper Limb Abnormal"
                   checked={formData.examination.neurologicalExam.upperLimb}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      neurologicalExam: { ...prev.examination.neurologicalExam, upperLimb: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          upperLimb: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.neurologicalExam.lowerLimb"
                   label="Lower Limb Abnormal"
                   checked={formData.examination.neurologicalExam.lowerLimb}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      neurologicalExam: { ...prev.examination.neurologicalExam, lowerLimb: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          lowerLimb: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.neurologicalExam.coordination"
                   label="Coordination Abnormal"
                   checked={formData.examination.neurologicalExam.coordination}
-                  onChange={(checked) => setFormData(prev => ({
-                    ...prev,
-                    examination: {
-                      ...prev.examination,
-                      neurologicalExam: { ...prev.examination.neurologicalExam, coordination: checked }
-                    }
-                  }))}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          coordination: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -2202,13 +2687,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.immunologicalDetails.bloodGroup.d}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: {
-                        ...prev.immunologicalDetails,
-                        bloodGroup: { ...prev.immunologicalDetails.bloodGroup, d: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          bloodGroup: {
+                            ...prev.immunologicalDetails.bloodGroup,
+                            d: e.target.value,
+                          },
+                        },
+                      }))
+                    }
                     placeholder="Enter D value"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -2219,13 +2709,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.immunologicalDetails.bloodGroup.r}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: {
-                        ...prev.immunologicalDetails,
-                        bloodGroup: { ...prev.immunologicalDetails.bloodGroup, r: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          bloodGroup: {
+                            ...prev.immunologicalDetails.bloodGroup,
+                            r: e.target.value,
+                          },
+                        },
+                      }))
+                    }
                     placeholder="Enter R value"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -2241,13 +2736,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.immunologicalDetails.crossMatch.tCell}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: {
-                        ...prev.immunologicalDetails,
-                        crossMatch: { ...prev.immunologicalDetails.crossMatch, tCell: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          crossMatch: {
+                            ...prev.immunologicalDetails.crossMatch,
+                            tCell: e.target.value,
+                          },
+                        },
+                      }))
+                    }
                     placeholder="Enter T cell value"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -2258,13 +2758,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.immunologicalDetails.crossMatch.bCell}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: {
-                        ...prev.immunologicalDetails,
-                        crossMatch: { ...prev.immunologicalDetails.crossMatch, bCell: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          crossMatch: {
+                            ...prev.immunologicalDetails.crossMatch,
+                            bCell: e.target.value,
+                          },
+                        },
+                      }))
+                    }
                     placeholder="Enter B cell value"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -2306,34 +2811,30 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                         <td className="py-3 px-4 font-medium text-slate-700 capitalize">
                           {type}
                         </td>
-                        {["hlaA", "hlaB", "hlaC", "hlaDR", "hlaDP", "hlaDQ"].map((hla) => (
+                        {[
+                          "hlaA",
+                          "hlaB",
+                          "hlaC",
+                          "hlaDR",
+                          "hlaDP",
+                          "hlaDQ",
+                        ].map((hla) => (
                           <td key={hla} className="py-3 px-2">
                             <Input
                               value={
                                 formData.immunologicalDetails.hlaTyping[
-                                  type as keyof typeof formData.immunologicalDetails.hlaTyping
+                                  type as "donor" | "recipient" | "conclusion"
                                 ][
                                   hla as keyof typeof formData.immunologicalDetails.hlaTyping.donor
                                 ] || ""
                               }
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setFormData(prev => ({
-                                  ...prev,
-                                  immunologicalDetails: {
-                                    ...prev.immunologicalDetails,
-                                    hlaTyping: {
-                                      ...prev.immunologicalDetails.hlaTyping,
-                                      [type]: {
-                                        ...prev.immunologicalDetails.hlaTyping[
-                                          type as keyof typeof formData.immunologicalDetails.hlaTyping
-                                        ],
-                                        [hla]: value
-                                      }
-                                    }
-                                  }
-                                }));
-                              }}
+                              onChange={(e) =>
+                                handleHlaChange(
+                                  type as "donor" | "recipient" | "conclusion",
+                                  hla,
+                                  e.target.value
+                                )
+                              }
                               className="h-9 text-sm border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                               placeholder={hla.replace("hla", "")}
                             />
@@ -2354,13 +2855,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.immunologicalDetails.pra.pre}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: {
-                        ...prev.immunologicalDetails,
-                        pra: { ...prev.immunologicalDetails.pra, pre: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          pra: {
+                            ...prev.immunologicalDetails.pra,
+                            pre: e.target.value,
+                          },
+                        },
+                      }))
+                    }
                     placeholder="Enter pre PRA percentage"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -2371,13 +2877,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.immunologicalDetails.pra.post}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: {
-                        ...prev.immunologicalDetails,
-                        pra: { ...prev.immunologicalDetails.pra, post: e.target.value }
-                      }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          pra: {
+                            ...prev.immunologicalDetails.pra,
+                            post: e.target.value,
+                          },
+                        },
+                      }))
+                    }
                     placeholder="Enter post PRA percentage"
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -2393,10 +2904,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <Input
                     value={formData.immunologicalDetails.dsa}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: { ...prev.immunologicalDetails, dsa: e.target.value }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          dsa: e.target.value,
+                        },
+                      }))
+                    }
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Enter DSA details"
                   />
@@ -2407,15 +2923,23 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   </Label>
                   <RadioGroup
                     value={formData.immunologicalDetails.immunologicalRisk}
-                    onValueChange={(value) => setFormData(prev => ({
-                      ...prev,
-                      immunologicalDetails: { ...prev.immunologicalDetails, immunologicalRisk: value }
-                    }))}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          immunologicalRisk: value,
+                        },
+                      }))
+                    }
                     className="flex gap-6"
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="low" id="low" />
-                      <Label htmlFor="low" className="text-sm text-slate-700 cursor-pointer">
+                      <Label
+                        htmlFor="low"
+                        className="text-sm text-slate-700 cursor-pointer"
+                      >
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Low
                         </span>
@@ -2423,7 +2947,10 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="average" id="average" />
-                      <Label htmlFor="average" className="text-sm text-slate-700 cursor-pointer">
+                      <Label
+                        htmlFor="average"
+                        className="text-sm text-slate-700 cursor-pointer"
+                      >
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                           Average
                         </span>
@@ -2431,7 +2958,10 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="high" id="high" />
-                      <Label htmlFor="high" className="text-sm text-slate-700 cursor-pointer">
+                      <Label
+                        htmlFor="high"
+                        className="text-sm text-slate-700 cursor-pointer"
+                      >
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                           High
                         </span>
@@ -2459,7 +2989,9 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="font-medium text-slate-600">Age:</span>
                     <span className="text-slate-900">
-                      {formData.age || formData.age === 0 ? formData.age : "Not provided"}
+                      {formData.age || formData.age === 0
+                        ? formData.age
+                        : "Not provided"}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
@@ -2489,13 +3021,17 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="font-medium text-slate-600">Relation:</span>
+                    <span className="font-medium text-slate-600">
+                      Relation:
+                    </span>
                     <span className="text-slate-900">
                       {formData.relationToRecipient || "Not provided"}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="font-medium text-slate-600">Relation Type:</span>
+                    <span className="font-medium text-slate-600">
+                      Relation Type:
+                    </span>
                     <span className="text-slate-900">
                       {formData.relationType || "Not provided"}
                     </span>
@@ -2595,7 +3131,10 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
             {FORM_STEPS.map((step, index) => {
               const StepIcon = step.icon;
               return (
-                <div key={index} className="flex flex-col items-center relative">
+                <div
+                  key={index}
+                  className="flex flex-col items-center relative"
+                >
                   <div
                     className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-200 bg-white relative z-10 ${
                       currentStep >= index
@@ -2646,7 +3185,9 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
             disabled={currentStep === 0}
             variant="outline"
             className={`${
-              currentStep === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-50"
+              currentStep === 0
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-slate-50"
             }`}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

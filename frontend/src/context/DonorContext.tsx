@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { 
-  fetchAllDonors, 
+  fetchAllDonors as apiFetchAllDonors, 
   fetchDonorsByPatient, 
   createDonor as apiCreateDonor, 
   deleteDonor as apiDeleteDonor,
   assignDonorToRecipient as apiAssignDonor,
   unassignDonor as apiUnassignDonor,
-  updateDonorStatus as apiUpdateDonorStatus,  searchDonors as apiSearchDonors // ✅ Import the actual API function
+  updateDonorStatus as apiUpdateDonorStatus,
+  searchDonors as apiSearchDonors
 } from '../services/donorApi';
 
 import { Donor, DonorAssessmentForm, DonorAssessmentResponseDTO, DonorAssessmentDataDTO, DonorAssignmentDTO } from '../types/donor';
@@ -24,6 +25,7 @@ interface DonorContextType {
   updateDonor: (id: string, updates: Partial<Donor>) => void;
   removeDonor: (id: string) => Promise<void>;
   fetchDonors: (patientPhn?: string) => Promise<void>;
+  fetchAllDonors: () => Promise<void>;
   clearError: () => void;
   
   // Assignment operations
@@ -52,89 +54,166 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
 
-  const fetchDonors = useCallback(async (patientPhn?: string) => {
-  setIsLoading(true);
-  setError(null);
-  try {
-    let donorsData: DonorAssessmentResponseDTO[];
-    if (patientPhn) {
-      donorsData = await fetchDonorsByPatient(patientPhn);
-    } else {
-      donorsData = await fetchAllDonors();
-    }
-    
-    // Transform backend data to frontend Donor format
-    const transformedDonors: Donor[] = donorsData.map((donor: DonorAssessmentResponseDTO) => ({
-      id: donor.id?.toString() || `donor-${Date.now()}`,
-      name: donor.name || '',
-      bloodGroup: `${donor.immunologicalDetails?.bloodGroup?.d || ''}${donor.immunologicalDetails?.bloodGroup?.r || ''}`,
-      age: Number(donor.age) || 0, // ✅ Convert to number
-      gender: donor.gender || '',
-      dateOfBirth: donor.dateOfBirth || '',
-      occupation: donor.occupation || '',
-      address: donor.address || '',
-      nicNo: donor.nicNo || '',
-      contactDetails: donor.contactDetails || '',
-      emailAddress: donor.emailAddress || '',
-      relationType: donor.relationType || '',
-      relationToRecipient: donor.relationToRecipient || '',
-      patientPhn: donor.patientPhn || '',
-      comorbidities: donor.comorbidities || {
-        dl: false,
-        dm: false,
-        psychiatricIllness: false,
-        htn: false,
-        ihd: false,
-      },
-      examination: donor.examination || {
-        height: "",
-        weight: "",
-        bmi: "",
-        pallor: false,
-        icterus: false,
-        oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
-        lymphNodes: { cervical: false, axillary: false, inguinal: false },
-        clubbing: false,
-        ankleOedema: false,
-        cvs: { bp: "", pr: "", murmurs: false },
-        respiratory: { rr: false, spo2: false, auscultation: false, crepts: false, ranchi: false, effusion: false },
-        abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
-        BrcostExamination: "",
-        neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
-      },
-      immunologicalDetails: donor.immunologicalDetails || {
-        bloodGroup: { d: "", r: "" },
-        crossMatch: { tCell: "", bCell: "" },
-        hlaTyping: {
-          donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-          recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-          conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+  // ✅ Function that always fetches ALL donors (for donor assessment)
+  const fetchAllDonors = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const donorsData = await apiFetchAllDonors(); // Call API without filters
+      
+      // Transform backend data to frontend Donor format
+      const transformedDonors: Donor[] = donorsData.map((donor: DonorAssessmentResponseDTO) => ({
+        id: donor.id?.toString() || `donor-${Date.now()}`,
+        name: donor.name || '',
+        bloodGroup: `${donor.immunologicalDetails?.bloodGroup?.d || ''}${donor.immunologicalDetails?.bloodGroup?.r || ''}`,
+        age: Number(donor.age) || 0,
+        gender: donor.gender || '',
+        dateOfBirth: donor.dateOfBirth || '',
+        occupation: donor.occupation || '',
+        address: donor.address || '',
+        nicNo: donor.nicNo || '',
+        contactDetails: donor.contactDetails || '',
+        emailAddress: donor.emailAddress || '',
+        relationType: donor.relationType || '',
+        relationToRecipient: donor.relationToRecipient || '',
+        patientPhn: donor.patientPhn || '',
+        comorbidities: donor.comorbidities || {
+          dl: false,
+          dm: false,
+          psychiatricIllness: false,
+          htn: false,
+          ihd: false,
         },
-        pra: { pre: "", post: "" },
-        dsa: "",
-        immunologicalRisk: "",
-      },
-      status: (donor.status as Donor['status']) || 'available',
-      assignedRecipientPhn: donor.patientPhn, // Map patientPhn to assignedRecipientPhn if assigned
-      assignedRecipientName: '', // This would need to come from backend
-    }));
+        examination: donor.examination || {
+          height: "",
+          weight: "",
+          bmi: "",
+          pallor: false,
+          icterus: false,
+          oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
+          lymphNodes: { cervical: false, axillary: false, inguinal: false },
+          clubbing: false,
+          ankleOedema: false,
+          cvs: { bp: "", pr: "", murmurs: false },
+          respiratory: { rr: false, spo2: false, auscultation: false, crepts: false, ranchi: false, effusion: false },
+          abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
+          BrcostExamination: "",
+          neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
+        },
+        immunologicalDetails: donor.immunologicalDetails || {
+          bloodGroup: { d: "", r: "" },
+          crossMatch: { tCell: "", bCell: "" },
+          hlaTyping: {
+            donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+            recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+            conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+          },
+          pra: { pre: "", post: "" },
+          dsa: "",
+          immunologicalRisk: "",
+        },
+        status: (donor.status as Donor['status']) || 'available',
+        assignedRecipientPhn: donor.patientPhn,
+        assignedRecipientName: '',
+      }));
 
-    setDonors(transformedDonors);
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch donors';
-    setError(errorMessage);
-    console.error('Error fetching donors:', err);
-  } finally {
-    setIsLoading(false);
-  }
-}, []);
-
-  useEffect(() => {
-    // Only fetch donors if user is authenticated
-    if (isAuthenticated) {
-      fetchDonors();
+      setDonors(transformedDonors);
+      console.log(`✅ Fetched ${transformedDonors.length} donors (ALL donors)`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch donors';
+      setError(errorMessage);
+      console.error('Error fetching all donors:', err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [fetchDonors, isAuthenticated]);
+  }, []);
+
+  // Existing function for patient-specific donors
+  const fetchDonors = useCallback(async (patientPhn?: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      let donorsData: DonorAssessmentResponseDTO[];
+      if (patientPhn) {
+        donorsData = await fetchDonorsByPatient(patientPhn);
+        console.log(`🔍 Fetched donors for patient: ${patientPhn}`);
+      } else {
+        donorsData = await apiFetchAllDonors();
+        console.log(`📋 Fetched all donors (no patient filter)`);
+      }
+      
+      // Transform backend data to frontend Donor format
+      const transformedDonors: Donor[] = donorsData.map((donor: DonorAssessmentResponseDTO) => ({
+        id: donor.id?.toString() || `donor-${Date.now()}`,
+        name: donor.name || '',
+        bloodGroup: `${donor.immunologicalDetails?.bloodGroup?.d || ''}${donor.immunologicalDetails?.bloodGroup?.r || ''}`,
+        age: Number(donor.age) || 0,
+        gender: donor.gender || '',
+        dateOfBirth: donor.dateOfBirth || '',
+        occupation: donor.occupation || '',
+        address: donor.address || '',
+        nicNo: donor.nicNo || '',
+        contactDetails: donor.contactDetails || '',
+        emailAddress: donor.emailAddress || '',
+        relationType: donor.relationType || '',
+        relationToRecipient: donor.relationToRecipient || '',
+        patientPhn: donor.patientPhn || '',
+        comorbidities: donor.comorbidities || {
+          dl: false,
+          dm: false,
+          psychiatricIllness: false,
+          htn: false,
+          ihd: false,
+        },
+        examination: donor.examination || {
+          height: "",
+          weight: "",
+          bmi: "",
+          pallor: false,
+          icterus: false,
+          oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
+          lymphNodes: { cervical: false, axillary: false, inguinal: false },
+          clubbing: false,
+          ankleOedema: false,
+          cvs: { bp: "", pr: "", murmurs: false },
+          respiratory: { rr: false, spo2: false, auscultation: false, crepts: false, ranchi: false, effusion: false },
+          abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
+          BrcostExamination: "",
+          neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
+        },
+        immunologicalDetails: donor.immunologicalDetails || {
+          bloodGroup: { d: "", r: "" },
+          crossMatch: { tCell: "", bCell: "" },
+          hlaTyping: {
+            donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+            recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+            conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+          },
+          pra: { pre: "", post: "" },
+          dsa: "",
+          immunologicalRisk: "",
+        },
+        status: (donor.status as Donor['status']) || 'available',
+        assignedRecipientPhn: donor.patientPhn,
+        assignedRecipientName: '',
+      }));
+
+      setDonors(transformedDonors);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch donors';
+      setError(errorMessage);
+      console.error('Error fetching donors:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Use fetchAllDonors by default for global donor management
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAllDonors();
+    }
+  }, [fetchAllDonors, isAuthenticated]);
 
   const addDonor = async (donorData: DonorAssessmentForm, patientPhn: string) => {
     setIsLoading(true);
@@ -206,34 +285,31 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       donor.id === id ? { ...donor, ...updates } : donor
     ));
   };
-  // In your DonorProvider component, add this function:
-const searchDonors = async (criteria: {
-  bloodGroup?: string;
-  relationType?: string;
-  status?: string;
-  patientPhn?: string;
-}): Promise<DonorAssessmentResponseDTO[]> => {
-  setIsLoading(true);
-  setError(null);
-  try {
-    console.log("🔍 Searching donors with criteria:", criteria);
-    
-    // Use the API function you already have
-    const results = await searchDonors(criteria);
-    console.log("📋 Search results:", results);
-    
-    return results;
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Failed to search donors';
-    setError(errorMessage);
-    console.error('Error searching donors:', err);
-    throw err;
-  } finally {
-    setIsLoading(false);
-  }
-};
 
-
+  const searchDonors = async (criteria: {
+    bloodGroup?: string;
+    relationType?: string;
+    status?: string;
+    patientPhn?: string;
+  }): Promise<DonorAssessmentResponseDTO[]> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log("🔍 Searching donors with criteria:", criteria);
+      
+      const results = await apiSearchDonors(criteria);
+      console.log("📋 Search results:", results);
+      
+      return results;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search donors';
+      setError(errorMessage);
+      console.error('Error searching donors:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const removeDonor = async (id: string) => {
     setIsLoading(true);
@@ -341,15 +417,25 @@ const searchDonors = async (criteria: {
     }
   };
 
-  // Helper functions
+  // ✅ FIXED: Remove duplicate function and keep only this one
+  const getAvailableDonors = useCallback(() => {
+    console.log("📋 All donors:", donors);
+    
+    // Filter only available donors (not assigned to any recipient)
+    const availableDonors = donors.filter(donor => 
+      donor.status !== 'assigned' && 
+      !donor.assignedRecipientPhn // Additional check for safety
+    );
+    
+    console.log("✅ Available donors:", availableDonors);
+    return availableDonors;
+  }, [donors]);
+
+  // ✅ FIXED: Keep other helper functions
   const getAssignedDonor = (recipientPhn: string) => {
     return donors.find(donor => 
       donor.assignedRecipientPhn === recipientPhn && donor.status === 'assigned'
     );
-  };
-
-  const getAvailableDonors = () => {
-    return donors.filter(donor => donor.status === 'available');
   };
 
   const getAssignedDonors = () => {
@@ -368,12 +454,13 @@ const searchDonors = async (criteria: {
     updateDonor,
     removeDonor,
     fetchDonors,
+    fetchAllDonors,
     clearError,
     assignDonorToRecipient,
     unassignDonor,
     getAssignedDonor,
     updateDonorStatus,
-    getAvailableDonors,
+    getAvailableDonors, // ✅ Now this will work correctly
     getAssignedDonors,
     searchDonors
   };
@@ -392,5 +479,3 @@ export const useDonorContext = () => {
   }
   return context;
 };
-
-

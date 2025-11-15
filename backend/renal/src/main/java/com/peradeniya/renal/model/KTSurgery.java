@@ -1,7 +1,6 @@
 package com.peradeniya.renal.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,179 +10,283 @@ public class KTSurgery {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "patient_phn", nullable = false)
+    @Column(name = "patient_phn", nullable = false, length = 50)
     private String patientPhn;
 
     // Patient Information
-    @Column(name = "name")
+    @Column(name = "name", length = 255)
     private String name;
 
-    @Column(name = "dob")
-    private LocalDate dob;
+    @Column(name = "dob", length = 50)
+    private String dob;
 
-    @Column(name = "age")
+    @Column(name = "age", length = 10)
     private String age;
 
-    @Column(name = "gender")
+    @Column(name = "gender", length = 20)
     private String gender;
 
-    @Column(name = "address", length = 500)
+    @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 
-    @Column(name = "contact")
+    @Column(name = "contact", length = 50)
     private String contact;
 
     // Medical History
-    @Column(name = "diabetes")
+    @Column(name = "diabetes", length = 10)
     private String diabetes;
 
-    @Column(name = "hypertension")
+    @Column(name = "hypertension", length = 10)
     private String hypertension;
 
-    @Column(name = "ihd")
+    @Column(name = "ihd", length = 10)
     private String ihd;
 
-    @Column(name = "dyslipidaemia")
+    @Column(name = "dyslipidaemia", length = 10)
     private String dyslipidaemia;
 
-    @Column(name = "other")
+    @Column(name = "other", length = 10)
     private String other;
 
-    @Column(name = "other_specify")
+    @Column(name = "other_specify", length = 255)
     private String otherSpecify;
 
-    @Column(name = "primary_diagnosis")
+    @Column(name = "primary_diagnosis", columnDefinition = "TEXT")
     private String primaryDiagnosis;
 
-    @Column(name = "mode_of_rrt")
+    @Column(name = "mode_of_rrt", length = 50)
     private String modeOfRRT;
 
-    @Column(name = "duration_rrt")
+    @Column(name = "duration_rrt", length = 50)
     private String durationRRT;
 
     // Transplantation Details
-    @Column(name = "kt_date")
-    private LocalDate ktDate;
+    @Column(name = "kt_date", length = 50)
+    private String ktDate;
 
-    @Column(name = "number_of_kt")
+    @Column(name = "number_of_kt", length = 20)
     private String numberOfKT;
 
-    @Column(name = "kt_unit")
+    @Column(name = "kt_unit", length = 50)
     private String ktUnit;
 
-    @Column(name = "ward_number")
+    @Column(name = "ward_number", length = 50)
     private String wardNumber;
 
-    @Column(name = "kt_surgeon")
+    @Column(name = "kt_surgeon", length = 255)
     private String ktSurgeon;
 
-    @Column(name = "kt_type")
+    @Column(name = "kt_type", length = 50)
     private String ktType;
 
-    @Column(name = "donor_relationship")
+    @Column(name = "donor_relationship", length = 100)
     private String donorRelationship;
 
-    @Column(name = "peritoneal_position")
+    @Column(name = "peritoneal_position", length = 50)
     private String peritonealPosition;
 
-    @Column(name = "side_of_kt")
+    @Column(name = "side_of_kt", length = 20)
     private String sideOfKT;
 
-    // Immunological Details
-    @Column(name = "pre_kt")
+    // Immunosuppression
+    @Column(name = "pre_kt", length = 50)
     private String preKT;
 
-    @Column(name = "induction_therapy")
+    @Column(name = "induction_therapy", length = 100)
     private String inductionTherapy;
 
-    @Column(name = "maintenance")
+    @Column(name = "maintenance", length = 100)
     private String maintenance;
 
-    @Column(name = "maintenance_other")
+    @Column(name = "maintenance_other", length = 255)
     private String maintenanceOther;
 
-    // Prophylaxis
-    @Column(name = "cotrimoxazole")
-    private String cotrimoxazole;
+    // Maintenance therapy checkboxes
+    @Column(name = "maintenance_pred")
+    private Boolean maintenancePred = false;
 
-    @Column(name = "cotri_duration")
+    @Column(name = "maintenance_mmf")
+    private Boolean maintenanceMMF = false;
+
+    @Column(name = "maintenance_tac")
+    private Boolean maintenanceTac = false;
+
+    @Column(name = "maintenance_everolimus")
+    private Boolean maintenanceEverolimus = false;
+
+    @Column(name = "maintenance_other_text", length = 255)
+    private String maintenanceOtherText;
+    // Immunological Details (Embedded with proper attribute overrides)
+    @Embedded
+    @AttributeOverrides({
+            // Blood Group
+            @AttributeOverride(name = "bloodGroup.d", column = @Column(name = "blood_group_donor", length = 10)),
+            @AttributeOverride(name = "bloodGroup.r", column = @Column(name = "blood_group_recipient", length = 10)),
+
+            // Cross Match
+            @AttributeOverride(name = "crossMatch.tCell", column = @Column(name = "cross_match_tcell", length = 50)),
+            @AttributeOverride(name = "crossMatch.bCell", column = @Column(name = "cross_match_bcell", length = 50)),
+
+            // HLA Typing - Donor
+            @AttributeOverride(name = "hlaTyping.donor.hlaA", column = @Column(name = "hla_a_donor", length = 100)),
+            @AttributeOverride(name = "hlaTyping.donor.hlaB", column = @Column(name = "hla_b_donor", length = 100)),
+            @AttributeOverride(name = "hlaTyping.donor.hlaC", column = @Column(name = "hla_c_donor", length = 100)),
+            @AttributeOverride(name = "hlaTyping.donor.hlaDR", column = @Column(name = "hla_dr_donor", length = 100)),
+            @AttributeOverride(name = "hlaTyping.donor.hlaDP", column = @Column(name = "hla_dp_donor", length = 100)),
+            @AttributeOverride(name = "hlaTyping.donor.hlaDQ", column = @Column(name = "hla_dq_donor", length = 100)),
+
+            // HLA Typing - Recipient
+            @AttributeOverride(name = "hlaTyping.recipient.hlaA", column = @Column(name = "hla_a_recipient", length = 100)),
+            @AttributeOverride(name = "hlaTyping.recipient.hlaB", column = @Column(name = "hla_b_recipient", length = 100)),
+            @AttributeOverride(name = "hlaTyping.recipient.hlaC", column = @Column(name = "hla_c_recipient", length = 100)),
+            @AttributeOverride(name = "hlaTyping.recipient.hlaDR", column = @Column(name = "hla_dr_recipient", length = 100)),
+            @AttributeOverride(name = "hlaTyping.recipient.hlaDP", column = @Column(name = "hla_dp_recipient", length = 100)),
+            @AttributeOverride(name = "hlaTyping.recipient.hlaDQ", column = @Column(name = "hla_dq_recipient", length = 100)),
+
+            // HLA Typing - Conclusion
+            @AttributeOverride(name = "hlaTyping.conclusion.hlaA", column = @Column(name = "hla_a_conclusion", length = 100)),
+            @AttributeOverride(name = "hlaTyping.conclusion.hlaB", column = @Column(name = "hla_b_conclusion", length = 100)),
+            @AttributeOverride(name = "hlaTyping.conclusion.hlaC", column = @Column(name = "hla_c_conclusion", length = 100)),
+            @AttributeOverride(name = "hlaTyping.conclusion.hlaDR", column = @Column(name = "hla_dr_conclusion", length = 100)),
+            @AttributeOverride(name = "hlaTyping.conclusion.hlaDP", column = @Column(name = "hla_dp_conclusion", length = 100)),
+            @AttributeOverride(name = "hlaTyping.conclusion.hlaDQ", column = @Column(name = "hla_dq_conclusion", length = 100)),
+
+            // Other immunological fields
+            @AttributeOverride(name = "praPre", column = @Column(name = "pra_pre", length = 50)),
+            @AttributeOverride(name = "praPost", column = @Column(name = "pra_post", length = 50)),
+            @AttributeOverride(name = "dsa", column = @Column(name = "dsa", columnDefinition = "TEXT")),
+            @AttributeOverride(name = "immunologicalRisk", column = @Column(name = "immunological_risk", length = 100))
+    })
+    private ImmunologicalDetails immunologicalDetails;
+
+    @Column(name = "cmv_donor", length = 10)
+    private String cmvDonor;
+
+    @Column(name = "cmv_recipient", length = 10)
+    private String cmvRecipient;
+
+    @Column(name = "ebv_donor", length = 10)
+    private String ebvDonor;
+
+    @Column(name = "ebv_recipient", length = 10)
+    private String ebvRecipient;
+
+    @Column(name = "cmv_risk_category", length = 20)
+    private String cmvRiskCategory;
+
+    @Column(name = "ebv_risk_category", length = 20)
+    private String ebvRiskCategory;
+
+    @Column(name = "tb_mantoux", length = 20)
+    private String tbMantoux;
+
+    @Column(name = "hiv_ab", length = 50)
+    private String hivAb;
+
+    @Column(name = "hep_bs_ag", length = 50)
+    private String hepBsAg;
+
+    @Column(name = "hep_c_ab", length = 50)
+    private String hepCAb;
+
+    @Column(name = "infection_risk_category", length = 20)
+    private String infectionRiskCategory;
+
+    // Prophylaxis
+    @Column(name = "cotrimoxazole_yes")
+    private Boolean cotrimoxazoleYes = false;
+
+    @Column(name = "cotri_duration", length = 100)
     private String cotriDuration;
 
-    @Column(name = "cotri_stopped")
-    private LocalDate cotriStopped;
+    @Column(name = "cotri_stopped", length = 50)
+    private String cotriStopped;
 
-    @Column(name = "valganciclovir")
-    private String valganciclovir;
+    @Column(name = "valganciclovir_yes")
+    private Boolean valganciclovirYes = false;
 
-    @Column(name = "valgan_duration")
+    @Column(name = "valgan_duration", length = 100)
     private String valganDuration;
 
-    @Column(name = "valgan_stopped")
-    private LocalDate valganStopped;
+    @Column(name = "valgan_stopped", length = 50)
+    private String valganStopped;
 
-    @Column(name = "vaccination")
-    private String vaccination;
+    // Vaccination checkboxes
+    @Column(name = "vaccination_covid")
+    private Boolean vaccinationCOVID = false;
+
+    @Column(name = "vaccination_influenza")
+    private Boolean vaccinationInfluenza = false;
+
+    @Column(name = "vaccination_pneumococcal")
+    private Boolean vaccinationPneumococcal = false;
+
+    @Column(name = "vaccination_varicella")
+    private Boolean vaccinationVaricella = false;
 
     // Pre-operative
-    @Column(name = "pre_op_status", length = 1000)
+    @Column(name = "pre_op_status", columnDefinition = "TEXT")
     private String preOpStatus;
 
-    @Column(name = "pre_op_preparation", length = 1000)
+    @Column(name = "pre_op_preparation", columnDefinition = "TEXT")
     private String preOpPreparation;
 
-    @Column(name = "surgical_notes", length = 2000)
+    @Column(name = "surgical_notes", columnDefinition = "TEXT")
     private String surgicalNotes;
 
     // Immediate Post-Transplant
-    @Column(name = "pre_kt_creatinine")
+    @Column(name = "pre_kt_creatinine", length = 50)
     private String preKTCreatinine;
 
-    @Column(name = "post_kt_creatinine")
+    @Column(name = "post_kt_creatinine", length = 50)
     private String postKTCreatinine;
 
-    @Column(name = "delayed_graft")
-    private String delayedGraft;
+    @Column(name = "delayed_graft_yes")
+    private Boolean delayedGraftYes = false;
 
-    @Column(name = "post_kt_dialysis")
-    private String postKTDialysis;
+    @Column(name = "post_kt_dialysis_yes")
+    private Boolean postKTDialysisYes = false;
 
-    @Column(name = "acute_rejection")
-    private String acuteRejection;
+    @Column(name = "post_kt_pd_yes")
+    private Boolean postKTPDYes = false;
 
-    @Column(name = "acute_rejection_details")
+    @Column(name = "acute_rejection_yes")
+    private Boolean acuteRejectionYes = false;
+
+    @Column(name = "acute_rejection_details", columnDefinition = "TEXT")
     private String acuteRejectionDetails;
 
-    @Column(name = "other_complications", length = 1000)
+    @Column(name = "other_complications", columnDefinition = "TEXT")
     private String otherComplications;
 
     // Surgery Complications
-    @Column(name = "post_kt_comp1")
+    @Column(name = "post_kt_comp1", columnDefinition = "TEXT")
     private String postKTComp1;
 
-    @Column(name = "post_kt_comp2")
+    @Column(name = "post_kt_comp2", columnDefinition = "TEXT")
     private String postKTComp2;
 
-    @Column(name = "post_kt_comp3")
+    @Column(name = "post_kt_comp3", columnDefinition = "TEXT")
     private String postKTComp3;
 
-    @Column(name = "post_kt_comp4")
+    @Column(name = "post_kt_comp4", columnDefinition = "TEXT")
     private String postKTComp4;
 
-    @Column(name = "post_kt_comp5")
+    @Column(name = "post_kt_comp5", columnDefinition = "TEXT")
     private String postKTComp5;
 
-    @Column(name = "post_kt_comp6")
+    @Column(name = "post_kt_comp6", columnDefinition = "TEXT")
     private String postKTComp6;
 
-    // Current Management
-    @Column(name = "current_meds")
-    private String currentMeds;
+    // Medications (as JSON)
+    @Column(name = "medications", columnDefinition = "TEXT")
+    private String medications;
 
     // Final
-    @Column(name = "recommendations", length = 2000)
+    @Column(name = "recommendations", columnDefinition = "TEXT")
     private String recommendations;
 
-    @Column(name = "filled_by")
+    @Column(name = "filled_by", length = 255)
     private String filledBy;
 
     @Column(name = "created_at")
@@ -196,6 +299,7 @@ public class KTSurgery {
     public KTSurgery() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.immunologicalDetails = new ImmunologicalDetails();
     }
 
     @PreUpdate
@@ -213,8 +317,8 @@ public class KTSurgery {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public LocalDate getDob() { return dob; }
-    public void setDob(LocalDate dob) { this.dob = dob; }
+    public String getDob() { return dob; }
+    public void setDob(String dob) { this.dob = dob; }
 
     public String getAge() { return age; }
     public void setAge(String age) { this.age = age; }
@@ -255,8 +359,8 @@ public class KTSurgery {
     public String getDurationRRT() { return durationRRT; }
     public void setDurationRRT(String durationRRT) { this.durationRRT = durationRRT; }
 
-    public LocalDate getKtDate() { return ktDate; }
-    public void setKtDate(LocalDate ktDate) { this.ktDate = ktDate; }
+    public String getKtDate() { return ktDate; }
+    public void setKtDate(String ktDate) { this.ktDate = ktDate; }
 
     public String getNumberOfKT() { return numberOfKT; }
     public void setNumberOfKT(String numberOfKT) { this.numberOfKT = numberOfKT; }
@@ -294,26 +398,86 @@ public class KTSurgery {
     public String getMaintenanceOther() { return maintenanceOther; }
     public void setMaintenanceOther(String maintenanceOther) { this.maintenanceOther = maintenanceOther; }
 
-    public String getCotrimoxazole() { return cotrimoxazole; }
-    public void setCotrimoxazole(String cotrimoxazole) { this.cotrimoxazole = cotrimoxazole; }
+    public Boolean getMaintenancePred() { return maintenancePred; }
+    public void setMaintenancePred(Boolean maintenancePred) { this.maintenancePred = maintenancePred; }
+
+    public Boolean getMaintenanceMMF() { return maintenanceMMF; }
+    public void setMaintenanceMMF(Boolean maintenanceMMF) { this.maintenanceMMF = maintenanceMMF; }
+
+    public Boolean getMaintenanceTac() { return maintenanceTac; }
+    public void setMaintenanceTac(Boolean maintenanceTac) { this.maintenanceTac = maintenanceTac; }
+
+    public Boolean getMaintenanceEverolimus() { return maintenanceEverolimus; }
+    public void setMaintenanceEverolimus(Boolean maintenanceEverolimus) { this.maintenanceEverolimus = maintenanceEverolimus; }
+
+    public String getMaintenanceOtherText() { return maintenanceOtherText; }
+    public void setMaintenanceOtherText(String maintenanceOtherText) { this.maintenanceOtherText = maintenanceOtherText; }
+
+    public ImmunologicalDetails getImmunologicalDetails() { return immunologicalDetails; }
+    public void setImmunologicalDetails(ImmunologicalDetails immunologicalDetails) { this.immunologicalDetails = immunologicalDetails; }
+
+    public String getCmvDonor() { return cmvDonor; }
+    public void setCmvDonor(String cmvDonor) { this.cmvDonor = cmvDonor; }
+
+    public String getCmvRecipient() { return cmvRecipient; }
+    public void setCmvRecipient(String cmvRecipient) { this.cmvRecipient = cmvRecipient; }
+
+    public String getEbvDonor() { return ebvDonor; }
+    public void setEbvDonor(String ebvDonor) { this.ebvDonor = ebvDonor; }
+
+    public String getEbvRecipient() { return ebvRecipient; }
+    public void setEbvRecipient(String ebvRecipient) { this.ebvRecipient = ebvRecipient; }
+
+    public String getCmvRiskCategory() { return cmvRiskCategory; }
+    public void setCmvRiskCategory(String cmvRiskCategory) { this.cmvRiskCategory = cmvRiskCategory; }
+
+    public String getEbvRiskCategory() { return ebvRiskCategory; }
+    public void setEbvRiskCategory(String ebvRiskCategory) { this.ebvRiskCategory = ebvRiskCategory; }
+
+    public String getTbMantoux() { return tbMantoux; }
+    public void setTbMantoux(String tbMantoux) { this.tbMantoux = tbMantoux; }
+
+    public String getHivAb() { return hivAb; }
+    public void setHivAb(String hivAb) { this.hivAb = hivAb; }
+
+    public String getHepBsAg() { return hepBsAg; }
+    public void setHepBsAg(String hepBsAg) { this.hepBsAg = hepBsAg; }
+
+    public String getHepCAb() { return hepCAb; }
+    public void setHepCAb(String hepCAb) { this.hepCAb = hepCAb; }
+
+    public String getInfectionRiskCategory() { return infectionRiskCategory; }
+    public void setInfectionRiskCategory(String infectionRiskCategory) { this.infectionRiskCategory = infectionRiskCategory; }
+
+    public Boolean getCotrimoxazoleYes() { return cotrimoxazoleYes; }
+    public void setCotrimoxazoleYes(Boolean cotrimoxazoleYes) { this.cotrimoxazoleYes = cotrimoxazoleYes; }
 
     public String getCotriDuration() { return cotriDuration; }
     public void setCotriDuration(String cotriDuration) { this.cotriDuration = cotriDuration; }
 
-    public LocalDate getCotriStopped() { return cotriStopped; }
-    public void setCotriStopped(LocalDate cotriStopped) { this.cotriStopped = cotriStopped; }
+    public String getCotriStopped() { return cotriStopped; }
+    public void setCotriStopped(String cotriStopped) { this.cotriStopped = cotriStopped; }
 
-    public String getValganciclovir() { return valganciclovir; }
-    public void setValganciclovir(String valganciclovir) { this.valganciclovir = valganciclovir; }
+    public Boolean getValganciclovirYes() { return valganciclovirYes; }
+    public void setValganciclovirYes(Boolean valganciclovirYes) { this.valganciclovirYes = valganciclovirYes; }
 
     public String getValganDuration() { return valganDuration; }
     public void setValganDuration(String valganDuration) { this.valganDuration = valganDuration; }
 
-    public LocalDate getValganStopped() { return valganStopped; }
-    public void setValganStopped(LocalDate valganStopped) { this.valganStopped = valganStopped; }
+    public String getValganStopped() { return valganStopped; }
+    public void setValganStopped(String valganStopped) { this.valganStopped = valganStopped; }
 
-    public String getVaccination() { return vaccination; }
-    public void setVaccination(String vaccination) { this.vaccination = vaccination; }
+    public Boolean getVaccinationCOVID() { return vaccinationCOVID; }
+    public void setVaccinationCOVID(Boolean vaccinationCOVID) { this.vaccinationCOVID = vaccinationCOVID; }
+
+    public Boolean getVaccinationInfluenza() { return vaccinationInfluenza; }
+    public void setVaccinationInfluenza(Boolean vaccinationInfluenza) { this.vaccinationInfluenza = vaccinationInfluenza; }
+
+    public Boolean getVaccinationPneumococcal() { return vaccinationPneumococcal; }
+    public void setVaccinationPneumococcal(Boolean vaccinationPneumococcal) { this.vaccinationPneumococcal = vaccinationPneumococcal; }
+
+    public Boolean getVaccinationVaricella() { return vaccinationVaricella; }
+    public void setVaccinationVaricella(Boolean vaccinationVaricella) { this.vaccinationVaricella = vaccinationVaricella; }
 
     public String getPreOpStatus() { return preOpStatus; }
     public void setPreOpStatus(String preOpStatus) { this.preOpStatus = preOpStatus; }
@@ -330,14 +494,17 @@ public class KTSurgery {
     public String getPostKTCreatinine() { return postKTCreatinine; }
     public void setPostKTCreatinine(String postKTCreatinine) { this.postKTCreatinine = postKTCreatinine; }
 
-    public String getDelayedGraft() { return delayedGraft; }
-    public void setDelayedGraft(String delayedGraft) { this.delayedGraft = delayedGraft; }
+    public Boolean getDelayedGraftYes() { return delayedGraftYes; }
+    public void setDelayedGraftYes(Boolean delayedGraftYes) { this.delayedGraftYes = delayedGraftYes; }
 
-    public String getPostKTDialysis() { return postKTDialysis; }
-    public void setPostKTDialysis(String postKTDialysis) { this.postKTDialysis = postKTDialysis; }
+    public Boolean getPostKTDialysisYes() { return postKTDialysisYes; }
+    public void setPostKTDialysisYes(Boolean postKTDialysisYes) { this.postKTDialysisYes = postKTDialysisYes; }
 
-    public String getAcuteRejection() { return acuteRejection; }
-    public void setAcuteRejection(String acuteRejection) { this.acuteRejection = acuteRejection; }
+    public Boolean getPostKTPDYes() { return postKTPDYes; }
+    public void setPostKTPDYes(Boolean postKTPDYes) { this.postKTPDYes = postKTPDYes; }
+
+    public Boolean getAcuteRejectionYes() { return acuteRejectionYes; }
+    public void setAcuteRejectionYes(Boolean acuteRejectionYes) { this.acuteRejectionYes = acuteRejectionYes; }
 
     public String getAcuteRejectionDetails() { return acuteRejectionDetails; }
     public void setAcuteRejectionDetails(String acuteRejectionDetails) { this.acuteRejectionDetails = acuteRejectionDetails; }
@@ -363,8 +530,8 @@ public class KTSurgery {
     public String getPostKTComp6() { return postKTComp6; }
     public void setPostKTComp6(String postKTComp6) { this.postKTComp6 = postKTComp6; }
 
-    public String getCurrentMeds() { return currentMeds; }
-    public void setCurrentMeds(String currentMeds) { this.currentMeds = currentMeds; }
+    public String getMedications() { return medications; }
+    public void setMedications(String medications) { this.medications = medications; }
 
     public String getRecommendations() { return recommendations; }
     public void setRecommendations(String recommendations) { this.recommendations = recommendations; }

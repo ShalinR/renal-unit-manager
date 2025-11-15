@@ -25,7 +25,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Users,
   Building2,
   Activity,
   Heart,
@@ -48,7 +47,6 @@ import GlobalSearch from "./GlobalSearch";
 import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
-  { title: "Patient Overview", url: "/patient-overview", icon: Users },
   { title: "Ward Management", url: "/ward-management", icon: Building2 },
   { title: "Peritoneal Dialysis", url: "/peritoneal-dialysis", icon: Activity },
   { title: "HaemoDialysis", url: "/haemodialysis", icon: Heart },

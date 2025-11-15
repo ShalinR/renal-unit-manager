@@ -80,11 +80,12 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   const [donorSearchResults, setDonorSearchResults] = useState<any>(null);
   const [searchingDonor, setSearchingDonor] = useState(false);
   const [viewMode, setViewMode] = useState<boolean>(false); // NEW: View mode state
-  const { getAvailableDonors } = useDonorContext();
   const [assignedDonor, setAssignedDonor] = useState<Donor | null>(null);
   const {
     donors,
     fetchDonors,
+    fetchAllDonors,
+    getAvailableDonors ,
     setSelectedDonor: setContextSelectedDonor,
   } = useDonorContext();
 
@@ -214,6 +215,8 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     }
   };
 
+  
+
   useEffect(() => {
     const loadAssignedDonor = async () => {
       if (patient?.phn) {
@@ -240,96 +243,103 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
 
     loadAssignedDonor();
   }, [patient?.phn, donors, fetchDonors, setContextSelectedDonor]);
-  useEffect(() => {
-    let isMounted = true;
-    let hasLoaded = false;
+  // In RecipientAssessment component, replace the current useEffect with this:
 
-    const loadData = async () => {
-      if (!patient?.phn || patient.phn.trim() === "" || hasLoaded) {
-        return;
+useEffect(() => {
+  let isMounted = true;
+  let hasLoaded = false;
+
+  const loadData = async () => {
+    if (!patient?.phn || patient.phn.trim() === "" || hasLoaded) {
+      return;
+    }
+
+    console.log("🔄 Loading assessment for PHN:", patient.phn);
+    hasLoaded = true;
+
+    try {
+      setIsSubmitting(true);
+
+      // Set basic patient info
+      if (isMounted) {
+        setRecipientForm((prev) => ({
+          ...prev,
+          phn: patient.phn || "",
+          name: patient.name || prev.name,
+          age: Number(patient.age) || prev.age,
+          gender: patient.gender || prev.gender,
+          dateOfBirth: patient.dateOfBirth || prev.dateOfBirth,
+          contactDetails: patient.contact || prev.contactDetails,
+          emailAddress: patient.email || prev.emailAddress,
+        }));
       }
 
-      console.log("🔄 Loading assessment for PHN:", patient.phn);
-      hasLoaded = true;
+      // ✅ NEW: Automatically fetch available donors when patient is loaded
+      await fetchAllDonors();
+      console.log("✅ Available donors loaded automatically");
 
-      try {
-        setIsSubmitting(true);
+      // Load existing assessment
+      const existingAssessment = await fetchLatestRecipientAssessment(
+        patient.phn
+      );
 
-        // Set basic patient info
-        if (isMounted) {
-          setRecipientForm((prev) => ({
-            ...prev,
-            phn: patient.phn || "",
-            name: patient.name || prev.name,
-            age: Number(patient.age) || prev.age,
-            gender: patient.gender || prev.gender,
-            dateOfBirth: patient.dateOfBirth || prev.dateOfBirth,
-            contactDetails: patient.contact || prev.contactDetails,
-            emailAddress: patient.email || prev.emailAddress,
-          }));
-        }
+      if (isMounted) {
+        if (existingAssessment) {
+          console.log("✅ Found existing assessment:", existingAssessment);
 
-        // Load existing assessment
-        const existingAssessment = await fetchLatestRecipientAssessment(
-          patient.phn
-        );
+          // IMPORTANT: Set the entire form with the existing assessment data
+          setRecipientForm(existingAssessment);
+          setIsEditing(true);
+          setViewMode(true);
 
-        if (isMounted) {
-          if (existingAssessment) {
-            console.log("✅ Found existing assessment:", existingAssessment);
+          // Set donor search results if donor is assigned
+          if (existingAssessment.donorId) {
+            console.log("🔗 Found assigned donor:", {
+              donorId: existingAssessment.donorId,
+              donorName: existingAssessment.donorName,
+              donorPhn: existingAssessment.donorPhn,
+            });
 
-            // IMPORTANT: Set the entire form with the existing assessment data
-            setRecipientForm(existingAssessment);
-            setIsEditing(true);
-            setViewMode(true);
-
-            // Set donor search results if donor is assigned
-            if (existingAssessment.donorId) {
-              console.log("🔗 Found assigned donor:", {
-                donorId: existingAssessment.donorId,
-                donorName: existingAssessment.donorName,
-                donorPhn: existingAssessment.donorPhn,
-              });
-
-              // Set donor search results to show the selected donor
-              setDonorSearchResults({
-                id: existingAssessment.donorId,
-                name: existingAssessment.donorName,
-                patientPhn: existingAssessment.donorPhn,
-                bloodGroup: existingAssessment.donorBloodGroup,
-              });
-            }
-
-            if (existingAssessment.transfusionHistory?.length > 0) {
-              setTransfusions(existingAssessment.transfusionHistory);
-            } else {
-              setTransfusions([{ date: "", indication: "", volume: "" }]);
-            }
-          } else {
-            setIsEditing(false);
-            setViewMode(false);
-            console.log("📝 No existing assessment found, creating new one");
+            // Set donor search results to show the selected donor
+            setDonorSearchResults({
+              id: existingAssessment.donorId,
+              name: existingAssessment.donorName,
+              patientPhn: existingAssessment.donorPhn,
+              bloodGroup: existingAssessment.donorBloodGroup,
+            });
           }
-        }
-      } catch (error) {
-        console.error("❌ Error loading patient assessment data:", error);
-        if (isMounted) {
+
+          if (existingAssessment.transfusionHistory?.length > 0) {
+            setTransfusions(existingAssessment.transfusionHistory);
+          } else {
+            setTransfusions([{ date: "", indication: "", volume: "" }]);
+          }
+        } else {
           setIsEditing(false);
           setViewMode(false);
-        }
-      } finally {
-        if (isMounted) {
-          setIsSubmitting(false);
+          console.log("📝 No existing assessment found, creating new one");
         }
       }
-    };
+    } catch (error) {
+      console.error("❌ Error loading patient assessment data:", error);
+      if (isMounted) {
+        setIsEditing(false);
+        setViewMode(false);
+      }
+    } finally {
+      if (isMounted) {
+        setIsSubmitting(false);
+      }
+    }
+  };
 
-    loadData();
+  loadData();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [patient?.phn]); // Only depend on patient.phn
+  return () => {
+    isMounted = false;
+  };
+}, [patient?.phn, fetchAllDonors]); 
+
   useEffect(() => {
     if (recipientForm.phn?.trim()) {
       setErrors((prev) => {
@@ -1243,253 +1253,153 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
             </Card>
           )}
 
-          {/* Step 1: Donor Relationship */}
           {step === 1 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Heart className="w-6 h-6" />
-                  Donor Relationship
-                </CardTitle>
-                <CardDescription className="text-blue-100">
-                  Link this recipient to an available donor
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                {/* Available Donors Section */}
-                <div className="space-y-6">
+  <Card className="shadow-lg border-0 bg-white">
+    <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+      <CardTitle className="flex items-center gap-3 text-xl">
+        <Heart className="w-6 h-6" />
+        Donor Information
+      </CardTitle>
+      <CardDescription className="text-blue-100">
+        Available donors are automatically loaded for this patient
+      </CardDescription>
+    </CardHeader>
+    <CardContent className="p-8 space-y-8">
+      {/* Available Donors Summary */}
+      <div className="space-y-6">
+        <div>
+          <Label className="text-sm font-semibold text-gray-700">
+            Available Donors
+          </Label>
+          <p className="text-sm text-gray-500 mt-1">
+            {getAvailableDonors().length} donor(s) available for selection
+          </p>
+        </div>
+
+        {/* Donor Selection - Auto-assign if only one available */}
+        {getAvailableDonors().length === 1 && (
+          <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-green-900 mb-2">
+                  Auto-Assigned Donor
+                </h3>
+                <p className="text-green-700">
+                  One available donor found. This donor has been automatically selected.
+                </p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            </div>
+            
+            {/* Auto-assign the single available donor */}
+            {(() => {
+              const singleDonor = getAvailableDonors()[0];
+              // Auto-assign if not already assigned
+              if (recipientForm.donorId !== singleDonor.id) {
+                handleSelectDonor(singleDonor);
+              }
+              return (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Name</Label>
+                    <p className="text-gray-900 font-semibold">{singleDonor.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Blood Group</Label>
+                    <p className="text-gray-900 font-semibold">{singleDonor.bloodGroup}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">PHN</Label>
+                    <p className="text-gray-900 font-semibold">{singleDonor.patientPhn}</p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Multiple donors available - show selection */}
+        {getAvailableDonors().length > 1 && (
+          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">
+              Select a Donor
+            </h3>
+            <p className="text-blue-700 mb-4">
+              Multiple donors available. Please select one:
+            </p>
+            
+            <div className="space-y-3">
+              {getAvailableDonors().map((donor) => (
+                <div
+                  key={donor.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    recipientForm.donorId === donor.id
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                  }`}
+                  onClick={() => handleSelectDonor(donor)}
+                >
                   <div className="flex justify-between items-center">
                     <div>
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Available Donors
-                      </Label>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Select from {getAvailableDonors().length} available
-                        donor(s)
-                      </p>
+                      <h4 className="font-semibold text-gray-900">{donor.name}</h4>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Blood Group: {donor.bloodGroup} • Age: {donor.age} • PHN: {donor.patientPhn}
+                      </div>
                     </div>
-                    {recipientForm.donorId && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={clearDonorSelection}
-                        className="text-red-600 border-red-300 hover:bg-red-50"
-                      >
-                        Clear Donor
-                      </Button>
+                    {recipientForm.donorId === donor.id && (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
                     )}
                   </div>
-
-                  {/* Available Donors Grid */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {getAvailableDonors().map((donor) => (
-    <div
-      key={donor.id}
-      className={`p-4 border rounded-lg cursor-pointer transition-all ${
-        recipientForm.donorId === donor.id
-          ? "border-green-500 bg-green-50"
-          : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
-      }`}
-      onClick={() => handleSelectDonor(donor)}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <h4 className="font-semibold text-gray-900">
-            {donor.name || "Unnamed Donor"}
-          </h4>
-          <div className="mt-2 space-y-1 text-sm">
-            <p className="text-gray-600">
-              <span className="font-medium">PHN:</span>{" "}
-              {donor.patientPhn || "Not available"} {/* FIXED: Use patientPhn instead of phn */}
-            </p>
-            <p className="text-gray-600">
-              <span className="font-medium">Blood Group:</span>{" "}
-              {donor.bloodGroup || "Not specified"}
-            </p>
-            <p className="text-gray-500">
-              <span className="font-medium">Age:</span>{" "}
-              {donor.age || "Unknown"} • {donor.gender || "Unknown"}
-            </p>
-            {donor.relationType && (
-              <p className="text-gray-500">
-                <span className="font-medium">Relation:</span>{" "}
-                {donor.relationType}
-              </p>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        {recipientForm.donorId === donor.id && (
-          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 ml-2" />
+        )}
+
+        {/* No donors available */}
+        {getAvailableDonors().length === 0 && (
+          <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+            <div className="text-center">
+              <User className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
+              <p className="font-medium text-yellow-800">No available donors found</p>
+              <p className="text-sm text-yellow-700 mt-1">
+                You can proceed without a donor, or check back later when donors become available.
+              </p>
+            </div>
+          </div>
         )}
       </div>
-    </div>
-  ))}
-</div>
-                  {getAvailableDonors().length === 0 && (
-                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
-                      <User className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                      <p className="font-medium">No available donors found</p>
-                      <p className="text-sm mt-1">
-                        All donors are currently assigned or under evaluation
-                      </p>
-                      <p className="text-xs mt-2 text-gray-400">
-                        You can proceed without linking a donor, or check back
-                        later
-                      </p>
-                    </div>
-                  )}
-                </div>
 
-                {/* Selected Donor Information */}
-                {recipientForm.donorId && (
-                  <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-blue-900">
-                        Selected Donor
-                      </h3>
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">Linked</span>
-                      </div>
-                    </div>
+      {/* Selected Donor Information */}
+      {recipientForm.donorId && (
+        <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-green-900">Selected Donor</h3>
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="w-4 h-4" />
+              <span className="text-sm font-medium">Ready for Assignment</span>
+            </div>
+          </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">
-                          Name
-                        </Label>
-                        <p className="text-gray-900 font-semibold">
-                          {recipientForm.donorName}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">
-                          Blood Group
-                        </Label>
-                        <p className="text-gray-900 font-semibold">
-                          {recipientForm.donorBloodGroup || "Not specified"}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">
-                          PHN
-                        </Label>
-                        <p className="text-gray-900 font-semibold">
-                          {recipientForm.donorPhn}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Relationship Details */}
-                    <div className="space-y-6">
-                      <div className="space-y-4">
-                        <Label className="text-sm font-semibold text-gray-700">
-                          Type of Relationship{" "}
-                          <span className="text-red-500 ml-1">*</span>
-                        </Label>
-                        <RadioGroup
-                          value={recipientForm.relationType}
-                          onValueChange={(value) =>
-                            handleNestedChange("relationType", value)
-                          }
-                          className="space-y-3"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <RadioGroupItem
-                              value="related"
-                              id="related"
-                              className="border-2 border-blue-300"
-                            />
-                            <Label
-                              htmlFor="related"
-                              className="text-gray-700 font-medium"
-                            >
-                              Related
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <RadioGroupItem
-                              value="unrelated"
-                              id="unrelated"
-                              className="border-2 border-blue-300"
-                            />
-                            <Label
-                              htmlFor="unrelated"
-                              className="text-gray-700 font-medium"
-                            >
-                              Unrelated
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <RadioGroupItem
-                              value="altruistic"
-                              id="altruistic"
-                              className="border-2 border-blue-300"
-                            />
-                            <Label
-                              htmlFor="altruistic"
-                              className="text-gray-700 font-medium"
-                            >
-                              Altruistic
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                        {errors.relationType && (
-                          <ErrorMessage message={errors.relationType} />
-                        )}
-                      </div>
-
-                      {recipientForm.relationType === "related" && (
-                        <div className="space-y-3">
-                          <Label
-                            htmlFor="relationToRecipient"
-                            className="text-sm font-semibold text-gray-700"
-                          >
-                            Specific Relation{" "}
-                            <span className="text-red-500 ml-1">*</span>
-                          </Label>
-                          <Input
-                            id="relationToRecipient"
-                            value={recipientForm.relationToRecipient}
-                            onChange={(e) =>
-                              handleNestedChange(
-                                "relationToRecipient",
-                                e.target.value
-                              )
-                            }
-                            placeholder="e.g., Brother, Sister, Parent, Child, Spouse, etc."
-                            className={`h-12 border-2 ${errors.relationToRecipient ? "border-red-500" : "border-gray-200"} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg`}
-                          />
-                          {errors.relationToRecipient && (
-                            <ErrorMessage
-                              message={errors.relationToRecipient}
-                            />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* No Donor Selected Message */}
-                {!recipientForm.donorId && getAvailableDonors().length > 0 && (
-                  <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                    <div className="text-center space-y-3">
-                      <p className="text-gray-700 font-medium">
-                        No donor selected
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Click on an available donor above to link them to this
-                        recipient.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-          {/* Steps 2-6 - Your existing medical form sections remain the same */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-700">Name</Label>
+              <p className="text-gray-900 font-semibold">{recipientForm.donorName}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700">Blood Group</Label>
+              <p className="text-gray-900 font-semibold">{recipientForm.donorBloodGroup}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700">PHN</Label>
+              <p className="text-gray-900 font-semibold">{recipientForm.donorPhn}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+)}
           {/* Step 2: Comorbidities */}
           {step === 2 && (
             <Card className="shadow-lg border-0 bg-white">

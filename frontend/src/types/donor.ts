@@ -13,12 +13,35 @@ export interface Donor {
   relationType?: string;
   relationToRecipient?: string;
   patientPhn?: string;
+  
+  // ADD THESE FIELDS FROM DonorAssessment
   comorbidities?: {
     dl: boolean;
     dm: boolean;
     psychiatricIllness: boolean;
     htn: boolean;
     ihd: boolean;
+  };
+  complains?: string;
+  systemicInquiry?: {
+    constitutional: { loa: boolean; low: boolean };
+    cvs: { chestPain: boolean; odema: boolean; sob: boolean };
+    respiratory: { cough: boolean; hemoptysis: boolean; wheezing: boolean };
+    git: { constipation: boolean; diarrhea: boolean; melena: boolean; prBleeding: boolean };
+    renal: { hematuria: boolean; frothyUrine: boolean };
+    neuro: { seizures: boolean; visualDisturbance: boolean; headache: boolean; limbWeakness: boolean };
+    gynecology: { pvBleeding: boolean; menopause: boolean; menorrhagia: boolean; lrmp: boolean };
+    sexualHistory: string;
+  };
+  drugHistory?: string;
+  allergyHistory?: { foods: boolean; drugs: boolean; p: boolean };
+  familyHistory?: { dm: string; htn: string; ihd: string; stroke: string; renal: string };
+  substanceUse?: { smoking: boolean; alcohol: boolean; other: string };
+  socialHistory?: {
+    spouseDetails: string;
+    childrenDetails: string;
+    income: string;
+    other: string;
   };
   examination?: {
     height: string;
@@ -67,14 +90,8 @@ export interface Donor {
     };
   };
   immunologicalDetails?: {
-    bloodGroup: {
-      d: string;
-      r: string;
-    };
-    crossMatch: {
-      tCell: string;
-      bCell: string;
-    };
+    bloodGroup: { d: string; r: string };
+    crossMatch: { tCell: string; bCell: string };
     hlaTyping: {
       donor: {
         hlaA: string;
@@ -101,10 +118,7 @@ export interface Donor {
         hlaDQ: string;
       };
     };
-    pra: {
-      pre: string;
-      post: string;
-    };
+    pra: { pre: string; post: string };
     dsa: string;
     immunologicalRisk: string;
   };
