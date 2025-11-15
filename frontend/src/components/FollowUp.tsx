@@ -42,7 +42,7 @@ interface FollowUpNote {
 const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
   const navigate = useNavigate();
   const { patient, globalPatient } = usePatientContext();
-  const [activeSection, setActiveSection] = useState<"options" | "investigations" | "followupNotes">("options");
+  const [activeSection, setActiveSection] = useState<"options" | "investigations" | "followupNotes">("followupNotes");
   const [activeTab, setActiveTab] = useState<"frequent" | "annual">("frequent");
   const [investigations, setInvestigations] = useState<Investigation[]>([]);
   const [followUps, setFollowUps] = useState<FollowUpNote[]>([]);
@@ -94,7 +94,11 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
     setLoadingFollowups(true);
     try {
       const data = await followupApi.list(phn);
-      setFollowUps((data as any[]).map((d: any) => ({ id: d.id, date: d.dateOfVisit, doctorNote: d.notes })));
+      setFollowUps((data as any[]).map((d: any) => ({ 
+        id: d.id?.toString() || '', 
+        date: d.dateOfVisit || d.date || '', 
+        doctorNote: d.doctorNote || d.notes || '' 
+      })));
     } catch (error) {
       console.error("Error loading followups:", error);
     } finally {
@@ -113,38 +117,41 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
       return;
     }
     try {
-      await followupApi.create(currentPatient.phn, {
+      const response = await followupApi.create(currentPatient.phn, {
         dateOfVisit: newFollowUp.date,
         notes: newFollowUp.doctorNote,
+        doctorNote: newFollowUp.doctorNote, // Send both fields for compatibility
       });
+      console.log("Follow-up saved successfully:", response);
       setNewFollowUp({ date: new Date().toISOString().split('T')[0], doctorNote: '' });
       await loadFollowups(currentPatient.phn);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving followup:", error);
-      alert('Failed to save note');
+      const errorMessage = error?.message || 'Failed to save note. Please try again.';
+      alert(errorMessage);
     }
   };
 
   // Quick Action Buttons
-const QuickActions = () => (
-  <div className="flex flex-wrap gap-3 mb-6">
-    <Button 
-      onClick={() => setActiveSection("followupNotes")}
-      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-    >
-      <Notebook className="w-4 h-4" />
-      Doctor's Notes
-    </Button>
-    <Button
-      onClick={() => navigate('/investigation/kt')}
-      variant="outline"
-      className="flex items-center gap-2"
-    >
-      <Calendar className="w-4 h-4" />
-      KT Investigation
-    </Button>
-  </div>
-);
+  const QuickActions = () => (
+    <div className="flex flex-wrap gap-3 mb-6">
+      <Button 
+        onClick={() => setActiveSection("followupNotes")}
+        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+      >
+        <Notebook className="w-4 h-4" />
+        Doctor's Notes
+      </Button>
+      <Button
+        onClick={() => navigate('/investigation/kt')}
+        variant="outline"
+        className="flex items-center gap-2"
+      >
+        <Calendar className="w-4 h-4" />
+        KT Investigation
+      </Button>
+    </div>
+  );
 
   const handleFrequentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,29 +232,11 @@ const QuickActions = () => (
               <ArrowLeft className="w-4 h-4" />
               Back to Dashboard
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">Follow Up Management</h1>
-              <p className="text-slate-600">Choose the type of follow up you want to perform</p>
-            </div>
           </div>
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white border-slate-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Total Investigations</p>
-                  <p className="text-2xl font-bold text-slate-800">{investigations.length}</p>
-                </div>
-                <div className="p-2 rounded-full bg-blue-100">
-                  <BarChart3 className="w-4 h-4 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="bg-white border-slate-200">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -266,15 +255,8 @@ const QuickActions = () => (
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Last Activity</p>
-                  <p className="text-lg font-bold text-slate-800">
-                    {investigations.length > 0 
-                      ? new Date(investigations[0].date).toLocaleDateString() 
-                      : followUps.length > 0
-                      ? new Date(followUps[0].date).toLocaleDateString()
-                      : "No activity"
-                    }
-                  </p>
+                  <p className="text-sm font-medium text-slate-600">Investigations</p>
+                  <p className="text-2xl font-bold text-slate-800">{investigations.length}</p>
                 </div>
                 <div className="p-2 rounded-full bg-purple-100">
                   <FileText className="w-4 h-4 text-purple-600" />
@@ -297,56 +279,6 @@ const QuickActions = () => (
           </CardHeader>
           <CardContent>
             <QuickActions />
-            
-            {/* Recent Activity Preview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              {/* Recent Investigations */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  Recent Lab Results
-                </h3>
-                {investigations.slice(0, 3).map((inv) => (
-                  <div key={inv.id} className="p-3 border border-slate-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{inv.date}</span>
-                      <Badge variant="outline" className={
-                        inv.type === "frequent" 
-                          ? "bg-green-50 text-green-700 text-xs" 
-                          : "bg-blue-50 text-blue-700 text-xs"
-                      }>
-                        {inv.type === "frequent" ? "Frequent" : "Annual"}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-slate-600 mt-1">
-                      Cr: {inv.creatinine || "N/A"} • eGFR: {inv.eGFR || "N/A"} • Tacro: {inv.tacrolimus || "N/A"}
-                    </div>
-                  </div>
-                ))}
-                {investigations.length === 0 && (
-                  <p className="text-sm text-slate-500 text-center py-4">No investigations recorded</p>
-                )}
-              </div>
-
-              {/* Recent Follow-up Notes */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-                  <Notebook className="w-4 h-4" />
-                  Recent Notes
-                </h3>
-                {followUps.slice(0, 3).map((fu) => (
-                  <div key={fu.id} className="p-3 border border-slate-200 rounded-lg">
-                    <div className="text-sm text-slate-600">{fu.date}</div>
-                    <div className="text-sm text-slate-800 mt-1 line-clamp-2">
-                      {fu.doctorNote}
-                    </div>
-                  </div>
-                ))}
-                {followUps.length === 0 && (
-                  <p className="text-sm text-slate-500 text-center py-4">No follow-up notes</p>
-                )}
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -363,11 +295,11 @@ const QuickActions = () => (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setActiveSection("options")}
+              onClick={() => setActiveView("dashboard")}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Options
+              Back to Dashboard
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-slate-800">Lab Investigations</h1>
@@ -609,8 +541,115 @@ const QuickActions = () => (
                   </div>
 
                   <form onSubmit={handleAnnualSubmit} className="space-y-6">
-                    {/* Annual form content remains the same */}
-                    {/* ... (rest of annual form) ... */}
+                    <div className="space-y-4">
+                      <Label htmlFor="annualDate">Test Date</Label>
+                      <Input
+                        id="annualDate"
+                        type="date"
+                        value={annualForm.date}
+                        onChange={(e) => setAnnualForm(prev => ({ ...prev, date: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="annualTacrolimus">Tacrolimus Level (ng/mL)</Label>
+                        <Input
+                          id="annualTacrolimus"
+                          value={annualForm.tacrolimus}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, tacrolimus: e.target.value }))}
+                          placeholder="5.0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="annualCreatinine">Creatinine (mg/dL)</Label>
+                        <Input
+                          id="annualCreatinine"
+                          value={annualForm.creatinine}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, creatinine: e.target.value }))}
+                          placeholder="1.2"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="annualEGFR">eGFR (mL/min/1.73m²)</Label>
+                        <Input
+                          id="annualEGFR"
+                          value={annualForm.eGFR}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, eGFR: e.target.value }))}
+                          placeholder="65"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="annualSeNa">Sodium (mmol/L)</Label>
+                        <Input
+                          id="annualSeNa"
+                          value={annualForm.seNa}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, seNa: e.target.value }))}
+                          placeholder="140"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="annualSeK">Potassium (mmol/L)</Label>
+                        <Input
+                          id="annualSeK"
+                          value={annualForm.seK}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, seK: e.target.value }))}
+                          placeholder="4.2"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="annualSeHb">Hemoglobin (g/dL)</Label>
+                        <Input
+                          id="annualSeHb"
+                          value={annualForm.seHb}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, seHb: e.target.value }))}
+                          placeholder="13.5"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="annualSAlbumin">Albumin (g/dL)</Label>
+                        <Input
+                          id="annualSAlbumin"
+                          value={annualForm.sAlbumin}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, sAlbumin: e.target.value }))}
+                          placeholder="4.0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="annualUrinePCR">Urine PCR (mg/g)</Label>
+                        <Input
+                          id="annualUrinePCR"
+                          value={annualForm.urinePCR}
+                          onChange={(e) => setAnnualForm(prev => ({ ...prev, urinePCR: e.target.value }))}
+                          placeholder="150"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="annualNotes">Additional Notes</Label>
+                      <Textarea
+                        id="annualNotes"
+                        value={annualForm.additionalNotes}
+                        onChange={(e) => setAnnualForm(prev => ({ ...prev, additionalNotes: e.target.value }))}
+                        placeholder="Any additional observations or comments..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+                      Save Annual Investigation
+                    </Button>
                   </form>
                 </TabsContent>
               </Tabs>
@@ -697,11 +736,11 @@ const QuickActions = () => (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setActiveSection("options")}
+              onClick={() => setActiveView("dashboard")}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Options
+              Back to Dashboard
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-slate-800">Doctor's Notes</h1>

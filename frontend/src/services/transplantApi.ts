@@ -1,6 +1,6 @@
 import { KTFormData } from '../types/transplant';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/transplant';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/transplant';
 
 // Common headers for API requests
 const getHeaders = (): HeadersInit => {
@@ -89,9 +89,16 @@ export const transplantApi = {
    */
   async getKTSurgeryByPatientPhn(patientPhn: string): Promise<KTFormData | null> {
     try {
-      return await handleApiRequest<KTFormData>(`${API_BASE_URL}/kt-surgery/${patientPhn}`);
+      console.log(`🔍 Fetching KT Surgery for PHN: ${patientPhn}`);
+      console.log(`📍 API URL: ${API_BASE_URL}/kt-surgery/${patientPhn}`);
+      const result = await handleApiRequest<KTFormData>(`${API_BASE_URL}/kt-surgery/${patientPhn}`);
+      console.log(`✅ Successfully fetched KT Surgery data:`, result);
+      return result;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('404')) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.log(`⚠️ Error fetching KT Surgery (expected if no data exists):`, errorMsg);
+      if (error instanceof Error && (errorMsg.includes('404') || errorMsg.includes('not found'))) {
+        console.log(`ℹ️ No KT Surgery record found for PHN: ${patientPhn}`);
         return null;
       }
       throw error;

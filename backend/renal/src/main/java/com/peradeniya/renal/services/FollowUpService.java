@@ -30,10 +30,23 @@ public class FollowUpService {
 
         Patient patient = patientOpt.get();
 
+        // Handle notes - prefer doctorNote, fallback to notes
+        String noteText = null;
+        if (dto.getDoctorNote() != null && !dto.getDoctorNote().trim().isEmpty()) {
+            noteText = dto.getDoctorNote().trim();
+        } else if (dto.getNotes() != null && !dto.getNotes().trim().isEmpty()) {
+            noteText = dto.getNotes().trim();
+        }
+
+        // Validate that notes are provided
+        if (noteText == null || noteText.isEmpty()) {
+            throw new RuntimeException("Doctor's note cannot be empty");
+        }
+
         FollowUp entity = FollowUp.builder()
                 .patient(patient)
                 .date(dto.getDateOfVisit() != null ? dto.getDateOfVisit() : (dto.getDate() != null ? dto.getDate() : LocalDate.now().toString()))
-                .doctorNote(dto.getDoctorNote() != null ? dto.getDoctorNote() : dto.getNotes())
+                .doctorNote(noteText)
                 .sCreatinine(dto.getSCreatinine() != null ? dto.getSCreatinine().toString() : null)
                 .eGFR(dto.getEGFR() != null ? dto.getEGFR().toString() : null)
                 .build();
@@ -47,6 +60,39 @@ public class FollowUpService {
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    public Optional<FollowUpDTO> getById(Long id) {
+        return repository.findById(id).map(this::convertToDTO);
+    }
+
+    public FollowUpDTO update(Long id, FollowUpDTO dto) {
+        FollowUp entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Follow-up not found with id: " + id));
+
+        // Update fields
+        if (dto.getDateOfVisit() != null) {
+            entity.setDate(dto.getDateOfVisit());
+        } else if (dto.getDate() != null) {
+            entity.setDate(dto.getDate());
+        }
+
+        if (dto.getDoctorNote() != null) {
+            entity.setDoctorNote(dto.getDoctorNote());
+        } else if (dto.getNotes() != null) {
+            entity.setDoctorNote(dto.getNotes());
+        }
+
+        if (dto.getSCreatinine() != null) {
+            entity.setSCreatinine(dto.getSCreatinine().toString());
+        }
+
+        if (dto.getEGFR() != null) {
+            entity.setEGFR(dto.getEGFR().toString());
+        }
+
+        FollowUp saved = repository.save(entity);
+        return convertToDTO(saved);
     }
 
     public void delete(Long id) {

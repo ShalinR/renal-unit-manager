@@ -40,11 +40,13 @@ import {
   Sun,
   Moon,
   Laptop,
+  MessageSquare,
 } from "lucide-react";
 
 import { useTheme } from "@/hooks/useTheme";
 import GlobalSearch from "./GlobalSearch";
 import { useAuth } from "@/context/AuthContext";
+import { FeedbackButton } from "./FeedbackButton";
 
 const menuItems = [
   { title: "Ward Management", url: "/ward-management", icon: Building2 },
@@ -53,6 +55,10 @@ const menuItems = [
   { title: "Kidney Transplant", url: "/kidney-transplant", icon: Stethoscope },
   { title: "Investigation", url: "/investigation", icon: Search },
   { title: "Medications", url: "/medications", icon: Pill },
+];
+
+const adminMenuItems = [
+  { title: "Feedback Management", url: "/admin/feedback", icon: MessageSquare },
 ];
 
 interface LayoutProps {
@@ -124,6 +130,31 @@ const Layout = ({ children }: LayoutProps) => {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  {user?.role === "ADMIN" && (
+                    <>
+                      <SidebarGroupLabel className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 mt-4">
+                        Administration
+                      </SidebarGroupLabel>
+                      {adminMenuItems.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            onClick={() => navigate(item.url)}
+                            isActive={location.pathname === item.url}
+                            className={`
+                              flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 w-full dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50
+                              ${location.pathname === item.url
+                                ? "bg-blue-50 text-blue-700 shadow-sm"
+                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                              }
+                            `}
+                          >
+                            <item.icon className="h-5 w-5" />
+                            <span>{item.title}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -148,7 +179,7 @@ const Layout = ({ children }: LayoutProps) => {
         </Sidebar>
 
         {/* Main */}
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col relative">
           {/* Header */}
           <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm dark:bg-slate-950 dark:border-slate-800">
             <div className="flex items-center justify-between px-6 py-4">
@@ -302,6 +333,7 @@ const Layout = ({ children }: LayoutProps) => {
               {children}
             </div>
           </div>
+          <FeedbackButton />
         </main>
       </div>
     </SidebarProvider>

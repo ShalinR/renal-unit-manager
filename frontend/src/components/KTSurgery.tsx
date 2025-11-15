@@ -202,6 +202,32 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
     }
   }, [patient]);
 
+  // Load saved KT Surgery data when patient is selected
+  useEffect(() => {
+    const loadSavedKTSurgery = async () => {
+      if (patient?.phn) {
+        console.log(`📋 KTSurgery.tsx: Loading saved data for patient PHN: ${patient.phn}`);
+        try {
+          const savedData = await transplantApi.getKTSurgeryByPatientPhn(patient.phn);
+          if (savedData) {
+            console.log("✅ KTSurgery.tsx: Successfully loaded saved data:", savedData);
+            setForm(savedData);
+            setStep(0); // Reset to first step
+          } else {
+            console.log(`ℹ️ KTSurgery.tsx: No saved data found for PHN ${patient.phn}. Form will use patient auto-population only.`);
+          }
+        } catch (error) {
+          console.error("❌ KTSurgery.tsx: Error loading KT Surgery data:", error);
+          // Don't show alert for expected errors
+        }
+      } else {
+        console.log("ℹ️ KTSurgery.tsx: No patient PHN available yet");
+      }
+    };
+
+    loadSavedKTSurgery();
+  }, [patient?.phn]);
+
   const handleChange = (field: keyof KTFormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -214,9 +240,15 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!form.filledBy) {
-      alert("Please enter who filled out the form in the Confirmation step.");
-      setStep(FORM_STEPS.findIndex(s => s.label === "Confirmation"));
+    // Only check filledBy on actual submission (when on last step)
+    if (step === FORM_STEPS.length - 1 && !form.filledBy) {
+      alert("Please enter who filled out the form.");
+      return;
+    }
+
+    // Only actually submit when on the last step
+    if (step < FORM_STEPS.length - 1) {
+      nextStep();
       return;
     }
 
@@ -228,8 +260,13 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
         return;
       }
 
+      console.log(`💾 Submitting KT Surgery form for patient PHN: ${patient.phn}`);
+      console.log(`📝 Form data:`, form);
+
       // Use the API service instead of direct fetch
       const saved = await transplantApi.createKTSurgery(patient.phn, form);
+      
+      console.log(`✅ KT Surgery saved successfully:`, saved);
 
       // Update patient context (ktSurgery summary fields)
       setPatientData(prev => ({
@@ -244,7 +281,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
       alert("KT form submitted successfully!");
       setActiveView("dashboard");
     } catch (err) {
-      console.error('Submission error:', err);
+      console.error('❌ Submission error:', err);
       const errorMessage = handleApiError(err);
       alert(`Error saving KT surgery: ${errorMessage}`);
     } finally {
@@ -253,14 +290,14 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-blue-900 mb-2">Kidney Transplant Surgery</h1>
-              <p className="text-blue-600">
+              <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">Kidney Transplant Surgery</h1>
+              <p className="text-blue-600 dark:text-blue-300">
                 {patient && patient.name 
                   ? `Patient: ${patient.name} (PHN: ${patient.phn})`
                   : "Complete the KT surgery assessment form"
@@ -271,7 +308,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
               variant="outline"
               size="sm"
               onClick={() => setActiveView("dashboard")}
-              className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="flex items-center gap-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Dashboard
@@ -279,10 +316,10 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           </div>
 
           {/* Progress Stepper */}
-          <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-blue-900">Assessment Progress</h2>
-              <span className="text-sm text-blue-600">Step {step + 1} of {FORM_STEPS.length}</span>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-blue-100 dark:border-slate-700 p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Assessment Progress</h2>
+              <span className="text-sm text-blue-600 dark:text-blue-300">Step {step + 1} of {FORM_STEPS.length}</span>
             </div>
             <div className="w-full max-w-full overflow-x-auto pb-2">
               <div className="flex items-center gap-3 min-w-[700px] md:min-w-0">
@@ -295,14 +332,14 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       <div className={
                         `flex flex-col items-center p-3 rounded-lg transition-all duration-200
                         ${isActive 
-                          ? "bg-blue-100 border-2 border-blue-500 text-blue-700" 
+                          ? "bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-200" 
                           : isCompleted
-                          ? "bg-blue-50 border border-blue-200 text-blue-600"
-                          : "bg-gray-50 border border-gray-200 text-gray-400"
+                          ? "bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-300"
+                          : "bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-400"
                         }`
                       }>
-                        <Icon className={`w-5 h-5 mb-2 ${isActive ? "text-blue-600" : isCompleted ? "text-blue-500" : "text-gray-400"}`} />
-                        <span className={`text-xs font-medium text-center ${isActive ? "text-blue-700" : isCompleted ? "text-blue-600" : "text-gray-400"}`}>
+                        <Icon className={`w-5 h-5 mb-2 ${isActive ? "text-blue-600 dark:text-blue-400" : isCompleted ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
+                        <span className={`text-xs font-medium text-center ${isActive ? "text-blue-700 dark:text-blue-200" : isCompleted ? "text-blue-600 dark:text-blue-300" : "text-gray-400 dark:text-slate-500"}`}>
                           {formStep.label}
                         </span>
                       </div>
@@ -318,7 +355,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 0: Patient Info */}
           {step === 0 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <User className="w-6 h-6" />
                   Patient Information
@@ -328,7 +365,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     </span>
                   )}
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   {patient && patient.name 
                     ? `Patient data loaded for: ${patient.name}`
                     : "Search for a patient using the search bar above to auto-fill this section"
@@ -338,7 +375,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
               <CardContent className="p-8 space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="name" className="text-sm font-semibold text-gray-700 flex items-center">
+                    <Label htmlFor="name" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                       Full Name <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <Input
@@ -346,12 +383,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.name}
                       onChange={e => handleChange("name", e.target.value)}
                       placeholder="Enter full name"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       required
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label htmlFor="contact" className="text-sm font-semibold text-gray-700 flex items-center">
+                    <Label htmlFor="contact" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                       Contact Number
                     </Label>
                     <Input
@@ -359,13 +396,13 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.contact}
                       onChange={e => handleChange("contact", e.target.value)}
                       placeholder="Enter phone number"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="dob" className="text-sm font-semibold text-gray-700 flex items-center">
+                    <Label htmlFor="dob" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                       Date of Birth <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <Input
@@ -373,12 +410,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       type="date"
                       value={form.dob}
                       onChange={e => handleChange("dob", e.target.value)}
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       required
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label htmlFor="age" className="text-sm font-semibold text-gray-700 flex items-center">
+                    <Label htmlFor="age" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                       Age at Referral (years) <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <Input
@@ -387,32 +424,32 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       min={0}
                       value={form.age}
                       onChange={e => handleChange("age", e.target.value)}
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       required
                     />
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700 flex items-center">
+                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                     Gender <span className="text-red-500 ml-1">*</span>
                   </Label>
                   <RadioGroup className="flex gap-8 pt-2" value={form.gender} onValueChange={value => handleChange("gender", value)}>
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="male" id="ktMale" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktMale" className="text-gray-700 font-medium">Male</Label>
+                      <Label htmlFor="ktMale" className="text-gray-700 dark:text-gray-200 font-medium">Male</Label>
                     </div>
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="female" id="ktFemale" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktFemale" className="text-gray-700 font-medium">Female</Label>
+                      <Label htmlFor="ktFemale" className="text-gray-700 dark:text-gray-200 font-medium">Female</Label>
                     </div>
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="other" id="ktOther" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktOther" className="text-gray-700 font-medium">Other</Label>
+                      <Label htmlFor="ktOther" className="text-gray-700 dark:text-gray-200 font-medium">Other</Label>
                     </div>
                   </RadioGroup>
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="address" className="text-sm font-semibold text-gray-700 flex items-center">
+                  <Label htmlFor="address" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                     Address
                   </Label>
                   <Textarea
@@ -421,7 +458,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     onChange={e => handleChange("address", e.target.value)}
                     placeholder="Enter complete address"
                     rows={4}
-                    className="border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg resize-none"
+                    className="border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg resize-none bg-white dark:bg-slate-700 text-foreground"
                   />
                 </div>
               </CardContent>
@@ -431,12 +468,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 1: Medical History */}
           {step === 1 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <Activity className="w-6 h-6" />
                   Medical History
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Select all applicable conditions
                 </CardDescription>
               </CardHeader>
@@ -447,9 +484,9 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       id="diabetes"
                       checked={form.diabetes === "true"}
                       onCheckedChange={(checked) => handleChange("diabetes", checked ? "true" : "false")}
-                      className="border-2 border-blue-300"
+                      className="border-2 border-blue-300 dark:border-blue-700"
                     />
-                    <Label htmlFor="diabetes" className="text-gray-700 cursor-pointer flex-1">Diabetes</Label>
+                    <Label htmlFor="diabetes" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Diabetes</Label>
                   </div>
                   
                   <div className="flex items-center space-x-3 p-4 border rounded-lg">
@@ -457,9 +494,9 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       id="hypertension"
                       checked={form.hypertension === "true"}
                       onCheckedChange={(checked) => handleChange("hypertension", checked ? "true" : "false")}
-                      className="border-2 border-blue-300"
+                      className="border-2 border-blue-300 dark:border-blue-700"
                     />
-                    <Label htmlFor="hypertension" className="text-gray-700 cursor-pointer flex-1">Hypertension</Label>
+                    <Label htmlFor="hypertension" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Hypertension</Label>
                   </div>
                   
                   <div className="flex items-center space-x-3 p-4 border rounded-lg">
@@ -467,9 +504,9 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       id="ihd"
                       checked={form.ihd === "true"}
                       onCheckedChange={(checked) => handleChange("ihd", checked ? "true" : "false")}
-                      className="border-2 border-blue-300"
+                      className="border-2 border-blue-300 dark:border-blue-700"
                     />
-                    <Label htmlFor="ihd" className="text-gray-700 cursor-pointer flex-1">IHD</Label>
+                    <Label htmlFor="ihd" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">IHD</Label>
                   </div>
                   
                   <div className="flex items-center space-x-3 p-4 border rounded-lg">
@@ -477,9 +514,9 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       id="dyslipidaemia"
                       checked={form.dyslipidaemia === "true"}
                       onCheckedChange={(checked) => handleChange("dyslipidaemia", checked ? "true" : "false")}
-                      className="border-2 border-blue-300"
+                      className="border-2 border-blue-300 dark:border-blue-700"
                     />
-                    <Label htmlFor="dyslipidaemia" className="text-gray-700 cursor-pointer flex-1">Dyslipidaemia</Label>
+                    <Label htmlFor="dyslipidaemia" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Dyslipidaemia</Label>
                   </div>
                   
                   <div className="flex items-center space-x-3 p-4 border rounded-lg">
@@ -487,15 +524,15 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       id="other"
                       checked={form.other === "true"}
                       onCheckedChange={(checked) => handleChange("other", checked ? "true" : "false")}
-                      className="border-2 border-blue-300"
+                      className="border-2 border-blue-300 dark:border-blue-700"
                     />
-                    <Label htmlFor="other" className="text-gray-700 cursor-pointer flex-1">Other</Label>
+                    <Label htmlFor="other" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Other</Label>
                   </div>
                 </div>
                 
                 {form.other === "true" && (
                   <div className="space-y-3">
-                    <Label htmlFor="otherSpecify" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="otherSpecify" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Please specify other conditions
                     </Label>
                     <Input
@@ -503,7 +540,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.otherSpecify}
                       onChange={(e) => handleChange("otherSpecify", e.target.value)}
                       placeholder="Specify other medical conditions"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 )}
@@ -514,18 +551,18 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 2: Pre-KT Details */}
           {step === 2 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <Pill className="w-6 h-6" />
                   Pre-Transplant Details
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Renal replacement therapy information
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
                 <div className="space-y-3">
-                  <Label htmlFor="primaryDiagnosis" className="text-sm font-semibold text-gray-700">
+                  <Label htmlFor="primaryDiagnosis" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     Primary Renal Diagnosis
                   </Label>
                   <Input
@@ -539,12 +576,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="modeOfRRT" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="modeOfRRT" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Mode of RRT prior to KT
                     </Label>
                     <select 
                       id="modeOfRRT"
-                      className="w-full h-12 px-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       value={form.modeOfRRT} 
                       onChange={e => handleChange("modeOfRRT", e.target.value)}
                     >
@@ -556,7 +593,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="durationRRT" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="durationRRT" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Duration of RRT prior to KT
                     </Label>
                     <Input
@@ -564,7 +601,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.durationRRT}
                       onChange={e => handleChange("durationRRT", e.target.value)}
                       placeholder="e.g. 2 years"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -575,19 +612,19 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 3: KT Related Info */}
           {step === 3 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <ClipboardList className="w-6 h-6" />
                   Transplantation Details
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Transplant surgery information
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="ktDate" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="ktDate" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Date of Transplantation
                     </Label>
                     <Input
@@ -595,17 +632,17 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       type="date"
                       value={form.ktDate}
                       onChange={e => handleChange("ktDate", e.target.value)}
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="numberOfKT" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="numberOfKT" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Transplant Number
                     </Label>
                     <select 
                       id="numberOfKT"
-                      className="w-full h-12 px-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       value={form.numberOfKT} 
                       onChange={e => handleChange("numberOfKT", e.target.value)}
                     >
@@ -619,12 +656,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <Label htmlFor="ktUnit" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="ktUnit" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Transplant Unit
                     </Label>
                     <select 
                       id="ktUnit"
-                      className="w-full h-12 px-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       value={form.ktUnit} 
                       onChange={e => handleChange("ktUnit", e.target.value)}
                     >
@@ -635,14 +672,14 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     </select>
                     {form.ktUnit === "Other" && (
                       <div className="mt-3">
-                        <Label htmlFor="wardNumber" className="text-sm font-semibold text-gray-700">
+                        <Label htmlFor="wardNumber" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                           Ward Number
                         </Label>
                         <Input
                           id="wardNumber"
                           value={form.wardNumber}
                           onChange={e => handleChange("wardNumber", e.target.value)}
-                          className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                          className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                         />
                       </div>
                     )}
@@ -657,7 +694,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.ktSurgeon}
                       onChange={e => handleChange("ktSurgeon", e.target.value)}
                       placeholder="Enter surgeon name"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -669,7 +706,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     </Label>
                     <select 
                       id="ktType"
-                      className="w-full h-12 px-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       value={form.ktType} 
                       onChange={e => handleChange("ktType", e.target.value)}
                     >
@@ -689,7 +726,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.donorRelationship}
                       onChange={e => handleChange("donorRelationship", e.target.value)}
                       placeholder="e.g. Mother, Father, etc."
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -701,7 +738,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     </Label>
                     <select 
                       id="peritonealPosition"
-                      className="w-full h-12 px-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       value={form.peritonealPosition} 
                       onChange={e => handleChange("peritonealPosition", e.target.value)}
                     >
@@ -717,7 +754,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     </Label>
                     <select 
                       id="sideOfKT"
-                      className="w-full h-12 px-4 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                       value={form.sideOfKT} 
                       onChange={e => handleChange("sideOfKT", e.target.value)}
                     >
@@ -734,12 +771,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 4: Infection Screen */}
           {step === 4 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <Shield className="w-6 h-6" />
                   Infection Screen
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   CMV / EBV / TB / Viral serology and overall infection risk
                 </CardDescription>
               </CardHeader>
@@ -843,12 +880,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           )}
                       {step === 5 && (
                       <Card className="shadow-lg border-0 bg-white">
-                        <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+                        <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                           <CardTitle className="flex items-center gap-3 text-xl">
                             <Shield className="w-6 h-6" />
                             Immunological Details
                           </CardTitle>
-                          <CardDescription className="text-blue-100">
+                          <CardDescription className="text-blue-100 dark:text-blue-200">
                             Blood group, cross match, HLA typing, and immunological risk
                             assessment
                           </CardDescription>
@@ -865,7 +902,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                                   value={form.immunologicalDetails?.bloodGroupDonor || ""}
                                   onChange={e => handleImmunoField('bloodGroupDonor', e.target.value)}
                                   placeholder="e.g. A+, O-"
-                                  className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                                 />
                               </div>
                               <div className="space-y-3">
@@ -875,7 +912,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                                   value={form.immunologicalDetails?.bloodGroupRecipient || ""}
                                   onChange={e => handleImmunoField('bloodGroupRecipient', e.target.value)}
                                   placeholder="e.g. B+, AB-"
-                                  className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                                 />
                               </div>
                             </div>
@@ -944,7 +981,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                                   type="number"
                                   min={0}
                                   max={100}
-                                  className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                                 />
                               </div>
                               <div className="space-y-3">
@@ -957,7 +994,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                                   type="number"
                                   min={0}
                                   max={100}
-                                  className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                                 />
                               </div>
                             </div>
@@ -981,12 +1018,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 6: Immunosuppression */}
           {step === 6 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <Pill className="w-6 h-6" />
                   Immunosuppression Therapy
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Immunosuppressive therapy details
                 </CardDescription>
               </CardHeader>
@@ -1053,12 +1090,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 7: Prophylaxis */}
           {step === 7 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <Pill className="w-6 h-6" />
                   Prophylaxis
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Preventive medication and treatment
                 </CardDescription>
               </CardHeader>
@@ -1119,12 +1156,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 8: Pre-op */}
           {step === 8 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <Activity className="w-6 h-6" />
                   Pre-Operative Details
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Pre-surgical assessment and preparation
                 </CardDescription>
               </CardHeader>
@@ -1177,12 +1214,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 9: Immediate Post KT */}
           {step === 9 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <FileText className="w-6 h-6" />
                   Immediate Post-Transplant Details
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Within the first week after transplantation
                 </CardDescription>
               </CardHeader>
@@ -1197,7 +1234,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.preKTCreatinine}
                       onChange={e => handleChange("preKTCreatinine", e.target.value)}
                       placeholder="Pre-transplant creatinine"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                   
@@ -1210,7 +1247,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.postKTCreatinine}
                       onChange={e => handleChange("postKTCreatinine", e.target.value)}
                       placeholder="Post-transplant creatinine"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -1248,7 +1285,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.acuteRejectionDetails}
                       onChange={e => handleChange("acuteRejectionDetails", e.target.value)}
                       placeholder="Acute rejection details"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -1273,12 +1310,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 10: Surgery Complications */}
           {step === 10 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <FileText className="w-6 h-6" />
                   Surgery Complications
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   List any post-transplant surgical complications
                 </CardDescription>
               </CardHeader>
@@ -1293,7 +1330,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.postKTComp1}
                       onChange={e => handleChange("postKTComp1", e.target.value)}
                       placeholder="First complication"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                   
@@ -1306,7 +1343,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.postKTComp2}
                       onChange={e => handleChange("postKTComp2", e.target.value)}
                       placeholder="Second complication"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -1321,7 +1358,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.postKTComp3}
                       onChange={e => handleChange("postKTComp3", e.target.value)}
                       placeholder="Third complication"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                   
@@ -1334,7 +1371,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.postKTComp4}
                       onChange={e => handleChange("postKTComp4", e.target.value)}
                       placeholder="Fourth complication"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -1349,7 +1386,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.postKTComp5}
                       onChange={e => handleChange("postKTComp5", e.target.value)}
                       placeholder="Fifth complication"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                   
@@ -1362,7 +1399,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       value={form.postKTComp6}
                       onChange={e => handleChange("postKTComp6", e.target.value)}
                       placeholder="Sixth complication"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                     />
                   </div>
                 </div>
@@ -1373,12 +1410,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 11: Medication */}
           {step === 11 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <Pill className="w-6 h-6" />
                   Current Medications
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Current medication regimen
                 </CardDescription>
               </CardHeader>
@@ -1440,12 +1477,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 12: Confirmation */}
           {step === 12 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <UserCheck className="w-6 h-6" />
                   Final Confirmation
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Review and confirm all assessment details
                 </CardDescription>
               </CardHeader>
@@ -1482,12 +1519,12 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Step 13: Recommendations */}
           {step === 13 && (
             <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <FileText className="w-6 h-6" />
                   Management Recommendations
                 </CardTitle>
-                <CardDescription className="text-blue-100">
+                <CardDescription className="text-blue-100 dark:text-blue-200">
                   Enter recommendations for ongoing management
                 </CardDescription>
               </CardHeader>

@@ -920,18 +920,18 @@ const searchDonorByPhn = async () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-blue-900 mb-2">
+                <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
                   Recipient Assessment {isEditing && "(Editing)"}
                   {viewMode && " - View Mode"}
                 </h1>
-                <p className="text-blue-600">
+                <p className="text-blue-600 dark:text-blue-300">
                   {patient && patient.name
                     ? `Patient: ${patient.name} (PHN: ${patient.phn})`
                     : "Complete medical evaluation for kidney transplant recipient"}

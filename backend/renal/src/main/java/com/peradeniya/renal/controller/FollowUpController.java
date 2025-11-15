@@ -17,12 +17,18 @@ public class FollowUpController {
     private FollowUpService service;
 
     @PostMapping("/{patientPhn}")
-    public ResponseEntity<FollowUpDTO> create(@PathVariable String patientPhn, @RequestBody FollowUpDTO dto) {
+    public ResponseEntity<?> create(@PathVariable String patientPhn, @RequestBody FollowUpDTO dto) {
         try {
             FollowUpDTO saved = service.create(patientPhn, dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage() != null ? e.getMessage() : "Bad request"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "Internal server error"));
         }
     }
 
@@ -31,6 +37,29 @@ public class FollowUpController {
         try {
             List<FollowUpDTO> list = service.getByPatientPhn(patientPhn);
             return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/id/{id}")
+    public ResponseEntity<FollowUpDTO> getById(@PathVariable Long id) {
+        try {
+            return service.getById(id)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<FollowUpDTO> update(@PathVariable Long id, @RequestBody FollowUpDTO dto) {
+        try {
+            FollowUpDTO updated = service.update(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

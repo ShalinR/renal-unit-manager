@@ -2,11 +2,10 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api
 
 const getHeaders = (): HeadersInit => {
   const token = localStorage.getItem('token');
-  const headers: HeadersInit = {
+  return {
     'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
 };
 
 const handle = async <T>(url: string, opts: RequestInit = {}): Promise<T> => {
@@ -25,7 +24,6 @@ const handle = async <T>(url: string, opts: RequestInit = {}): Promise<T> => {
     if (res.status === 204) return undefined as unknown as T;
     return res.json();
   } catch (error: any) {
-    // Handle network errors (connection refused, etc.)
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
       throw new Error('Cannot connect to server. Please make sure the backend server is running on port 8081.');
     }
@@ -33,16 +31,21 @@ const handle = async <T>(url: string, opts: RequestInit = {}): Promise<T> => {
   }
 };
 
-export const followupApi = {
-  async create(patientPhn: string, data: any) {
-    return handle(`${API_BASE}/followup/${patientPhn}`, { method: 'POST', body: JSON.stringify(data) });
-  },
-  async list(patientPhn: string) {
-    return handle(`${API_BASE}/followup/${patientPhn}`);
-  },
-  async remove(id: number) {
-    return handle(`${API_BASE}/followup/${id}`, { method: 'DELETE' });
-  }
+export const feedbackApi = {
+  create: (data: { submittedBy: string; submittedByName: string; role: string; message: string }) =>
+    handle(`${API_BASE}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getAll: () => handle<any[]>(`${API_BASE}/feedback`),
+
+  getByStatus: (status: string) => handle<any[]>(`${API_BASE}/feedback/status/${status}`),
+
+  updateStatus: (id: number, status: string) =>
+    handle(`${API_BASE}/feedback/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
 };
 
-export default followupApi;

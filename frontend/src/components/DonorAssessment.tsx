@@ -3217,15 +3217,15 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-blue-900 mb-2">
+              <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
                 Donor Assessment
               </h1>
-              <p className="text-blue-600">
+              <p className="text-blue-600 dark:text-blue-300">
                 Comprehensive donor evaluation and management system
               </p>
             </div>
@@ -3234,7 +3234,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveView("dashboard")}
-                className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="flex items-center gap-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Dashboard

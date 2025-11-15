@@ -53,6 +53,33 @@ public class KTInvestigationService {
         return repository.findById(id).map(this::convertToDTO);
     }
 
+    public KTInvestigationDTO update(Long id, KTInvestigationDTO dto) {
+        KTInvestigation entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("KT Investigation not found with id: " + id));
+
+        // Update fields
+        if (dto.getDate() != null) {
+            entity.setDate(dto.getDate());
+        }
+
+        if (dto.getType() != null) {
+            entity.setType(dto.getType());
+        }
+
+        if (dto.getPayload() != null) {
+            entity.setPayload(dto.getPayload());
+        }
+
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        KTInvestigation saved = repository.save(entity);
+        return convertToDTO(saved);
+    }
+
+    public void delete(Long id) {
+        repository.deleteById(id);
+    }
+
     private KTInvestigationDTO convertToDTO(KTInvestigation e) {
         KTInvestigationDTO dto = new KTInvestigationDTO();
         dto.setId(e.getId());

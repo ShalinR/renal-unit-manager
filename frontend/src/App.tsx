@@ -19,6 +19,7 @@ const PDInvestigation = lazy(() => import("./pages/PDInvestigation"));
 const KTInvestigation = lazy(() => import("./pages/KTInvestigation"));
 const HDInvestigation = lazy(() => import("./pages/HDInvestigation"));
 const Medications = lazy(() => import("./pages/Medications"));
+const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { PatientProvider } from "./context/PatientContext";
@@ -117,6 +118,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Layout><Medications /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/feedback" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><AdminFeedback /></Layout>
                       </ProtectedRoute>
                     } 
                   />

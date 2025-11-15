@@ -637,8 +637,10 @@ const KidneyTransplant = () => {
       {activeView === "follow-up" && (
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-slate-800">
-            Patient Follow-Up
+            Follow Up Management
           </h2>
+
+          
           <FollowUpForm setActiveView={setActiveView} />
         </div>
       )}

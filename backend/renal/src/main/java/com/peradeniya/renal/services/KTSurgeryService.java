@@ -22,14 +22,39 @@ public class KTSurgeryService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public KTSurgeryDTO createKTSurgery(KTSurgeryDTO ktSurgeryDTO) {
+        System.out.println("🔵 [KTSurgeryService] Converting DTO to entity for patient: " + ktSurgeryDTO.getPatientPhn());
+        System.out.println("   DTO PHN: [" + ktSurgeryDTO.getPatientPhn() + "]");
         KTSurgery ktSurgery = convertToEntity(ktSurgeryDTO);
+        System.out.println("💾 [KTSurgeryService] Saving entity to database...");
+        System.out.println("   Entity PHN before save: [" + ktSurgery.getPatientPhn() + "]");
         KTSurgery saved = ktSurgeryRepository.save(ktSurgery);
-        return convertToDTO(saved);
+        System.out.println("✅ [KTSurgeryService] Saved with ID: " + saved.getId() + ", PHN: [" + saved.getPatientPhn() + "]");
+        KTSurgeryDTO result = convertToDTO(saved);
+        System.out.println("📦 [KTSurgeryService] Converted back to DTO: " + result);
+        return result;
     }
 
     public Optional<KTSurgeryDTO> getKTSurgeryByPatientPhn(String patientPhn) {
-        return ktSurgeryRepository.findByPatientPhn(patientPhn)
-                .map(this::convertToDTO);
+        System.out.println("🔍 [KTSurgeryService] Searching for KT Surgery with PHN: [" + patientPhn + "]");
+        System.out.println("   PHN length: " + (patientPhn != null ? patientPhn.length() : "NULL"));
+        System.out.println("   PHN type: " + (patientPhn != null ? patientPhn.getClass().getName() : "NULL"));
+        
+        // Also try fetching ALL records to see what's in the database
+        List<KTSurgery> allRecords = ktSurgeryRepository.findAllByPatientPhn(patientPhn);
+        System.out.println("   Found " + allRecords.size() + " records with this PHN");
+        
+        Optional<KTSurgery> result = ktSurgeryRepository.findByPatientPhn(patientPhn);
+        if (result.isPresent()) {
+            System.out.println("✅ [KTSurgeryService] Found: ID=" + result.get().getId() + ", Stored PHN=[" + result.get().getPatientPhn() + "]");
+        } else {
+            System.out.println("⚠️ [KTSurgeryService] Not found in database");
+            System.out.println("   Attempting to list all KT Surgeries in database:");
+            List<KTSurgery> allSurgeries = ktSurgeryRepository.findAll();
+            for (KTSurgery surgery : allSurgeries) {
+                System.out.println("     - ID: " + surgery.getId() + ", PHN: [" + surgery.getPatientPhn() + "]");
+            }
+        }
+        return result.map(this::convertToDTO);
     }
 
     public List<KTSurgeryDTO> getAllKTSurgeriesByPatientPhn(String patientPhn) {

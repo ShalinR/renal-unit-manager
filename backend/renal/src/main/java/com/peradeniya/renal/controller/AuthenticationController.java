@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", allowCredentials = "true")
+// CORS is handled globally by SecurityConfig.corsConfigurationSource()
+// Removed @CrossOrigin to avoid conflicts with global CORS configuration
 public class AuthenticationController {
 
     @Autowired

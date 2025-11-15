@@ -5,7 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, ArrowLeft, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Heart, ArrowLeft, Loader2, Calendar, Eye, FileText, X } from "lucide-react";
 import { usePatientContext } from "@/context/PatientContext";
 import { ktInvestigationApi } from "@/services/ktInvestigationApi";
 
@@ -80,11 +83,26 @@ interface StandardInvestigationData {
   notes: string;
 }
 
+interface KTInvestigationRecord {
+  id: number;
+  date: string;
+  type: 'standard' | 'annual';
+  payload: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 const KTInvestigation = () => {
   const navigate = useNavigate();
   const { patient, globalPatient } = usePatientContext();
+  const [viewMode, setViewMode] = useState<'create' | 'view'>('create');
   const [mode, setMode] = useState<'standard' | 'annual'>('standard');
   const [submitting, setSubmitting] = useState(false);
+  const [investigations, setInvestigations] = useState<KTInvestigationRecord[]>([]);
+  const [loadingInvestigations, setLoadingInvestigations] = useState(false);
+  const [filterDate, setFilterDate] = useState<string>('');
+  const [selectedInvestigation, setSelectedInvestigation] = useState<KTInvestigationRecord | null>(null);
+  const [viewDetails, setViewDetails] = useState(false);
   const [formData, setFormData] = useState<StandardInvestigationData>({
     patientId: '',
     date: new Date().toISOString().split('T')[0],
@@ -154,11 +172,26 @@ const KTInvestigation = () => {
     const currentPatient = globalPatient || patient;
     if (currentPatient?.phn) {
       setFormData(prev => ({ ...prev, patientId: currentPatient.phn || '' }));
+      if (viewMode === 'view') {
+        loadInvestigations(currentPatient.phn);
+      }
     }
-  }, [globalPatient, patient]);
+  }, [globalPatient, patient, viewMode]);
 
   const handleChange = (field: keyof StandardInvestigationData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const loadInvestigations = async (phn: string) => {
+    setLoadingInvestigations(true);
+    try {
+      const data = await ktInvestigationApi.list(phn);
+      setInvestigations((data as any[]) || []);
+    } catch (error) {
+      console.error('Error loading investigations:', error);
+    } finally {
+      setLoadingInvestigations(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,7 +209,12 @@ const KTInvestigation = () => {
         payload: JSON.stringify(formData),
       });
       alert('Investigation saved successfully!');
-      navigate('/investigation');
+      // Reload investigations if in view mode
+      if (viewMode === 'view') {
+        await loadInvestigations(currentPatient.phn);
+      } else {
+        navigate('/investigation');
+      }
     } catch (error) {
       console.error('Error saving investigation:', error);
       alert('Failed to save investigation');
@@ -184,6 +222,36 @@ const KTInvestigation = () => {
       setSubmitting(false);
     }
   };
+
+  const handleViewDetails = async (investigation: KTInvestigationRecord) => {
+    try {
+      const details = await ktInvestigationApi.getById(investigation.id);
+      setSelectedInvestigation(details as any);
+      setViewDetails(true);
+    } catch (error) {
+      console.error('Error loading investigation details:', error);
+      alert('Failed to load investigation details');
+    }
+  };
+
+  const filteredInvestigations = investigations.filter(inv => {
+    if (!filterDate) return true;
+    return inv.date === filterDate;
+  });
+
+  // Group investigations by date
+  const groupedByDate = filteredInvestigations.reduce((acc, inv) => {
+    const date = inv.date;
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(inv);
+    return acc;
+  }, {} as Record<string, KTInvestigationRecord[]>);
+
+  const sortedDates = Object.keys(groupedByDate).sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -203,42 +271,234 @@ const KTInvestigation = () => {
           </div>
         </div>
         {(globalPatient || patient)?.phn && (
-          <div className="text-sm text-green-700 bg-green-100 px-4 py-2 rounded">
+          <div className="text-sm text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded border border-green-200 dark:border-green-800">
             <strong>Patient:</strong> {(globalPatient || patient)?.name} (PHN: {(globalPatient || patient)?.phn})
           </div>
         )}
       </div>
 
-      <div className="flex gap-3">
-        <Button variant={mode === 'standard' ? 'default' : 'ghost'} onClick={() => setMode('standard')}>Standard Investigation</Button>
-        <Button variant={mode === 'annual' ? 'default' : 'ghost'} onClick={() => setMode('annual')}>Annual Investigation</Button>
-      </div>
+      <Tabs value={mode} onValueChange={(value) => {
+        setMode(value as 'standard' | 'annual');
+        setViewDetails(false);
+        setSelectedInvestigation(null);
+      }} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsTrigger value="standard" className="flex items-center gap-2">
+            Standard Investigation
+          </TabsTrigger>
+          <TabsTrigger value="annual" className="flex items-center gap-2">
+            Annual Investigation
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{mode === 'standard' ? 'Standard Investigation' : 'Annual Investigation'}</CardTitle>
-          <CardDescription>
-            {mode === 'standard'
-              ? 'Enter the standard panel of tests for routine follow-up'
-              : 'Enter annual comprehensive investigation results'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="patient">Patient ID</Label>
-                <Input id="patient" value={formData.patientId} onChange={(e) => handleChange('patientId', e.target.value)} placeholder="Patient ID" required />
-              </div>
-              <div>
-                <Label htmlFor="date">Date</Label>
-                <Input id="date" type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} required />
-              </div>
-            </div>
+        {/* Standard Investigation Tab */}
+        <TabsContent value="standard" className="space-y-4">
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'create' | 'view')} className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2 mb-4">
+              <TabsTrigger value="create" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Create New
+              </TabsTrigger>
+              <TabsTrigger value="view" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                View Investigations
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Standard - divided into logical sections */}
-            {mode === 'standard' && (
+            <TabsContent value="view" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Standard Investigation Records
+                  </CardTitle>
+                  <CardDescription>
+                    View and filter standard investigations by date
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Date Filter */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <Label htmlFor="filterDateStandard">Filter by Date</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            id="filterDateStandard"
+                            type="date"
+                            value={filterDate}
+                            onChange={(e) => setFilterDate(e.target.value)}
+                            className="flex-1"
+                          />
+                          {filterDate && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setFilterDate('')}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="pt-6">
+                        <Badge variant="outline" className="text-sm">
+                          {filteredInvestigations.filter(inv => inv.type === 'standard').length} record{filteredInvestigations.filter(inv => inv.type === 'standard').length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Loading State */}
+                    {loadingInvestigations ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : sortedDates.filter(date => groupedByDate[date].some(inv => inv.type === 'standard')).length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No standard investigations found</p>
+                        {filterDate && (
+                          <p className="text-sm mt-2">Try selecting a different date</p>
+                        )}
+                      </div>
+                    ) : (
+                      /* Grouped Standard Investigations by Date */
+                      <div className="space-y-6">
+                        {sortedDates
+                          .filter(date => groupedByDate[date].some(inv => inv.type === 'standard'))
+                          .map((date) => (
+                            <div key={date} className="space-y-3">
+                              <div className="flex items-center gap-2 pb-2 border-b">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <h3 className="font-semibold text-lg">
+                                  {new Date(date).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </h3>
+                                <Badge variant="outline" className="ml-auto">
+                                  {groupedByDate[date].filter(inv => inv.type === 'standard').length} {groupedByDate[date].filter(inv => inv.type === 'standard').length === 1 ? 'record' : 'records'}
+                                </Badge>
+                              </div>
+                              <div className="grid gap-3">
+                                {groupedByDate[date]
+                                  .filter(inv => inv.type === 'standard')
+                                  .map((inv) => (
+                                    <Card key={inv.id} className="hover:shadow-md transition-shadow">
+                                      <CardContent className="p-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            <Badge
+                                              variant="outline"
+                                              className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                                            >
+                                              Standard
+                                            </Badge>
+                                            <span className="text-sm text-muted-foreground">
+                                              Created: {inv.createdAt ? new Date(inv.createdAt).toLocaleString() : 'N/A'}
+                                            </span>
+                                          </div>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleViewDetails(inv)}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <Eye className="h-4 w-4" />
+                                            View Details
+                                          </Button>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Investigation Details Modal */}
+              {viewDetails && selectedInvestigation && selectedInvestigation.type === 'standard' && (
+                <Dialog open={viewDetails} onOpenChange={(open) => {
+                  if (!open) {
+                    setViewDetails(false);
+                    setSelectedInvestigation(null);
+                  }
+                }}>
+                  <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg sm:text-xl">Standard Investigation Details</DialogTitle>
+                      <DialogDescription className="text-sm">
+                        {new Date(selectedInvestigation.date).toLocaleDateString()} - Standard
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
+                          <p className="font-medium text-sm sm:text-base">{new Date(selectedInvestigation.date).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
+                          <p className="font-medium text-sm sm:text-base capitalize">{selectedInvestigation.type}</p>
+                        </div>
+                        {selectedInvestigation.createdAt && (
+                          <div>
+                            <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
+                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.createdAt).toLocaleString()}</p>
+                          </div>
+                        )}
+                        {selectedInvestigation.updatedAt && (
+                          <div>
+                            <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
+                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.updatedAt).toLocaleString()}</p>
+                          </div>
+                        )}
+                      </div>
+                      {selectedInvestigation.payload && (
+                        <div>
+                          <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
+                          <div className="mt-2 p-3 sm:p-4 bg-muted rounded-lg max-h-[60vh] overflow-auto">
+                            <pre className="text-xs sm:text-sm whitespace-pre-wrap break-words">
+                              {JSON.stringify(JSON.parse(selectedInvestigation.payload), null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </TabsContent>
+
+            <TabsContent value="create" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Standard Investigation</CardTitle>
+                  <CardDescription>
+                    Enter the standard panel of tests for routine follow-up
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="patientStandard">Patient ID</Label>
+                        <Input id="patientStandard" value={formData.patientId} onChange={(e) => handleChange('patientId', e.target.value)} placeholder="Patient ID" required />
+                      </div>
+                      <div>
+                        <Label htmlFor="dateStandard">Date</Label>
+                        <Input id="dateStandard" type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} required />
+                      </div>
+                    </div>
+
+            {/* Standard Investigation Form */}
+            {(
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">1. Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -441,8 +701,234 @@ const KTInvestigation = () => {
               </div>
             )}
 
-            {/* Annual - full panel as requested by user */}
-            {mode === 'annual' && (
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/investigation')} disabled={submitting}>Cancel</Button>
+                      <Button type="submit" className="flex-1" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Submit Investigation'
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Annual Investigation Tab */}
+        <TabsContent value="annual" className="space-y-4">
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'create' | 'view')} className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2 mb-4">
+              <TabsTrigger value="create" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Create New
+              </TabsTrigger>
+              <TabsTrigger value="view" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                View Investigations
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="view" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Annual Investigation Records
+                  </CardTitle>
+                  <CardDescription>
+                    View and filter annual investigations by date
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Date Filter */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <Label htmlFor="filterDateAnnual">Filter by Date</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            id="filterDateAnnual"
+                            type="date"
+                            value={filterDate}
+                            onChange={(e) => setFilterDate(e.target.value)}
+                            className="flex-1"
+                          />
+                          {filterDate && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setFilterDate('')}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="pt-6">
+                        <Badge variant="outline" className="text-sm">
+                          {filteredInvestigations.filter(inv => inv.type === 'annual').length} record{filteredInvestigations.filter(inv => inv.type === 'annual').length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Loading State */}
+                    {loadingInvestigations ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : sortedDates.filter(date => groupedByDate[date].some(inv => inv.type === 'annual')).length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No annual investigations found</p>
+                        {filterDate && (
+                          <p className="text-sm mt-2">Try selecting a different date</p>
+                        )}
+                      </div>
+                    ) : (
+                      /* Grouped Annual Investigations by Date */
+                      <div className="space-y-6">
+                        {sortedDates
+                          .filter(date => groupedByDate[date].some(inv => inv.type === 'annual'))
+                          .map((date) => (
+                            <div key={date} className="space-y-3">
+                              <div className="flex items-center gap-2 pb-2 border-b">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <h3 className="font-semibold text-lg">
+                                  {new Date(date).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </h3>
+                                <Badge variant="outline" className="ml-auto">
+                                  {groupedByDate[date].filter(inv => inv.type === 'annual').length} {groupedByDate[date].filter(inv => inv.type === 'annual').length === 1 ? 'record' : 'records'}
+                                </Badge>
+                              </div>
+                              <div className="grid gap-3">
+                                {groupedByDate[date]
+                                  .filter(inv => inv.type === 'annual')
+                                  .map((inv) => (
+                                    <Card key={inv.id} className="hover:shadow-md transition-shadow">
+                                      <CardContent className="p-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            <Badge
+                                              variant="outline"
+                                              className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                                            >
+                                              Annual
+                                            </Badge>
+                                            <span className="text-sm text-muted-foreground">
+                                              Created: {inv.createdAt ? new Date(inv.createdAt).toLocaleString() : 'N/A'}
+                                            </span>
+                                          </div>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleViewDetails(inv)}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <Eye className="h-4 w-4" />
+                                            View Details
+                                          </Button>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Investigation Details Modal */}
+              {viewDetails && selectedInvestigation && selectedInvestigation.type === 'annual' && (
+                <Dialog open={viewDetails} onOpenChange={(open) => {
+                  if (!open) {
+                    setViewDetails(false);
+                    setSelectedInvestigation(null);
+                  }
+                }}>
+                  <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg sm:text-xl">Annual Investigation Details</DialogTitle>
+                      <DialogDescription className="text-sm">
+                        {new Date(selectedInvestigation.date).toLocaleDateString()} - Annual
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
+                          <p className="font-medium text-sm sm:text-base">{new Date(selectedInvestigation.date).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
+                          <p className="font-medium text-sm sm:text-base capitalize">{selectedInvestigation.type}</p>
+                        </div>
+                        {selectedInvestigation.createdAt && (
+                          <div>
+                            <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
+                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.createdAt).toLocaleString()}</p>
+                          </div>
+                        )}
+                        {selectedInvestigation.updatedAt && (
+                          <div>
+                            <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
+                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.updatedAt).toLocaleString()}</p>
+                          </div>
+                        )}
+                      </div>
+                      {selectedInvestigation.payload && (
+                        <div>
+                          <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
+                          <div className="mt-2 p-3 sm:p-4 bg-muted rounded-lg max-h-[60vh] overflow-auto">
+                            <pre className="text-xs sm:text-sm whitespace-pre-wrap break-words">
+                              {JSON.stringify(JSON.parse(selectedInvestigation.payload), null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </TabsContent>
+
+            <TabsContent value="create" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Annual Investigation</CardTitle>
+                  <CardDescription>
+                    Enter annual comprehensive investigation results
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="patientAnnual">Patient ID</Label>
+                        <Input id="patientAnnual" value={formData.patientId} onChange={(e) => handleChange('patientId', e.target.value)} placeholder="Patient ID" required />
+                      </div>
+                      <div>
+                        <Label htmlFor="dateAnnual">Date</Label>
+                        <Input id="dateAnnual" type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} required />
+                      </div>
+                    </div>
+
+            {/* Annual Investigation Form */}
+            {(
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">1. Annual Screening Tests</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -577,22 +1063,26 @@ const KTInvestigation = () => {
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/investigation')} disabled={submitting}>Cancel</Button>
-              <Button type="submit" className="flex-1" disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Submit Investigation'
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/investigation')} disabled={submitting}>Cancel</Button>
+                      <Button type="submit" className="flex-1" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Submit Investigation'
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

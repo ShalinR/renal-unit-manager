@@ -27,10 +27,17 @@ public class KTSurgeryController {
             @Valid @RequestBody KTSurgeryDTO ktSurgeryDTO) {
 
         try {
+            System.out.println("🔵 [KTSurgeryController] Creating KT Surgery for patient: " + patientPhn);
+            System.out.println("📋 [KTSurgeryController] Received DTO: " + ktSurgeryDTO);
+            
             ktSurgeryDTO.setPatientPhn(patientPhn);
             KTSurgeryDTO saved = ktSurgeryService.createKTSurgery(ktSurgeryDTO);
+            
+            System.out.println("✅ [KTSurgeryController] Successfully saved KT Surgery: " + saved.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (Exception e) {
+            System.out.println("❌ [KTSurgeryController] Error creating KT Surgery: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -41,10 +48,18 @@ public class KTSurgeryController {
     @GetMapping("/kt-surgery/{patientPhn}")
     public ResponseEntity<KTSurgeryDTO> getKTSurgeryByPatientPhn(@PathVariable String patientPhn) {
         try {
+            System.out.println("🔵 [KTSurgeryController] Fetching KT Surgery for patient: " + patientPhn);
             Optional<KTSurgeryDTO> ktSurgery = ktSurgeryService.getKTSurgeryByPatientPhn(patientPhn);
-            return ktSurgery.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+            if (ktSurgery.isPresent()) {
+                System.out.println("✅ [KTSurgeryController] Found KT Surgery: " + ktSurgery.get().getId());
+                return ResponseEntity.ok(ktSurgery.get());
+            } else {
+                System.out.println("⚠️ [KTSurgeryController] No KT Surgery found for patient: " + patientPhn);
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
+            System.out.println("❌ [KTSurgeryController] Error fetching KT Surgery: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
