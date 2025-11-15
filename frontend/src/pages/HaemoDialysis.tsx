@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, CalendarDays, ClipboardList, Save } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarDays, ClipboardList, Save, Activity, Calendar, FileText } from 'lucide-react';
 import { HemodialysisRecord, ValidationErrors } from '@/types/hemodialysis';
 import { HDPrescriptionStep } from '@/components/hemodialysis/steps/HDPrescriptionStep';
 import { VascularAccessStep } from '@/components/hemodialysis/steps/VascularAccessStep';
@@ -37,7 +38,7 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
   const [touched, setTouched] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState(0);
   const [filledBy, setFilledBy] = useState('');
-  const [activeTab, setActiveTab] = useState('form');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [showFloatingTimetable, setShowFloatingTimetable] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -330,9 +331,16 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
               )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
+              {activeTab !== 'dashboard' && (
+                <Button variant="outline" onClick={() => setActiveTab('dashboard')}>
+                  Dashboard
+                </Button>
+              )}
+              {activeTab === 'form' && (
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -341,24 +349,106 @@ const HemodialysisPage: React.FC<HemodialysisPageProps> = ({
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="form">
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Session Form
-            </TabsTrigger>
-            <TabsTrigger value="schedule">
-              <CalendarDays className="w-4 h-4 mr-2" />
-              Schedule Appointment
-            </TabsTrigger>
-            <TabsTrigger value="calendar">
-              <CalendarDays className="w-4 h-4 mr-2" />
-              View Calendar
-            </TabsTrigger>
-            <TabsTrigger value="patient-summary">
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Patient Summary
-            </TabsTrigger>
-          </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-8">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+                <Activity className="w-8 h-8 text-primary" />
+              </div>
+              <h1 className="text-4xl font-bold text-foreground dark:text-slate-200">Hemodialysis Management</h1>
+              {patientId ? (
+                <div className="inline-flex items-center justify-center gap-2 text-lg text-green-600 bg-green-50 px-4 py-2 rounded-full">
+                  <span>Patient: {patientName} (PHN: {patientId})</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center justify-center gap-2 text-lg text-amber-600 bg-amber-50 px-4 py-2 rounded-full">
+                  <span>⚠️ Please search for a patient by PHN to begin</span>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+              {/* Session Form Card */}
+              <Card 
+                className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" 
+                onClick={() => setActiveTab('form')}
+              >
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <ClipboardList className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle>Session Form</CardTitle>
+                  <CardDescription>Record hemodialysis session data</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full bg-blue-500" variant="outline">Open Form</Button>
+                </CardContent>
+              </Card>
+
+              {/* Schedule Appointment Card */}
+              <Card 
+                className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" 
+                onClick={() => setActiveTab('schedule')}
+              >
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <CalendarDays className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle>Schedule Appointment</CardTitle>
+                  <CardDescription>Book dialysis appointments</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full bg-blue-500" variant="outline">Schedule</Button>
+                </CardContent>
+              </Card>
+
+              {/* View Calendar Card */}
+              <Card 
+                className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" 
+                onClick={() => setActiveTab('calendar')}
+              >
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle>View Calendar</CardTitle>
+                  <CardDescription>View dialysis schedule calendar</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full bg-blue-500" variant="outline">View Calendar</Button>
+                </CardContent>
+              </Card>
+
+              {/* Patient Summary Card */}
+              <Card 
+                className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" 
+                onClick={() => setActiveTab('patient-summary')}
+              >
+                <CardHeader className="text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle>Patient Summary</CardTitle>
+                  <CardDescription>View patient dialysis history</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    className="w-full bg-blue-500" 
+                    variant="outline"
+                    disabled={!patientId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (patientId) {
+                        setActiveTab('patient-summary');
+                      }
+                    }}
+                  >
+                    {patientId ? 'View Summary' : 'Search Patient First'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="form" className="space-y-6">
             {!patientId && (
