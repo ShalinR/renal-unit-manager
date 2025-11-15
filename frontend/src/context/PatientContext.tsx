@@ -1,5 +1,8 @@
 import React, { createContext, useState, useContext } from "react";
 
+// Backend API configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+
 interface PatientData {
   recipientAssessment: {
     name: string;
@@ -102,7 +105,10 @@ export const PatientProvider = ({
     setIsSearching(true);
 
     try {
-      const res = await fetch(`/api/patient/${encodeURIComponent(phn)}`);
+      const url = `${API_BASE_URL}/patient/${encodeURIComponent(phn)}`;
+      console.log("📡 Fetching from URL:", url);
+      
+      const res = await fetch(url);
       console.log("📊 Response status:", res.status, res.statusText);
 
       if (!res.ok) {

@@ -6,17 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/FollowUpDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/FollowUpDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/KTSurgeryDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/KTSurgeryDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/FollowUp.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/FollowUp.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/KTSurgery.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/KTSurgery.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/FollowUpRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/FollowUpRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/DonorAssessment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/DonorAssessment.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/DonorAssessmentTabs.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/DonorAssessmentTabs.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/DonorDetailsModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/DonorDetailsModal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/FollowUp.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/FollowUp.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/DonorAssessmentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/DonorAssessmentController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/DonorAssessmentDataDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/DonorAssessmentDataDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/DonorAssessment.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/DonorAssessment.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/DonorAssessmentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/DonorAssessmentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/RecipientAssessment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/RecipientAssessment.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/context/DonorContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/context/DonorContext.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/types/donor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/types/donor.ts" afterDir="false" />
     </list>
@@ -95,7 +89,7 @@
       <workItem from="1762424749843" duration="824000" />
       <workItem from="1762768152903" duration="961000" />
       <workItem from="1762931038813" duration="2062000" />
-      <workItem from="1763202907388" duration="5933000" />
+      <workItem from="1763202907388" duration="10156000" />
     </task>
     <servers />
   </component>

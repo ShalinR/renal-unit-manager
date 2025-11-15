@@ -122,9 +122,9 @@ export interface Donor {
     dsa: string;
     immunologicalRisk: string;
   };
-  status?: 'available' | 'assigned' | 'evaluating' | 'rejected';
-  assignedRecipientName?: string;
+status?: string;
   assignedRecipientPhn?: string;
+  assignedRecipientName?: string;
 }
 
 export interface DonorAssessmentDataDTO {

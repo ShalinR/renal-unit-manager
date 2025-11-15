@@ -7,6 +7,9 @@ import {
 
 // For Vite, use import.meta.env instead of process.env
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/donor-assessment';
+
+console.log('🔧 Donor API Base URL:', API_BASE_URL);
+
 // Common headers for API requests
 const getHeaders = (): HeadersInit => {
   const token = localStorage.getItem('token');
@@ -57,7 +60,16 @@ const handleApiRequest = async <T>(url: string, options: RequestInit = {}): Prom
 
 // Donor API functions - UPDATED TO MATCH BACKEND ENDPOINTS
 export const fetchAllDonors = async (): Promise<DonorAssessmentResponseDTO[]> => {
-  return handleApiRequest<DonorAssessmentResponseDTO[]>(`${API_BASE_URL}`);
+  const url = `${API_BASE_URL}`;
+  console.log('📡 Fetching all donors from:', url);
+  try {
+    const result = await handleApiRequest<DonorAssessmentResponseDTO[]>(url);
+    console.log('✅ Donors fetched successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Error fetching donors:', error);
+    throw error;
+  }
 };
 
 export const fetchDonorsByPatient = async (patientPhn: string): Promise<DonorAssessmentResponseDTO[]> => {
@@ -87,8 +99,9 @@ export const updateDonor = async (id: number, donorData: Partial<DonorAssessment
   });
 };
 
-export const deleteDonor = async (id: number): Promise<void> => {
-  await handleApiRequest<void>(`${API_BASE_URL}/${id}`, {
+export const deleteDonor = async (id: string): Promise<void> => {
+  const numericId = parseInt(id);
+  await handleApiRequest<void>(`${API_BASE_URL}/${numericId}`, {
     method: 'DELETE',
   });
 };
