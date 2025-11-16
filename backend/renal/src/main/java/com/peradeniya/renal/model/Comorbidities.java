@@ -1,5 +1,6 @@
 package com.peradeniya.renal.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.*;
 
@@ -9,27 +10,39 @@ import lombok.*;
 @AllArgsConstructor
 public class Comorbidities {
     private boolean dm;
+
+    @Column(columnDefinition = "TEXT")  // Duration can be descriptive
     private String duration;
+
     private boolean psychiatricIllness;
     private boolean htn;
     private boolean ihd;
-    
+
     // Microvascular complications
     private boolean retinopathy;
     private boolean nephropathy;
     private boolean neuropathy;
-    
+
     // Macrovascular complications
+    @Column(columnDefinition = "TEXT")  // Echo results can be detailed
     private String twoDEcho;
+
+    @Column(columnDefinition = "TEXT")  // Angiogram details can be long
     private String coronaryAngiogram;
+
     private boolean cva;
     private boolean pvd;
-    
+
     // Other comorbidities
     private boolean dl; // Dyslipidemia
     private boolean clcd; // Chronic Liver Disease
+
+    @Column(length = 50)  // Child class is usually short (A, B, C, etc.)
     private String childClass;
+
+    @Column(length = 20)  // MELD score is typically numeric/short
     private String meldScore;
+
     private boolean hf; // Heart Failure
 
     public boolean isDm() {

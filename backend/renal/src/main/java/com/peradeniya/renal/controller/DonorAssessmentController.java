@@ -57,6 +57,12 @@ public class DonorAssessmentController {
         service.assignDonorToRecipient(assignment);
         return ResponseEntity.ok().build();
     }
+    // In DonorAssessmentController.java - ADD THIS ENDPOINT
+    @GetMapping("/available")
+    public ResponseEntity<List<DonorAssessmentResponseDTO>> getAvailableDonors() {
+        List<DonorAssessmentResponseDTO> availableDonors = service.getAvailableDonors();
+        return ResponseEntity.ok(availableDonors);
+    }
 
     @PostMapping("/{id}/unassign")
     public ResponseEntity<Void> unassignDonor(@PathVariable Long id) {

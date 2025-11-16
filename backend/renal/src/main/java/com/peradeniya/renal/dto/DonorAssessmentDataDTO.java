@@ -5,6 +5,11 @@ import java.time.LocalDate;
 public class DonorAssessmentDataDTO {
     // Basic donor info
     private String name;
+
+
+
+    private String patientPhn;
+
     private Integer age;
     private String gender;
     private LocalDate dateOfBirth;
@@ -31,7 +36,13 @@ public class DonorAssessmentDataDTO {
     private SocialHistoryDTO socialHistory;
     private ExaminationDTO examination;
     private ImmunologicalDetailsDTO immunologicalDetails;
+    public String getPatientPhn() {
+        return patientPhn;
+    }
 
+    public void setPatientPhn(String patientPhn) {
+        this.patientPhn = patientPhn;
+    }
     // Getters and Setters for all fields
     public String getName() {
         return name;

@@ -2,6 +2,7 @@ package com.peradeniya.renal.dto;
 
 import lombok.Data;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class RecipientAssessmentDTO {
@@ -36,4 +37,14 @@ public class RecipientAssessmentDTO {
     private SocialHistoryDTO socialHistory = new SocialHistoryDTO();
     private ExaminationDTO examination = new ExaminationDTO();
     private ImmunologicalDetailsDTO immunologicalDetails = new ImmunologicalDetailsDTO();
+    private CompletedByDTO completedBy = new CompletedByDTO();
+    private ReviewedByDTO reviewedBy = new ReviewedByDTO();
+    private List<TransfusionHistoryDTO> transfusionHistory;
+    public List<TransfusionHistoryDTO> getTransfusionHistory() {
+        return transfusionHistory;
+    }
+
+    public void setTransfusionHistory(List<TransfusionHistoryDTO> transfusionHistory) {
+        this.transfusionHistory = transfusionHistory;
+    }
 }

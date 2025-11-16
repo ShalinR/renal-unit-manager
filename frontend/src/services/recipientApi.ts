@@ -1,7 +1,19 @@
 import { 
   RecipientAssessmentForm, 
   RecipientAssessmentDTO, 
-  RecipientAssessmentResponseDTO 
+  RecipientAssessmentResponseDTO,
+  Comorbidities,
+  RRTDetails,
+  SystemicInquiry,
+  AllergyHistory,
+  FamilyHistory,
+  SubstanceUse,
+  SocialHistory,
+  Examination,
+  ImmunologicalDetails,
+  TransfusionHistory,
+  CompletedBy,
+  ReviewedBy
 } from '@/types/recipient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/recipient-assessment';
@@ -73,6 +85,124 @@ const handleApiRequest = async <T>(
   }
 };
 
+// Default values for nested objects
+const defaultComorbidities: Comorbidities = {
+  dm: false,
+  duration: '',
+  retinopathy: false,
+  nephropathy: false,
+  neuropathy: false,
+  ihd: false,
+  twoDEcho: '',
+  coronaryAngiogram: '',
+  cva: false,
+  pvd: false,
+  dl: false,
+  htn: false,
+  clcd: false,
+  childClass: '',
+  meldScore: '',
+  hf: false,
+  psychiatricIllness: false,
+};
+
+const defaultRRTDetails: RRTDetails = {
+  modalityHD: false,
+  modalityCAPD: false,
+  startingDate: '',
+  accessFemoral: false,
+  accessIJC: false,
+  accessPermeath: false,
+  accessCAPD: false,
+  complications: '',
+};
+
+const defaultSystemicInquiry: SystemicInquiry = {
+  constitutional: { loa: false, low: false },
+  cvs: { chestPain: false, odema: false, sob: false },
+  respiratory: { cough: false, hemoptysis: false, wheezing: false },
+  git: { constipation: false, diarrhea: false, melena: false, prBleeding: false },
+  renal: { hematuria: false, frothyUrine: false },
+  neuro: { seizures: false, visualDisturbance: false, headache: false, limbWeakness: false },
+  gynecology: { pvBleeding: false, menopause: false, menorrhagia: false, lrmp: false },
+  sexualHistory: '',
+};
+
+const defaultAllergyHistory: AllergyHistory = {
+  foods: false,
+  drugs: false,
+  p: false,
+};
+
+const defaultFamilyHistory: FamilyHistory = {
+  dm: '',
+  htn: '',
+  ihd: '',
+  stroke: '',
+  renal: '',
+};
+
+const defaultSubstanceUse: SubstanceUse = {
+  smoking: false,
+  alcohol: false,
+  other: '',
+};
+
+const defaultSocialHistory: SocialHistory = {
+  spouseDetails: '',
+  childrenDetails: '',
+  income: '',
+  other: '',
+};
+
+const defaultExamination: Examination = {
+  height: '',
+  weight: '',
+  bmi: '',
+  pallor: false,
+  icterus: false,
+  oral: { dentalCaries: false, oralHygiene: false, satisfactory: false, unsatisfactory: false },
+  lymphNodes: { cervical: false, axillary: false, inguinal: false },
+  clubbing: false,
+  ankleOedema: false,
+  cvs: { bp: '', pr: '', murmurs: false },
+  respiratory: { rr: '', spo2: '', auscultation: false, crepts: false, ranchi: false, effusion: false },
+  abdomen: { hepatomegaly: false, splenomegaly: false, renalMasses: false, freeFluid: false },
+  BrcostExamination: '',
+  neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
+};
+
+const defaultImmunologicalDetails: ImmunologicalDetails = {
+  bloodGroup: { d: '', r: '' },
+  crossMatch: { tCell: '', bCell: '' },
+  hlaTyping: {
+    donor: { hlaA: '', hlaB: '', hlaC: '', hlaDR: '', hlaDP: '', hlaDQ: '' },
+    recipient: { hlaA: '', hlaB: '', hlaC: '', hlaDR: '', hlaDP: '', hlaDQ: '' },
+    conclusion: { hlaA: '', hlaB: '', hlaC: '', hlaDR: '', hlaDP: '', hlaDQ: '' },
+  },
+  praPre: '',
+  praPost: '',
+  dsa: '',
+  immunologicalRisk: '',
+};
+
+const defaultCompletedBy: CompletedBy = {
+  staffName: '',
+  staffRole: '',
+  staffId: '',
+  department: '',
+  signature: '',
+  completionDate: '',
+};
+
+const defaultReviewedBy: ReviewedBy = {
+  consultantName: '',
+  consultantId: '',
+  reviewDate: '',
+  approvalStatus: 'pending',
+  notes: '',
+};
+
 // Convert frontend form to DTO for API
 const convertToDTO = (form: RecipientAssessmentForm): RecipientAssessmentDTO => {
   return {
@@ -90,18 +220,20 @@ const convertToDTO = (form: RecipientAssessmentForm): RecipientAssessmentDTO => 
     donorId: form.donorId,
     relationType: form.relationType,
     relationToRecipient: form.relationToRecipient,
-    comorbidities: form.comorbidities,
-    rrtDetails: form.rrtDetails,
-    systemicInquiry: form.systemicInquiry,
-    complains: form.complains,
-    drugHistory: form.drugHistory,
-    allergyHistory: form.allergyHistory,
-    familyHistory: form.familyHistory,
-    substanceUse: form.substanceUse,
-    socialHistory: form.socialHistory,
-    examination: form.examination,
-    immunologicalDetails: form.immunologicalDetails,
-    transfusionHistory: form.transfusionHistory,
+    comorbidities: form.comorbidities || defaultComorbidities,
+    rrtDetails: form.rrtDetails || defaultRRTDetails,
+    systemicInquiry: form.systemicInquiry || defaultSystemicInquiry,
+    complains: form.complains || '',
+    drugHistory: form.drugHistory || '',
+    allergyHistory: form.allergyHistory || defaultAllergyHistory,
+    familyHistory: form.familyHistory || defaultFamilyHistory,
+    substanceUse: form.substanceUse || defaultSubstanceUse,
+    socialHistory: form.socialHistory || defaultSocialHistory,
+    examination: form.examination || defaultExamination,
+    immunologicalDetails: form.immunologicalDetails || defaultImmunologicalDetails,
+    transfusionHistory: form.transfusionHistory || [],
+    completedBy: form.completedBy || defaultCompletedBy,
+    reviewedBy: form.reviewedBy || defaultReviewedBy,
   };
 };
 
@@ -133,7 +265,9 @@ const convertToForm = (response: RecipientAssessmentResponseDTO): RecipientAsses
     socialHistory: response.socialHistory,
     examination: response.examination,
     immunologicalDetails: response.immunologicalDetails,
-    transfusionHistory: response.transfusionHistory,
+    transfusionHistory: response.transfusionHistory || [],
+    completedBy: response.completedBy,
+    reviewedBy: response.reviewedBy,
   };
 };
 
@@ -175,7 +309,11 @@ export const createRecipient = async (recipientData: RecipientAssessmentForm): P
 };
 
 export const updateRecipient = async (id: number, recipientData: Partial<RecipientAssessmentForm>): Promise<RecipientAssessmentForm> => {
-  const dto = convertToDTO(recipientData as RecipientAssessmentForm);
+  // Merge with existing data to ensure all required fields are present
+  const existingData = await fetchRecipientById(id);
+  const mergedData = { ...existingData, ...recipientData };
+  const dto = convertToDTO(mergedData as RecipientAssessmentForm);
+  
   const response = await handleApiRequest<RecipientAssessmentResponseDTO>(`${API_BASE_URL}/${id}`, {
     method: 'PUT',
     body: JSON.stringify(dto),
@@ -212,6 +350,39 @@ export const searchDonorByPhn = async (phn: string): Promise<any> => {
   }
 };
 
+// Helper function to create empty form with default values
+export const createEmptyRecipientForm = (): RecipientAssessmentForm => {
+  return {
+    phn: '',
+    name: '',
+    age: 0,
+    gender: '',
+    dateOfBirth: '',
+    occupation: '',
+    address: '',
+    nicNo: '',
+    contactDetails: '',
+    emailAddress: '',
+    donorId: '',
+    relationType: '',
+    relationToRecipient: '',
+    comorbidities: defaultComorbidities,
+    rrtDetails: defaultRRTDetails,
+    systemicInquiry: defaultSystemicInquiry,
+    complains: '',
+    drugHistory: '',
+    allergyHistory: defaultAllergyHistory,
+    familyHistory: defaultFamilyHistory,
+    substanceUse: defaultSubstanceUse,
+    socialHistory: defaultSocialHistory,
+    examination: defaultExamination,
+    immunologicalDetails: defaultImmunologicalDetails,
+    transfusionHistory: [],
+    completedBy: defaultCompletedBy,
+    reviewedBy: defaultReviewedBy,
+  };
+};
+
 // Main API service for the component
 export const recipientApiService = {
   // Assessment operations
@@ -223,6 +394,9 @@ export const recipientApiService = {
   
   // Donor operations
   searchDonorByPhn,
+  
+  // Helper functions
+  createEmptyRecipientForm,
   
   // Combined save operation (create or update)
   saveRecipientAssessment: async (data: RecipientAssessmentForm, isEditing: boolean, id?: number): Promise<RecipientAssessmentForm> => {

@@ -23,11 +23,15 @@ public class DonorAssessmentService {
 
     @Transactional
     public DonorAssessmentResponseDTO save(DonorAssessmentDTO request) {
+        // ✅ Get patient using the PHN from the request
         Patient patient = patientRepository.findByPhn(request.getPhn())
                 .orElseThrow(() -> new RuntimeException("Patient not found with PHN: " + request.getPhn()));
 
         DonorAssessment entity = convertToEntity(request.getData());
         entity.setPatient(patient);
+
+        // ✅ SET THE PATIENT PHN ON THE DONOR ENTITY
+        entity.setPatientPhn(request.getPhn());
 
         DonorAssessment savedEntity = repository.save(entity);
         return convertToResponseDTO(savedEntity);
@@ -50,6 +54,11 @@ public class DonorAssessmentService {
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
+    public List<DonorAssessmentResponseDTO> getAvailableDonors() {
+        return repository.findByStatus("available").stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
 
     public void deleteById(Long id) {
         repository.deleteById(id);
@@ -66,6 +75,11 @@ public class DonorAssessmentService {
         donor.setAssignedRecipientPhn(assignment.getRecipientPhn());
 
         repository.save(donor);
+
+        // Also update the recipient assessment with the donor ID
+        // This ensures the recipient knows which donor is assigned
+        // Note: You might need to inject RecipientAssessmentService here
+        // or create a separate service method that coordinates both updates
     }
 
     @Transactional
@@ -141,6 +155,7 @@ public class DonorAssessmentService {
         DonorAssessmentResponseDTO dto = new DonorAssessmentResponseDTO();
 
         dto.setId(entity.getId());
+        dto.setPatientPhn(entity.getPatientPhn());
 
         // Copy basic donor info
         dto.setName(entity.getName());
@@ -185,9 +200,7 @@ public class DonorAssessmentService {
         dto.setImmunologicalDetails(convertImmunologicalDetailsToDTO(entity.getImmunologicalDetails()));
 
         // Include patient PHN without circular reference
-        if (entity.getPatient() != null) {
-            dto.setPatientPhn(entity.getPatient().getPhn());
-        }
+
 
         return dto;
     }

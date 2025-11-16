@@ -17,7 +17,7 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/patient-overview", { replace: true });
+      navigate("/ward-management", { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -31,7 +31,7 @@ const Login = () => {
     setLoading(true);
     try {
       await login(username, password);
-      navigate("/patient-overview", { replace: true });
+      navigate("/ward-management", { replace: true });
     } catch (error) {
       // Error is already handled in AuthContext
     } finally {

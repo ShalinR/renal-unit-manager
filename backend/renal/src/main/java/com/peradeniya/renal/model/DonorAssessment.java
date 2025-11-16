@@ -13,7 +13,8 @@ public class DonorAssessment {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-
+	@Column(name = "patient_phn", length = 50)
+	private String patientPhn;
 	// Basic donor info
 	private String name;
 	private Integer age;

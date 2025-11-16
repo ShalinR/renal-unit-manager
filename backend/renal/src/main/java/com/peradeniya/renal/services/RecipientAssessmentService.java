@@ -7,6 +7,7 @@ import com.peradeniya.renal.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,7 +57,19 @@ public class RecipientAssessmentService {
         return convertToResponseDTO(entity);
     }
 
+    @Transactional
+    public void assignDonorToRecipient(String recipientPhn, String donorId) {
+        // Get the latest recipient assessment for this patient
+        List<RecipientAssessment> assessments = repository.findByPatientPhnOrderByIdDesc(recipientPhn);
+        if (assessments.isEmpty()) {
+            throw new RuntimeException("No recipient assessment found for PHN: " + recipientPhn);
+        }
 
+        RecipientAssessment latestAssessment = assessments.get(0);
+        latestAssessment.setDonorId(donorId);
+
+        repository.save(latestAssessment);
+    }
 
 
 
@@ -91,12 +104,21 @@ public class RecipientAssessmentService {
             updateComorbiditiesFromDTO(entity.getComorbidities(), dto.getComorbidities());
         }
 
+
         // Update RRT Details
         if (dto.getRrtDetails() != null) {
             if (entity.getRrtDetails() == null) {
                 entity.setRrtDetails(new RRTDetails());
             }
             updateRRTDetailsFromDTO(entity.getRrtDetails(), dto.getRrtDetails());
+        }
+        if (dto.getTransfusionHistory() != null) {
+            List<TransfusionHistory> transfusionHistory = dto.getTransfusionHistory().stream()
+                    .map(this::convertTransfusionHistoryToEntity)
+                    .collect(Collectors.toList());
+            entity.setTransfusionHistory(transfusionHistory);
+        } else {
+            entity.setTransfusionHistory(new ArrayList<>());
         }
 
         // Update other embedded objects
@@ -109,7 +131,11 @@ public class RecipientAssessmentService {
         entity.setSocialHistory(convertSocialHistoryToEntity(dto.getSocialHistory()));
         entity.setExamination(convertExaminationToEntity(dto.getExamination()));
         entity.setImmunologicalDetails(convertImmunologicalDetailsToEntity(dto.getImmunologicalDetails()));
+        entity.setCompletedBy(convertCompletedByToEntity(dto.getCompletedBy()));
+        entity.setReviewedBy(convertReviewedByToEntity(dto.getReviewedBy()));
     }
+
+
 
     // Helper methods for updating embedded objects
     private void updateComorbiditiesFromDTO(Comorbidities entity, ComorbiditiesDTO dto) {
@@ -172,7 +198,12 @@ public class RecipientAssessmentService {
             RRTDetails rrtDetails = convertRRTDetailsToEntity(dto.getRrtDetails());
             entity.setRrtDetails(rrtDetails);
         }
-
+        if (dto.getTransfusionHistory() != null) {
+            List<TransfusionHistory> transfusionHistory = dto.getTransfusionHistory().stream()
+                    .map(this::convertTransfusionHistoryToEntity)
+                    .collect(Collectors.toList());
+            entity.setTransfusionHistory(transfusionHistory);
+        }
         // Copy other embedded objects
         entity.setSystemicInquiry(convertSystemicInquiryToEntity(dto.getSystemicInquiry()));
         entity.setComplains(dto.getComplains());
@@ -183,7 +214,8 @@ public class RecipientAssessmentService {
         entity.setSocialHistory(convertSocialHistoryToEntity(dto.getSocialHistory()));
         entity.setExamination(convertExaminationToEntity(dto.getExamination()));
         entity.setImmunologicalDetails(convertImmunologicalDetailsToEntity(dto.getImmunologicalDetails()));
-
+        entity.setCompletedBy(convertCompletedByToEntity(dto.getCompletedBy()));
+        entity.setReviewedBy(convertReviewedByToEntity(dto.getReviewedBy()));
         return entity;
     }
 
@@ -219,7 +251,12 @@ public class RecipientAssessmentService {
             RRTDetailsDTO rrtDetailsDTO = convertRRTDetailsToDTO(entity.getRrtDetails());
             dto.setRrtDetails(rrtDetailsDTO);
         }
-
+        if (entity.getTransfusionHistory() != null) {
+            List<TransfusionHistoryDTO> transfusionHistory = entity.getTransfusionHistory().stream()
+                    .map(this::convertTransfusionHistoryToDTO)
+                    .collect(Collectors.toList());
+            dto.setTransfusionHistory(transfusionHistory);
+        }
         // Copy other embedded objects as DTOs
         dto.setSystemicInquiry(convertSystemicInquiryToDTO(entity.getSystemicInquiry()));
         dto.setComplains(entity.getComplains());
@@ -230,7 +267,8 @@ public class RecipientAssessmentService {
         dto.setSocialHistory(convertSocialHistoryToDTO(entity.getSocialHistory()));
         dto.setExamination(convertExaminationToDTO(entity.getExamination()));
         dto.setImmunologicalDetails(convertImmunologicalDetailsToDTO(entity.getImmunologicalDetails()));
-
+        dto.setCompletedBy(convertCompletedByToDTO(entity.getCompletedBy()));
+        dto.setReviewedBy(convertReviewedByToDTO(entity.getReviewedBy()));
         // Include patient PHN without circular reference
         if (entity.getPatient() != null) {
             dto.setPatientPhn(entity.getPatient().getPhn());
@@ -302,7 +340,15 @@ public class RecipientAssessmentService {
 
         return dto;
     }
+    private TransfusionHistory convertTransfusionHistoryToEntity(TransfusionHistoryDTO dto) {
+        if (dto == null) return null;
+        return new TransfusionHistory(dto.getDate(), dto.getIndication(), dto.getVolume());
+    }
 
+    private TransfusionHistoryDTO convertTransfusionHistoryToDTO(TransfusionHistory entity) {
+        if (entity == null) return null;
+        return new TransfusionHistoryDTO(entity.getDate(), entity.getIndication(), entity.getVolume());
+    }
     private RRTDetails convertRRTDetailsToEntity(RRTDetailsDTO dto) {
         if (dto == null) return null;
 
@@ -332,6 +378,58 @@ public class RecipientAssessmentService {
         dto.setAccessCAPD(entity.isAccessCAPD());
         dto.setComplications(entity.getComplications());
 
+        return dto;
+    }
+
+    // Add these conversion methods to the service class
+
+    private CompletedBy convertCompletedByToEntity(CompletedByDTO dto) {
+        if (dto == null) return null;
+
+        CompletedBy entity = new CompletedBy();
+        entity.setStaffName(dto.getStaffName());
+        entity.setStaffRole(dto.getStaffRole());
+        entity.setStaffId(dto.getStaffId());
+        entity.setDepartment(dto.getDepartment());
+        entity.setSignature(dto.getSignature());
+        entity.setCompletionDate(dto.getCompletionDate());
+        return entity;
+    }
+
+    private CompletedByDTO convertCompletedByToDTO(CompletedBy entity) {
+        if (entity == null) return null;
+
+        CompletedByDTO dto = new CompletedByDTO();
+        dto.setStaffName(entity.getStaffName());
+        dto.setStaffRole(entity.getStaffRole());
+        dto.setStaffId(entity.getStaffId());
+        dto.setDepartment(entity.getDepartment());
+        dto.setSignature(entity.getSignature());
+        dto.setCompletionDate(entity.getCompletionDate());
+        return dto;
+    }
+
+    private ReviewedBy convertReviewedByToEntity(ReviewedByDTO dto) {
+        if (dto == null) return null;
+
+        ReviewedBy entity = new ReviewedBy();
+        entity.setConsultantName(dto.getConsultantName());
+        entity.setConsultantId(dto.getConsultantId());
+        entity.setReviewDate(dto.getReviewDate());
+        entity.setApprovalStatus(dto.getApprovalStatus());
+        entity.setNotes(dto.getNotes());
+        return entity;
+    }
+
+    private ReviewedByDTO convertReviewedByToDTO(ReviewedBy entity) {
+        if (entity == null) return null;
+
+        ReviewedByDTO dto = new ReviewedByDTO();
+        dto.setConsultantName(entity.getConsultantName());
+        dto.setConsultantId(entity.getConsultantId());
+        dto.setReviewDate(entity.getReviewDate());
+        dto.setApprovalStatus(entity.getApprovalStatus());
+        dto.setNotes(entity.getNotes());
         return dto;
     }
     public void deleteById(Long id) {

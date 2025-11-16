@@ -9,7 +9,6 @@ import { FullPageSpinner } from "@/components/ui/spinner";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const Login = lazy(() => import("./pages/Login"));
-const PatientOverview = lazy(() => import("./pages/PatientOverview"));
 const RegisterPatient = lazy(() => import("./pages/RegisterPatient"));
 const WardManagement = lazy(() => import("./pages/WardManagement"));
 const Peritoneal = lazy(() => import("./pages/Peritoneal"));
@@ -20,6 +19,7 @@ const PDInvestigation = lazy(() => import("./pages/PDInvestigation"));
 const KTInvestigation = lazy(() => import("./pages/KTInvestigation"));
 const HDInvestigation = lazy(() => import("./pages/HDInvestigation"));
 const Medications = lazy(() => import("./pages/Medications"));
+const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { PatientProvider } from "./context/PatientContext";
@@ -40,15 +40,7 @@ const App = () => (
               <Suspense fallback={<FullPageSpinner />}>
                 <Routes>
                   <Route path="/login" element={<Login />} />
-                  <Route path="/" element={<Navigate to="/patient-overview" replace />} />
-                  <Route 
-                    path="/patient-overview" 
-                    element={
-                      <ProtectedRoute>
-                        <Layout><PatientOverview /></Layout>
-                      </ProtectedRoute>
-                    } 
-                  />
+                  <Route path="/" element={<Navigate to="/kidney-transplant" replace />} />
                   <Route 
                     path="/register-patient" 
                     element={
@@ -126,6 +118,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Layout><Medications /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/feedback" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><AdminFeedback /></Layout>
                       </ProtectedRoute>
                     } 
                   />

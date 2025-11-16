@@ -43,7 +43,6 @@ import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
 import { Patient, PatientBasicDTO } from "../types/patient";
 
-
 const FORM_STEPS = [
   { title: "Personal Info", icon: User },
   { title: "Medical History", icon: Users },
@@ -60,11 +59,26 @@ const FORM_STEPS = [
 interface DonorAssessmentProps {
   donorForm: DonorAssessmentForm;
   setDonorForm: React.Dispatch<React.SetStateAction<DonorAssessmentForm>>;
-  setActiveView: (view: "dashboard" | "donor-assessment" | "recipient-assessment" | "kt" | "follow-up" | "summary") => void;
+  setActiveView: (
+    view:
+      | "dashboard"
+      | "donor-assessment"
+      | "recipient-assessment"
+      | "kt"
+      | "follow-up"
+      | "summary"
+  ) => void;
   handleDonorFormChange: (field: string, value: any) => void;
   handleDonorFormSubmit: (e: React.FormEvent) => void;
 }
-const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
+
+const DonorAssessment: React.FC<DonorAssessmentProps> = ({
+  donorForm,
+  setDonorForm,
+  setActiveView,
+  handleDonorFormChange,
+  handleDonorFormSubmit,
+}) => {
   const [currentView, setCurrentView] = useState<"list" | "form">("list");
   const [currentStep, setCurrentStep] = useState(0);
   const [showDonorModal, setShowDonorModal] = useState(false);
@@ -75,17 +89,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
   const [searchError, setSearchError] = useState("");
   const [searchedPatient, setSearchedPatient] = useState<Patient | null>(null);
   const [donorType, setDonorType] = useState<"new" | "existing">("new");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { patient } = usePatientContext();
+
   const {
     donors,
     addDonor,
     setSelectedDonor: setContextSelectedDonor,
     isLoading,
     error,
-    fetchDonors,
+    fetchAllDonors,
   } = useDonorContext();
-
   // Single source of truth for form data
   const [formData, setFormData] = useState<DonorAssessmentForm>({
     name: "",
@@ -215,151 +230,89 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({ setActiveView }) => {
     },
   });
 
+  // Search patient by PHN using your Spring Boot API
+  const searchPatientByPhn = useCallback(async () => {
+    if (!searchPhn.trim()) {
+      setSearchError("Please enter a PHN number");
+      return;
+    }
 
+    setIsSearching(true);
+    setSearchError("");
+    setSearchedPatient(null);
 
-  // Helper function to update nested form data
-  const updateFormField = useCallback((path: string, value: any) => {
-    setFormData((prev) => {
-      const keys = path.split(".");
+    try {
+      const response = await fetch(`/api/patient/${searchPhn}`);
 
-      // Base case: if it's a top-level field
-      if (keys.length === 1) {
-        return { ...prev, [keys[0]]: value };
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Patient not found with this PHN");
+        }
+        throw new Error("Failed to fetch patient data");
       }
 
-      // Recursive function to create the updated nested structure
-      const updateNestedObject = (
-        currentObj: any,
-        keyPath: string[],
-        currentIndex: number
-      ): any => {
-        if (currentIndex === keyPath.length - 1) {
-          // We've reached the target field, update it
-          return { ...currentObj, [keyPath[currentIndex]]: value };
-        }
+      const patientData: PatientBasicDTO = await response.json();
 
-        const currentKey = keyPath[currentIndex];
-        const nextObj = currentObj[currentKey] || {};
-
-        // Recursively update the next level
-        return {
-          ...currentObj,
-          [currentKey]: updateNestedObject(nextObj, keyPath, currentIndex + 1),
-        };
+      // Convert PatientBasicDTO to Patient type for the form
+      const patientForForm: Patient = {
+        phn: patientData.phn,
+        name: patientData.name || "",
+        age: Number(patientData.age) || 0,
+        gender: patientData.gender || "",
+        dateOfBirth: patientData.dateOfBirth || "",
+        occupation: patientData.occupation || "",
+        address: patientData.address || "",
+        nicNo: patientData.nicNo || "",
+        contactDetails: patientData.contactDetails || "",
+        emailAddress: patientData.emailAddress || "",
       };
 
-      return updateNestedObject(prev, keys, 0);
-    });
+      setSearchedPatient(patientForForm);
+      setDonorType("existing");
+
+      // Auto-populate personal information fields using direct state updates
+      setFormData((prev) => ({
+        ...prev,
+        name: patientForForm.name,
+        age: patientForForm.age,
+        gender: patientForForm.gender,
+        dateOfBirth: patientForForm.dateOfBirth,
+        occupation: patientForForm.occupation,
+        address: patientForForm.address,
+        nicNo: patientForForm.nicNo,
+        contactDetails: patientForForm.contactDetails,
+        emailAddress: patientForForm.emailAddress,
+      }));
+
+      if (currentStep !== 0) {
+        setCurrentStep(0);
+      }
+    } catch (err) {
+      console.error("API Error:", err);
+      setSearchError(
+        "Cannot connect to server. Make sure the backend is running."
+      );
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchPhn, currentStep]);
+
+  const clearSearch = useCallback(() => {
+    setSearchPhn("");
+    setSearchedPatient(null);
+    setSearchError("");
+    setDonorType("new");
+    resetForm();
   }, []);
 
-  const getNestedValue = (obj: any, path: string) => {
-    return path.split(".").reduce((acc, key) => {
-      if (acc == null) return "";
-      return acc[key] ?? "";
-    }, obj);
-  };
-
-  // Unified input change handler
-  const handleInputChange = useCallback(
-    (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
-    ) => {
-      const { name, value, type } = e.target;
-      const checked = (e.target as HTMLInputElement).checked;
-      const finalValue = type === "checkbox" ? checked : value;
-
-      updateFormField(name, finalValue);
-    },
-    [updateFormField]
-  );
-
-  // Direct checkbox handler
-  const handleCheckboxChange = useCallback(
-    (name: string, checked: boolean) => {
-      updateFormField(name, checked);
-    },
-    [updateFormField]
-  );
-
-  // Search patient by PHN
-  // Search patient by PHN using your Spring Boot API
-// Search patient by PHN using your Spring Boot API
-const searchPatientByPhn = useCallback(async () => {
-  if (!searchPhn.trim()) {
-    setSearchError("Please enter a PHN number");
-    return;
-  }
-
-  setIsSearching(true);
-  setSearchError("");
-  setSearchedPatient(null);
-
-  try {
-    const response = await fetch(`/api/patient/${searchPhn}`);
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error("Patient not found with this PHN");
-      }
-      throw new Error("Failed to fetch patient data");
-    }
-
-    const patientData: PatientBasicDTO = await response.json();
-    
-    // Convert PatientBasicDTO to Patient type for the form
-    const patientForForm: Patient = {
-      phn: patientData.phn,
-      name: patientData.name || "",
-age: Number(patientData.age) || 0,      gender: patientData.gender || "",
-      dateOfBirth: patientData.dateOfBirth || "",
-      occupation: patientData.occupation || "",
-      address: patientData.address || "",
-      nicNo: patientData.nicNo || "",
-      contactDetails: patientData.contactDetails || "",
-      emailAddress: patientData.emailAddress || ""
-    };
-
-    setSearchedPatient(patientForForm);
-    setDonorType("existing")
-    // Auto-populate personal information fields
-    updateFormField("name", patientForForm.name);
-    updateFormField("age", patientForForm.age);
-    updateFormField("gender", patientForForm.gender);
-    updateFormField("dateOfBirth", patientForForm.dateOfBirth);
-    updateFormField("occupation", patientForForm.occupation);
-    updateFormField("address", patientForForm.address);
-    updateFormField("nicNo", patientForForm.nicNo);
-    updateFormField("contactDetails", patientForForm.contactDetails);
-    updateFormField("emailAddress", patientForForm.emailAddress);
-
-    if (currentStep !== 0) {
-      setCurrentStep(0);
-    }
-
-  } catch (err) {
-    console.error('API Error:', err);
-    setSearchError("Cannot connect to server. Make sure the backend is running.");
-  } finally {
-    setIsSearching(false);
-  }
-}, [searchPhn, updateFormField, currentStep]);
-
-const clearSearch = useCallback(() => {
-  setSearchPhn("");
-  setSearchedPatient(null);
-  setSearchError("");
-  setDonorType("new"); // Reset to new donor
-  resetForm();
-}, []);
-
   // Helper function to convert Donor to DonorAssessmentForm
+  // Fixed convertDonorToFormData function
   const convertDonorToFormData = useCallback(
     (donor: Donor): DonorAssessmentForm => {
       return {
+        // Basic information
         name: donor.name || "",
-      age: Number(donor.age) || 0,
+        age: donor.age || 0,
         gender: donor.gender || "",
         dateOfBirth: donor.dateOfBirth || "",
         occupation: donor.occupation || "",
@@ -369,6 +322,8 @@ const clearSearch = useCallback(() => {
         emailAddress: donor.emailAddress || "",
         relationToRecipient: donor.relationToRecipient || "",
         relationType: donor.relationType || "",
+
+        // Medical history - these now exist in the updated Donor type
         comorbidities: donor.comorbidities || {
           dl: false,
           dm: false,
@@ -376,8 +331,10 @@ const clearSearch = useCallback(() => {
           htn: false,
           ihd: false,
         },
-        complains: "",
-        systemicInquiry: {
+        complains: donor.complains || "",
+
+        // Systemic inquiry
+        systemicInquiry: donor.systemicInquiry || {
           constitutional: { loa: false, low: false },
           cvs: { chestPain: false, odema: false, sob: false },
           respiratory: { cough: false, hemoptysis: false, wheezing: false },
@@ -402,16 +359,40 @@ const clearSearch = useCallback(() => {
           },
           sexualHistory: "",
         },
-        drugHistory: "",
-        allergyHistory: { foods: false, drugs: false, p: false },
-        familyHistory: { dm: "", htn: "", ihd: "", stroke: "", renal: "" },
-        substanceUse: { smoking: false, alcohol: false, other: "" },
-        socialHistory: {
+
+        // Drug & allergy
+        drugHistory: donor.drugHistory || "",
+        allergyHistory: donor.allergyHistory || {
+          foods: false,
+          drugs: false,
+          p: false,
+        },
+
+        // Family history
+        familyHistory: donor.familyHistory || {
+          dm: "",
+          htn: "",
+          ihd: "",
+          stroke: "",
+          renal: "",
+        },
+
+        // Substance use
+        substanceUse: donor.substanceUse || {
+          smoking: false,
+          alcohol: false,
+          other: "",
+        },
+
+        // Social history
+        socialHistory: donor.socialHistory || {
           spouseDetails: "",
           childrenDetails: "",
           income: "",
           other: "",
         },
+
+        // Examination
         examination: donor.examination || {
           height: "",
           weight: "",
@@ -450,11 +431,10 @@ const clearSearch = useCallback(() => {
             coordination: false,
           },
         },
+
+        // Immunological details
         immunologicalDetails: donor.immunologicalDetails || {
-          bloodGroup: {
-            d: donor.bloodGroup?.charAt(0) || "",
-            r: donor.bloodGroup?.charAt(1) || "",
-          },
+          bloodGroup: { d: "", r: "" },
           crossMatch: { tCell: "", bCell: "" },
           hlaTyping: {
             donor: {
@@ -492,12 +472,8 @@ const clearSearch = useCallback(() => {
   );
 
   useEffect(() => {
-    if (patient?.phn) {
-      fetchDonors(patient.phn);
-    } else {
-      fetchDonors();
-    }
-  }, [patient?.phn, fetchDonors]);
+    fetchAllDonors();
+  }, [fetchAllDonors]);
 
   // Calculate BMI function
   const calculateBMI = useCallback(() => {
@@ -506,15 +482,26 @@ const clearSearch = useCallback(() => {
 
     if (height && weight && height > 0 && weight > 0) {
       const bmi = (weight / (height / 100) ** 2).toFixed(2);
-      updateFormField("examination.bmi", bmi);
+      setFormData((prev) => ({
+        ...prev,
+        examination: {
+          ...prev.examination,
+          bmi: bmi,
+        },
+      }));
     } else if (formData.examination.bmi && (!height || !weight)) {
-      updateFormField("examination.bmi", "");
+      setFormData((prev) => ({
+        ...prev,
+        examination: {
+          ...prev.examination,
+          bmi: "",
+        },
+      }));
     }
   }, [
     formData.examination.height,
     formData.examination.weight,
     formData.examination.bmi,
-    updateFormField,
   ]);
 
   const nextStep = useCallback(() => {
@@ -529,6 +516,25 @@ const clearSearch = useCallback(() => {
     }
   }, [currentStep]);
 
+  const handleHlaChange = (
+    type: "donor" | "recipient" | "conclusion",
+    hla: string,
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      immunologicalDetails: {
+        ...prev.immunologicalDetails,
+        hlaTyping: {
+          ...prev.immunologicalDetails.hlaTyping,
+          [type]: {
+            ...prev.immunologicalDetails.hlaTyping[type],
+            [hla]: value,
+          },
+        },
+      },
+    }));
+  };
   const resetForm = useCallback(() => {
     setFormData({
       name: "",
@@ -659,16 +665,16 @@ const clearSearch = useCallback(() => {
     });
   }, []);
 
- const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  // Check if we have a donor (either from search or form data)
   if (!formData.name || !formData.nicNo) {
-    alert("Please fill in at least the donor's name and NIC number, or search for an existing patient first.");
+    alert(
+      "Please fill in at least the donor's name and NIC number, or search for an existing patient first."
+    );
     return;
   }
 
-  // Basic validation for required fields
   const requiredFields = [
     { field: formData.name, name: "Full Name" },
     { field: formData.age, name: "Age" },
@@ -684,12 +690,10 @@ const clearSearch = useCallback(() => {
     return;
   }
 
+  setIsSubmitting(true);
+
   try {
-    // Use the searched patient's PHN if available, otherwise you might need to generate one
-    // or handle the case where this is a new donor without a PHN
-    const patientPhn = searchedPatient?.phn || formData.nicNo; // Fallback to NIC if no PHN
-    
-    // The addDonor function now expects DonorAssessmentForm directly
+    const patientPhn = searchedPatient?.phn || formData.nicNo;
     await addDonor(formData, patientPhn);
 
     alert(
@@ -701,40 +705,27 @@ const clearSearch = useCallback(() => {
   } catch (err) {
     console.error("Failed to submit donor:", err);
     alert("Failed to submit donor. Please try again.");
+  } finally {
+    setIsSubmitting(false);
   }
 };
-
-  const handleSelectDonor = useCallback(
-    (donor: Donor) => {
-      setContextSelectedDonor(donor);
-      alert(
-        `Donor ${donor.name} selected! You can now use this donor in recipient assessment.`
-      );
-
-      if (setActiveView) {
-        setActiveView("recipient-assessment");
-      }
-    },
-    [setContextSelectedDonor, setActiveView]
-  );
 
   const CheckboxField = useCallback(
     ({
       name,
       label,
       checked,
+      onChange,
     }: {
       name: string;
       label: string;
       checked: boolean;
+      onChange: (checked: boolean) => void;
     }) => (
       <label className="flex items-start gap-3 cursor-pointer group">
         <Checkbox
-          name={name}
           checked={checked}
-          onCheckedChange={(checked) => {
-            handleCheckboxChange(name, checked === true);
-          }}
+          onCheckedChange={(checked) => onChange(checked === true)}
           className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
         />
         <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors">
@@ -742,40 +733,8 @@ const clearSearch = useCallback(() => {
         </span>
       </label>
     ),
-    [handleCheckboxChange]
+    []
   );
-
-const InputField = ({
-  name,
-  label,
-  type = "text",
-  placeholder = "",
-  required = false,
-  value, // Add value prop
-}: {
-  name: string;
-  label: string;
-  type?: string;
-  placeholder?: string;
-  required?: boolean;
-  value?: string | number; // Add value to the type definition
-}) => (
-  <div className="space-y-2">
-    <Label htmlFor={name} className="text-sm font-medium text-slate-700">
-      {label}
-      {required && <span className="text-red-500 ml-1">*</span>}
-    </Label>
-    <Input
-      id={name}
-      name={name}
-      type={type}
-      value={value} // Pass the value prop
-      onChange={handleInputChange}
-      placeholder={placeholder}
-      className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-    />
-  </div>
-);
 
   const SectionCard = useCallback(
     ({
@@ -798,92 +757,101 @@ const InputField = ({
   );
 
   // Search Bar Component
-  // Search Bar Component
-const SearchBar = () => (
-  <Card className="border border-slate-200 shadow-sm mb-6">
-    <CardContent className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-medium text-slate-900">Search Existing Patient</h3>
-          <p className="text-sm text-slate-600">
-            Search by PHN to auto-populate personal information
-          </p>
+  const SearchBar = () => (
+    <Card className="border border-slate-200 shadow-sm mb-6">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-slate-900">
+              Search Existing Patient
+            </h3>
+            <p className="text-sm text-slate-600">
+              Search by PHN to auto-populate personal information
+            </p>
+          </div>
+          {searchedPatient && (
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              Patient Loaded
+            </Badge>
+          )}
         </div>
-        {searchedPatient && (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            Patient Loaded
-          </Badge>
-        )}
-      </div>
-      
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <Label htmlFor="phn-search" className="text-sm font-medium text-slate-700 mb-2 block">
-            PHN Number
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="phn-search"
-              type="text"
-              placeholder="Enter patient PHN number..."
-              value={searchPhn}
-              onChange={(e) => setSearchPhn(e.target.value)}
-              className="flex-1 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  searchPatientByPhn();
-                }
-              }}
-            />
-            <Button
-              onClick={searchPatientByPhn}
-              disabled={isSearching || !searchPhn.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Label
+              htmlFor="phn-search"
+              className="text-sm font-medium text-slate-700 mb-2 block"
             >
-              {isSearching ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-              Search
-            </Button>
-            {searchedPatient && (
+              PHN Number
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="phn-search"
+                type="text"
+                placeholder="Enter patient PHN number..."
+                value={searchPhn}
+                onChange={(e) => setSearchPhn(e.target.value)}
+                className="flex-1 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    searchPatientByPhn();
+                  }
+                }}
+              />
               <Button
-                onClick={clearSearch}
-                variant="outline"
-                className="border-red-300 text-red-700 hover:bg-red-50"
+                onClick={searchPatientByPhn}
+                disabled={isSearching || !searchPhn.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Clear
+                {isSearching ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+                Search
               </Button>
+              {searchedPatient && (
+                <Button
+                  onClick={clearSearch}
+                  variant="outline"
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            {searchError && (
+              <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {searchError}
+              </p>
+            )}
+            {searchedPatient && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-blue-900">
+                      {searchedPatient.name}
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      PHN: {searchedPatient.phn} | Age: {searchedPatient.age} |
+                      Gender: {searchedPatient.gender}
+                    </p>
+                  </div>
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  Personal information has been auto-populated from your
+                  database.
+                </p>
+              </div>
             )}
           </div>
-          {searchError && (
-            <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" />
-              {searchError}
-            </p>
-          )}
-          {searchedPatient && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-blue-900">{searchedPatient.name}</p>
-                  <p className="text-sm text-blue-700">
-                    PHN: {searchedPatient.phn} | Age: {searchedPatient.age} | Gender: {searchedPatient.gender}
-                  </p>
-                </div>
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <p className="text-xs text-blue-600 mt-2">
-                Personal information has been auto-populated from your database.
-              </p>
-            </div>
-          )}
         </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+
   const renderAvailableDonors = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -913,7 +881,7 @@ const SearchBar = () => (
               <span>Error loading donors: {error}</span>
             </div>
             <Button
-              onClick={() => fetchDonors(patient?.phn)}
+              onClick={() => fetchAllDonors()}
               variant="outline"
               size="sm"
               className="mt-2"
@@ -1023,28 +991,18 @@ const SearchBar = () => (
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-slate-600 border-slate-300 hover:bg-slate-50"
-                            onClick={() => {
-                              setSelectedDonor(convertDonorToFormData(donor));
-                              setShowDonorModal(true);
-                            }}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => handleSelectDonor(donor)}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Select
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-slate-600 border-slate-300 hover:bg-slate-50"
+                          onClick={() => {
+                            setSelectedDonor(convertDonorToFormData(donor));
+                            setShowDonorModal(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Details
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -1056,6 +1014,7 @@ const SearchBar = () => (
       )}
     </div>
   );
+
   const renderFormStep = () => {
     switch (currentStep) {
       case 0:
@@ -1063,33 +1022,58 @@ const SearchBar = () => (
           <div className="space-y-6">
             <SearchBar />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                name="name"
-                label="Full Name"
-                value={formData.name}
-                placeholder="Enter full name"
-                required
-              />
-              <Input
-            id="age"
-            name="age"
-            type="number"
-            value={formData.age} // This will work since age is now a number
-            onChange={(e) => updateFormField("age", parseInt(e.target.value) || 0)} // ✅ Convert to number
-            placeholder="Enter age"
-            className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-            required
-          />
+              <div className="space-y-2">
+                <Label
+                  htmlFor="name"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Full Name <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Enter full name"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="age"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Age <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="age"
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      age: parseInt(e.target.value) || 0,
+                    }))
+                  }
+                  placeholder="Enter age"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
                   Gender <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <select
-                  name="gender"
                   value={formData.gender}
-                  onChange={handleInputChange}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, gender: e.target.value }))
+                  }
                   className="w-full px-3 py-2 border border-slate-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="">Select gender</option>
@@ -1098,57 +1082,175 @@ const SearchBar = () => (
                   <option value="other">Other</option>
                 </select>
               </div>
-              <InputField
-                name="dateOfBirth"
-                label="Date of Birth"
-                value={formData.dateOfBirth}
-                type="date"
-                required
-              />
+              <div className="space-y-2">
+                <Label
+                  htmlFor="dateOfBirth"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Date of Birth <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      dateOfBirth: e.target.value,
+                    }))
+                  }
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                name="occupation"
-                label="Occupation"
-                value={formData.occupation}
-                placeholder="Enter occupation"
-              />
-              <InputField
-                name="nicNo"
-                label="NIC Number"
-                value={formData.nicNo}
-                placeholder="Enter NIC number"
-                required
-              />
+              <div className="space-y-2">
+                <Label
+                  htmlFor="occupation"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Occupation
+                </Label>
+                <Input
+                  id="occupation"
+                  value={formData.occupation}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      occupation: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter occupation"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="nicNo"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  NIC Number <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="nicNo"
+                  value={formData.nicNo}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, nicNo: e.target.value }))
+                  }
+                  placeholder="Enter NIC number"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">
+              <Label
+                htmlFor="address"
+                className="text-sm font-medium text-slate-700"
+              >
                 Address
               </Label>
               <Textarea
-                name="address"
+                id="address"
                 value={formData.address}
-                onChange={handleInputChange}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, address: e.target.value }))
+                }
                 rows={3}
                 className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Enter full address"
               />
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                name="contactDetails"
-                label="Phone Number"
-                value={formData.contactDetails}
-                placeholder="Enter phone number"
-                required
-              />
-              <InputField
-                name="emailAddress"
-                label="Email Address"
-                value={formData.emailAddress}
-                type="email"
-                placeholder="Enter email address"
-              />
+              <div className="space-y-2">
+                <Label
+                  htmlFor="contactDetails"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Phone Number <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                  id="contactDetails"
+                  value={formData.contactDetails}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contactDetails: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter phone number"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="emailAddress"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Email Address
+                </Label>
+                <Input
+                  id="emailAddress"
+                  type="email"
+                  value={formData.emailAddress}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      emailAddress: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter email address"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="relationToRecipient"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Relation to Recipient
+                </Label>
+                <Input
+                  id="relationToRecipient"
+                  value={formData.relationToRecipient}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      relationToRecipient: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., Mother, Father, Sibling"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="relationType"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Relation Type
+                </Label>
+                <Input
+                  id="relationType"
+                  value={formData.relationType}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      relationType: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., Biological, Emotional"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1156,16 +1258,19 @@ const SearchBar = () => (
       case 1:
         return (
           <div className="space-y-6">
-            {/* Complains Section - Added at the top */}
             <SectionCard title="Chief Complaints">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
                   Chief Complaints
                 </Label>
                 <Textarea
-                  name="complains"
                   value={formData.complains}
-                  onChange={handleInputChange}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      complains: e.target.value,
+                    }))
+                  }
                   rows={4}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Enter chief complaints and details about current symptoms, duration, severity, etc."
@@ -1177,33 +1282,67 @@ const SearchBar = () => (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CheckboxField
                   name="comorbidities.dm"
-                  label="Diabetes Mellitus(DM)"
+                  label="Diabetes Mellitus (DM)"
                   checked={formData.comorbidities.dm}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, dm: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.htn"
-                  label="Hypertension(HTN)"
+                  label="Hypertension (HTN)"
                   checked={formData.comorbidities.htn}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, htn: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.ihd"
-                  label="Ischemic Heart Disease(IHD)"
+                  label="Ischemic Heart Disease (IHD)"
                   checked={formData.comorbidities.ihd}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, ihd: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.psychiatricIllness"
                   label="Psychiatric Illness"
                   checked={formData.comorbidities.psychiatricIllness}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: {
+                        ...prev.comorbidities,
+                        psychiatricIllness: checked,
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="comorbidities.dl"
                   label="Dyslipidemia (DL)"
                   checked={formData.comorbidities.dl}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      comorbidities: { ...prev.comorbidities, dl: checked },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
           </div>
         );
+
       case 2:
         return (
           <div className="space-y-6">
@@ -1213,73 +1352,208 @@ const SearchBar = () => (
                   name="systemicInquiry.constitutional.loa"
                   label="Loss of Appetite"
                   checked={formData.systemicInquiry.constitutional.loa}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        constitutional: {
+                          ...prev.systemicInquiry.constitutional,
+                          loa: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.constitutional.low"
                   label="Loss of Weight"
                   checked={formData.systemicInquiry.constitutional.low}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        constitutional: {
+                          ...prev.systemicInquiry.constitutional,
+                          low: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
-            <SectionCard title="Cardiovascular System(CVS)">
+
+            <SectionCard title="Cardiovascular System (CVS)">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <CheckboxField
                   name="systemicInquiry.cvs.chestPain"
                   label="Chest Pain"
                   checked={formData.systemicInquiry.cvs.chestPain}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        cvs: {
+                          ...prev.systemicInquiry.cvs,
+                          chestPain: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.cvs.odema"
-                  label="Odem"
+                  label="Edema"
                   checked={formData.systemicInquiry.cvs.odema}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        cvs: { ...prev.systemicInquiry.cvs, odema: checked },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.cvs.sob"
-                  label="Shortness of Breath(SOB)"
+                  label="Shortness of Breath (SOB)"
                   checked={formData.systemicInquiry.cvs.sob}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        cvs: { ...prev.systemicInquiry.cvs, sob: checked },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
+
             <SectionCard title="Respiratory System">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <CheckboxField
                   name="systemicInquiry.respiratory.cough"
                   label="Cough"
                   checked={formData.systemicInquiry.respiratory.cough}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        respiratory: {
+                          ...prev.systemicInquiry.respiratory,
+                          cough: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.respiratory.hemoptysis"
                   label="Hemoptysis"
                   checked={formData.systemicInquiry.respiratory.hemoptysis}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        respiratory: {
+                          ...prev.systemicInquiry.respiratory,
+                          hemoptysis: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.respiratory.wheezing"
                   label="Wheezing"
                   checked={formData.systemicInquiry.respiratory.wheezing}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        respiratory: {
+                          ...prev.systemicInquiry.respiratory,
+                          wheezing: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
+
             <SectionCard title="Gastrointestinal System">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
                   name="systemicInquiry.git.constipation"
                   label="Constipation"
                   checked={formData.systemicInquiry.git.constipation}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: {
+                          ...prev.systemicInquiry.git,
+                          constipation: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.git.diarrhea"
                   label="Diarrhea"
                   checked={formData.systemicInquiry.git.diarrhea}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: { ...prev.systemicInquiry.git, diarrhea: checked },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.git.melena"
                   label="Melena"
                   checked={formData.systemicInquiry.git.melena}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: { ...prev.systemicInquiry.git, melena: checked },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.git.prBleeding"
                   label="PR Bleeding"
                   checked={formData.systemicInquiry.git.prBleeding}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        git: {
+                          ...prev.systemicInquiry.git,
+                          prBleeding: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1290,11 +1564,35 @@ const SearchBar = () => (
                   name="systemicInquiry.renal.hematuria"
                   label="Hematuria"
                   checked={formData.systemicInquiry.renal.hematuria}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        renal: {
+                          ...prev.systemicInquiry.renal,
+                          hematuria: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.renal.frothyUrine"
                   label="Frothy Urine"
                   checked={formData.systemicInquiry.renal.frothyUrine}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        renal: {
+                          ...prev.systemicInquiry.renal,
+                          frothyUrine: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1305,21 +1603,69 @@ const SearchBar = () => (
                   name="systemicInquiry.neuro.seizures"
                   label="Seizures"
                   checked={formData.systemicInquiry.neuro.seizures}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          seizures: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.neuro.visualDisturbance"
                   label="Visual Disturbance"
                   checked={formData.systemicInquiry.neuro.visualDisturbance}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          visualDisturbance: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.neuro.headache"
                   label="Headache"
                   checked={formData.systemicInquiry.neuro.headache}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          headache: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.neuro.limbWeakness"
                   label="Limb Weakness"
                   checked={formData.systemicInquiry.neuro.limbWeakness}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        neuro: {
+                          ...prev.systemicInquiry.neuro,
+                          limbWeakness: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1330,21 +1676,69 @@ const SearchBar = () => (
                   name="systemicInquiry.gynecology.pvBleeding"
                   label="PV Bleeding"
                   checked={formData.systemicInquiry.gynecology.pvBleeding}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          pvBleeding: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.gynecology.menopause"
                   label="Menopause"
                   checked={formData.systemicInquiry.gynecology.menopause}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          menopause: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.gynecology.menorrhagia"
                   label="Menorrhagia"
                   checked={formData.systemicInquiry.gynecology.menorrhagia}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          menorrhagia: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="systemicInquiry.gynecology.lrmp"
                   label="LRMP"
                   checked={formData.systemicInquiry.gynecology.lrmp}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        gynecology: {
+                          ...prev.systemicInquiry.gynecology,
+                          lrmp: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
               <div className="mt-4 space-y-2">
@@ -1352,9 +1746,16 @@ const SearchBar = () => (
                   Sexual History
                 </Label>
                 <Textarea
-                  name="systemicInquiry.sexualHistory"
                   value={formData.systemicInquiry.sexualHistory}
-                  onChange={handleInputChange}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemicInquiry: {
+                        ...prev.systemicInquiry,
+                        sexualHistory: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Enter sexual history details"
@@ -1372,9 +1773,13 @@ const SearchBar = () => (
                 Current Medications
               </Label>
               <Textarea
-                name="drugHistory"
                 value={formData.drugHistory}
-                onChange={handleInputChange}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    drugHistory: e.target.value,
+                  }))
+                }
                 rows={4}
                 className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 placeholder="List current medications, dosages, and duration"
@@ -1386,16 +1791,40 @@ const SearchBar = () => (
                   name="allergyHistory.foods"
                   label="Food Allergies"
                   checked={formData.allergyHistory.foods}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      allergyHistory: {
+                        ...prev.allergyHistory,
+                        foods: checked,
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="allergyHistory.drugs"
                   label="Drug Allergies"
                   checked={formData.allergyHistory.drugs}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      allergyHistory: {
+                        ...prev.allergyHistory,
+                        drugs: checked,
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="allergyHistory.p"
                   label="Environmental Allergies"
                   checked={formData.allergyHistory.p}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      allergyHistory: { ...prev.allergyHistory, p: checked },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1406,36 +1835,101 @@ const SearchBar = () => (
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                name="familyHistory.dm"
-                label="Diabetes Mellitus(DM)"
-                value={formData.familyHistory.dm}
-                placeholder="Family member relationship"
-              />
-              <InputField
-                name="familyHistory.htn"
-                label="Hypertension(HTN)"
-                value={formData.familyHistory.htn}
-                placeholder="Family member relationship"
-              />
-              <InputField
-                name="familyHistory.ihd"
-                label="Ischemic Heart Disease(IHD)"
-                value={formData.familyHistory.ihd}
-                placeholder="Family member relationship"
-              />
-              <InputField
-                name="familyHistory.stroke"
-                label="Stroke"
-                value={formData.familyHistory.stroke}
-                placeholder="Family member relationship"
-              />
-              <InputField
-                name="familyHistory.renal"
-                label="Renal Disease"
-                value={formData.familyHistory.renal}
-                placeholder="Family member relationship"
-              />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Diabetes Mellitus (DM)
+                </Label>
+                <Input
+                  value={formData.familyHistory.dm}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        dm: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Family member relationship"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Hypertension (HTN)
+                </Label>
+                <Input
+                  value={formData.familyHistory.htn}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        htn: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Family member relationship"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Ischemic Heart Disease (IHD)
+                </Label>
+                <Input
+                  value={formData.familyHistory.ihd}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        ihd: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Family member relationship"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Stroke
+                </Label>
+                <Input
+                  value={formData.familyHistory.stroke}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        stroke: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Family member relationship"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Renal Disease
+                </Label>
+                <Input
+                  value={formData.familyHistory.renal}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      familyHistory: {
+                        ...prev.familyHistory,
+                        renal: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Family member relationship"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
             </div>
           </div>
         );
@@ -1450,11 +1944,29 @@ const SearchBar = () => (
                     name="substanceUse.smoking"
                     label="Smoking"
                     checked={formData.substanceUse.smoking}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        substanceUse: {
+                          ...prev.substanceUse,
+                          smoking: checked,
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="substanceUse.alcohol"
                     label="Alcohol"
                     checked={formData.substanceUse.alcohol}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        substanceUse: {
+                          ...prev.substanceUse,
+                          alcohol: checked,
+                        },
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -1462,9 +1974,16 @@ const SearchBar = () => (
                     Other Substances
                   </Label>
                   <Textarea
-                    name="substanceUse.other"
                     value={formData.substanceUse.other}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        substanceUse: {
+                          ...prev.substanceUse,
+                          other: e.target.value,
+                        },
+                      }))
+                    }
                     rows={3}
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Describe any other substance use"
@@ -1484,9 +2003,16 @@ const SearchBar = () => (
                   Spouse Details
                 </Label>
                 <Textarea
-                  name="socialHistory.spouseDetails"
                   value={formData.socialHistory.spouseDetails}
-                  onChange={handleInputChange}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        spouseDetails: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Spouse information"
@@ -1497,9 +2023,16 @@ const SearchBar = () => (
                   Children Details
                 </Label>
                 <Textarea
-                  name="socialHistory.childrenDetails"
                   value={formData.socialHistory.childrenDetails}
-                  onChange={handleInputChange}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        childrenDetails: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Children information"
@@ -1507,20 +2040,40 @@ const SearchBar = () => (
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                name="socialHistory.income"
-                label="Monthly Income"
-                value={formData.socialHistory.income}
-                placeholder="Monthly income"
-              />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Monthly Income
+                </Label>
+                <Input
+                  value={formData.socialHistory.income}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        income: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Monthly income"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
                   Other Social Information
                 </Label>
                 <Textarea
-                  name="socialHistory.other"
                   value={formData.socialHistory.other}
-                  onChange={handleInputChange}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      socialHistory: {
+                        ...prev.socialHistory,
+                        other: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Other relevant social information"
@@ -1535,127 +2088,315 @@ const SearchBar = () => (
           <div className="space-y-6">
             <SectionCard title="Anthropometric Measurements">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <InputField
-                  name="examination.height"
-                  label="Height (cm)"
-                  value={formData.examination.height}
-                  placeholder="Height in cm"
-                />
-                <InputField
-                  name="examination.weight"
-                  label="Weight (kg)"
-                  value={formData.examination.weight}
-                  placeholder="Weight in kg"
-                />
                 <div className="space-y-2">
-                  <InputField
-                    name="examination.bmi"
-                    label="BMI"
+                  <Label className="text-sm font-medium text-slate-700">
+                    Height (cm)
+                  </Label>
+                  <Input
+                    value={formData.examination.height}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          height: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Height in cm"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Weight (kg)
+                  </Label>
+                  <Input
+                    value={formData.examination.weight}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          weight: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Weight in kg"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    BMI
+                  </Label>
+                  <Input
                     value={formData.examination.bmi}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          bmi: e.target.value,
+                        },
+                      }))
+                    }
                     placeholder="Auto-calculated"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <Button
                     type="button"
                     onClick={calculateBMI}
                     size="sm"
                     variant="outline"
-                    className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
+                    className="w-full text-blue-600 border-blue-300 hover:bg-blue-50 mt-2"
                   >
                     Calculate BMI
                   </Button>
                 </div>
               </div>
             </SectionCard>
+
             <SectionCard title="General Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
                   name="examination.pallor"
                   label="Pallor"
                   checked={formData.examination.pallor}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: { ...prev.examination, pallor: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.icterus"
                   label="Icterus"
                   checked={formData.examination.icterus}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: { ...prev.examination, icterus: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.clubbing"
                   label="Clubbing"
                   checked={formData.examination.clubbing}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: { ...prev.examination, clubbing: checked },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.ankleOedema"
                   label="Ankle Edema"
                   checked={formData.examination.ankleOedema}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        ankleOedema: checked,
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
+
             <SectionCard title="Oral Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
                   name="examination.oral.dentalCaries"
-                  label="Dental Conics"
+                  label="Dental Caries"
                   checked={formData.examination.oral.dentalCaries}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          dentalCaries: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.oral.oralHygiene"
                   label="Oral Hygiene"
                   checked={formData.examination.oral.oralHygiene}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          oralHygiene: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.oral.satisfactory"
                   label="Satisfactory"
                   checked={formData.examination.oral.satisfactory}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          satisfactory: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.oral.unsatisfactory"
                   label="Unsatisfactory"
                   checked={formData.examination.oral.unsatisfactory}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        oral: {
+                          ...prev.examination.oral,
+                          unsatisfactory: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
+
             <SectionCard title="Lymph Nodes">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <CheckboxField
                   name="examination.lymphNodes.cervical"
                   label="Cervical"
                   checked={formData.examination.lymphNodes.cervical}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        lymphNodes: {
+                          ...prev.examination.lymphNodes,
+                          cervical: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.lymphNodes.axillary"
                   label="Axillary"
                   checked={formData.examination.lymphNodes.axillary}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        lymphNodes: {
+                          ...prev.examination.lymphNodes,
+                          axillary: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.lymphNodes.inguinal"
                   label="Inguinal"
                   checked={formData.examination.lymphNodes.inguinal}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        lymphNodes: {
+                          ...prev.examination.lymphNodes,
+                          inguinal: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
-            <SectionCard title="Cardiovascular System(CVS)">
+
+            <SectionCard title="Cardiovascular System (CVS)">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <InputField
-                  name="examination.cvs.bp"
-                  label="Blood Pressure"
-                  value={formData.examination.cvs.bp}
-                  placeholder="e.g., 120/80"
-                />
-                <InputField
-                  name="examination.cvs.pr"
-                  label="Pulse Rate"
-                  value={formData.examination.cvs.pr}
-                  placeholder="e.g., 72 bpm"
-                />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Blood Pressure
+                  </Label>
+                  <Input
+                    value={formData.examination.cvs.bp}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          cvs: { ...prev.examination.cvs, bp: e.target.value },
+                        },
+                      }))
+                    }
+                    placeholder="e.g., 120/80"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Pulse Rate
+                  </Label>
+                  <Input
+                    value={formData.examination.cvs.pr}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          cvs: { ...prev.examination.cvs, pr: e.target.value },
+                        },
+                      }))
+                    }
+                    placeholder="e.g., 72 bpm"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
                 <div className="flex items-end pb-2">
                   <CheckboxField
                     name="examination.cvs.murmurs"
                     label="Murmurs"
                     checked={formData.examination.cvs.murmurs}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          cvs: { ...prev.examination.cvs, murmurs: checked },
+                        },
+                      }))
+                    }
                   />
                 </div>
               </div>
             </SectionCard>
+
             <SectionCard title="Respiratory System">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1663,11 +2404,35 @@ const SearchBar = () => (
                     name="examination.respiratory.rr"
                     label="Respiratory Rate (RR)"
                     checked={formData.examination.respiratory.rr}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            rr: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.spo2"
                     label="SpO2"
                     checked={formData.examination.respiratory.spo2}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            spo2: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1675,82 +2440,236 @@ const SearchBar = () => (
                     name="examination.respiratory.auscultation"
                     label="Abnormal Auscultation"
                     checked={formData.examination.respiratory.auscultation}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            auscultation: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.crepts"
                     label="Crepts"
                     checked={formData.examination.respiratory.crepts}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            crepts: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.ranchi"
                     label="Ronchi"
                     checked={formData.examination.respiratory.ranchi}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            ranchi: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                   <CheckboxField
                     name="examination.respiratory.effusion"
                     label="Effusion"
                     checked={formData.examination.respiratory.effusion}
+                    onChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        examination: {
+                          ...prev.examination,
+                          respiratory: {
+                            ...prev.examination.respiratory,
+                            effusion: checked,
+                          },
+                        },
+                      }))
+                    }
                   />
                 </div>
               </div>
             </SectionCard>
+
             <SectionCard title="Abdominal Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
                   name="examination.abdomen.hepatomegaly"
                   label="Hepatomegaly"
                   checked={formData.examination.abdomen.hepatomegaly}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          hepatomegaly: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.abdomen.splenomegaly"
                   label="Splenomegaly"
                   checked={formData.examination.abdomen.splenomegaly}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          splenomegaly: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.abdomen.renalMasses"
                   label="Renal Masses"
                   checked={formData.examination.abdomen.renalMasses}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          renalMasses: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.abdomen.freeFluid"
                   label="Free Fluid"
                   checked={formData.examination.abdomen.freeFluid}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        abdomen: {
+                          ...prev.examination.abdomen,
+                          freeFluid: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
-            <SectionCard title="Brcost Examination">
+
+            <SectionCard title="Breast Examination">
               <div className="space-y-2">
                 <Textarea
-                  name="examination.BrcostExamination"
                   value={formData.examination.BrcostExamination}
-                  onChange={handleInputChange}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        BrcostExamination: e.target.value,
+                      },
+                    }))
+                  }
                   rows={3}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Describe examination findings"
                 />
               </div>
             </SectionCard>
+
             <SectionCard title="Neurological Examination">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <CheckboxField
                   name="examination.neurologicalExam.cranialNerves"
                   label="Cranial Nerves Abnormal"
                   checked={formData.examination.neurologicalExam.cranialNerves}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          cranialNerves: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.neurologicalExam.upperLimb"
                   label="Upper Limb Abnormal"
                   checked={formData.examination.neurologicalExam.upperLimb}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          upperLimb: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.neurologicalExam.lowerLimb"
                   label="Lower Limb Abnormal"
                   checked={formData.examination.neurologicalExam.lowerLimb}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          lowerLimb: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
                 <CheckboxField
                   name="examination.neurologicalExam.coordination"
                   label="Coordination Abnormal"
                   checked={formData.examination.neurologicalExam.coordination}
+                  onChange={(checked) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      examination: {
+                        ...prev.examination,
+                        neurologicalExam: {
+                          ...prev.examination.neurologicalExam,
+                          coordination: checked,
+                        },
+                      },
+                    }))
+                  }
                 />
               </div>
             </SectionCard>
@@ -1762,36 +2681,102 @@ const SearchBar = () => (
           <div className="space-y-6">
             <SectionCard title="Blood Group">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputField
-                  name="immunologicalDetails.bloodGroup.d"
-                  label="D Group"
-                  value={formData.immunologicalDetails.bloodGroup.d}
-                  placeholder="Enter D value"
-                />
-                <InputField
-                  name="immunologicalDetails.bloodGroup.r"
-                  label="R Group"
-                  value={formData.immunologicalDetails.bloodGroup.r}
-                  placeholder="Enter R value"
-                />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    D Group
+                  </Label>
+                  <Input
+                    value={formData.immunologicalDetails.bloodGroup.d}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          bloodGroup: {
+                            ...prev.immunologicalDetails.bloodGroup,
+                            d: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    placeholder="Enter D value"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    R Group
+                  </Label>
+                  <Input
+                    value={formData.immunologicalDetails.bloodGroup.r}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          bloodGroup: {
+                            ...prev.immunologicalDetails.bloodGroup,
+                            r: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    placeholder="Enter R value"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </SectionCard>
+
             <SectionCard title="Cross Match">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputField
-                  name="immunologicalDetails.crossMatch.tCell"
-                  label="T Cell"
-                  value={formData.immunologicalDetails.crossMatch.tCell}
-                  placeholder="Enter T cell value"
-                />
-                <InputField
-                  name="immunologicalDetails.crossMatch.bCell"
-                  label="B Cell"
-                  value={formData.immunologicalDetails.crossMatch.bCell}
-                  placeholder="Enter B cell value"
-                />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    T Cell
+                  </Label>
+                  <Input
+                    value={formData.immunologicalDetails.crossMatch.tCell}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          crossMatch: {
+                            ...prev.immunologicalDetails.crossMatch,
+                            tCell: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    placeholder="Enter T cell value"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    B Cell
+                  </Label>
+                  <Input
+                    value={formData.immunologicalDetails.crossMatch.bCell}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          crossMatch: {
+                            ...prev.immunologicalDetails.crossMatch,
+                            bCell: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    placeholder="Enter B cell value"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </SectionCard>
+
             <SectionCard title="HLA Typing">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
@@ -1836,15 +2821,20 @@ const SearchBar = () => (
                         ].map((hla) => (
                           <td key={hla} className="py-3 px-2">
                             <Input
-                              name={`immunologicalDetails.hlaTyping.${type}.${hla}`}
                               value={
                                 formData.immunologicalDetails.hlaTyping[
-                                  type as keyof typeof formData.immunologicalDetails.hlaTyping
+                                  type as "donor" | "recipient" | "conclusion"
                                 ][
                                   hla as keyof typeof formData.immunologicalDetails.hlaTyping.donor
                                 ] || ""
                               }
-                              onChange={handleInputChange}
+                              onChange={(e) =>
+                                handleHlaChange(
+                                  type as "donor" | "recipient" | "conclusion",
+                                  hla,
+                                  e.target.value
+                                )
+                              }
                               className="h-9 text-sm border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                               placeholder={hla.replace("hla", "")}
                             />
@@ -1856,22 +2846,56 @@ const SearchBar = () => (
                 </table>
               </div>
             </SectionCard>
+
             <SectionCard title="PRA (Panel Reactive Antibodies)">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputField
-                  name="immunologicalDetails.pra.pre"
-                  label="Pre (%)"
-                  value={formData.immunologicalDetails.pra.pre}
-                  placeholder="Enter pre PRA percentage"
-                />
-                <InputField
-                  name="immunologicalDetails.pra.post"
-                  label="Post (%)"
-                  value={formData.immunologicalDetails.pra.post}
-                  placeholder="Enter post PRA percentage"
-                />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Pre (%)
+                  </Label>
+                  <Input
+                    value={formData.immunologicalDetails.pra.pre}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          pra: {
+                            ...prev.immunologicalDetails.pra,
+                            pre: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    placeholder="Enter pre PRA percentage"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Post (%)
+                  </Label>
+                  <Input
+                    value={formData.immunologicalDetails.pra.post}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          pra: {
+                            ...prev.immunologicalDetails.pra,
+                            post: e.target.value,
+                          },
+                        },
+                      }))
+                    }
+                    placeholder="Enter post PRA percentage"
+                    className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </SectionCard>
+
             <SectionCard title="DSA & Risk Assessment">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -1879,9 +2903,16 @@ const SearchBar = () => (
                     DSA (Donor Specific Antibodies)
                   </Label>
                   <Input
-                    name="immunologicalDetails.dsa"
                     value={formData.immunologicalDetails.dsa}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          dsa: e.target.value,
+                        },
+                      }))
+                    }
                     className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Enter DSA details"
                   />
@@ -1893,10 +2924,13 @@ const SearchBar = () => (
                   <RadioGroup
                     value={formData.immunologicalDetails.immunologicalRisk}
                     onValueChange={(value) =>
-                      updateFormField(
-                        "immunologicalDetails.immunologicalRisk",
-                        value
-                      )
+                      setFormData((prev) => ({
+                        ...prev,
+                        immunologicalDetails: {
+                          ...prev.immunologicalDetails,
+                          immunologicalRisk: value,
+                        },
+                      }))
                     }
                     className="flex gap-6"
                   >
@@ -1955,7 +2989,9 @@ const SearchBar = () => (
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="font-medium text-slate-600">Age:</span>
                     <span className="text-slate-900">
-                {formData.age || formData.age === 0 ? formData.age : "Not provided"} {/* ✅ Handle number display */}
+                      {formData.age || formData.age === 0
+                        ? formData.age
+                        : "Not provided"}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
@@ -2003,6 +3039,7 @@ const SearchBar = () => (
                 </div>
               </div>
             </SectionCard>
+
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <Shield className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -2019,6 +3056,7 @@ const SearchBar = () => (
                 </div>
               </div>
             </div>
+
             <SectionCard title="Consent and Confirmation">
               <div className="space-y-4">
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -2111,7 +3149,9 @@ const SearchBar = () => (
                     )}
                   </div>
                   <div
-                    className={`text-center mt-3 transition-colors duration-200 ${currentStep >= index ? "text-slate-900" : "text-slate-400"}`}
+                    className={`text-center mt-3 transition-colors duration-200 ${
+                      currentStep >= index ? "text-slate-900" : "text-slate-400"
+                    }`}
                   >
                     <div className="text-xs font-medium">{step.title}</div>
                   </div>
@@ -2144,7 +3184,11 @@ const SearchBar = () => (
             onClick={prevStep}
             disabled={currentStep === 0}
             variant="outline"
-            className={`${currentStep === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-50"}`}
+            className={`${
+              currentStep === 0
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-slate-50"
+            }`}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Previous
@@ -2173,15 +3217,15 @@ const SearchBar = () => (
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-blue-900 mb-2">
+              <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
                 Donor Assessment
               </h1>
-              <p className="text-blue-600">
+              <p className="text-blue-600 dark:text-blue-300">
                 Comprehensive donor evaluation and management system
               </p>
             </div>
@@ -2190,7 +3234,7 @@ const SearchBar = () => (
                 variant="outline"
                 size="sm"
                 onClick={() => setActiveView("dashboard")}
-                className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="flex items-center gap-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Dashboard

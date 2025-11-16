@@ -4,15 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TestTube, Plus, Trash2 } from "lucide-react";
-
+import { TestTube, Plus, Trash2, Loader2 } from "lucide-react";
+import { usePatientContext } from "@/context/PatientContext";
 interface PETTestProps {
   petResults: {
     first: { date: string; data: any };
     second: { date: string; data: any };
     third: { date: string; data: any };
   };
-  onUpdate: (results: any) => void; // legacy shape from CAPDSummary
+  onUpdate: (results: any) => void;
 }
 
 interface PETData {
@@ -24,7 +24,6 @@ interface PETData {
     t3: { dialysateCreatinine: string; dialysateGlucose: string; serumCreatinine: string };
     t4: { dialysateCreatinine: string; dialysateGlucose: string; serumCreatinine: string };
   };
-  // auto-filled
   dpCreatinine: string;
   dd0Glucose: string;
   creatinineClassification: string;
@@ -33,7 +32,7 @@ interface PETData {
 
 type PETEntry = {
   id: string;
-  label: string;   // "Test 1", "Test 2", ...
+  label: string;
   payload: PETData;
 };
 
@@ -62,7 +61,6 @@ const emptyPET = (): PETData => ({
   glucoseClassification: "",
 });
 
-// ---- Auto-classification per your ranges ----
 const classifyCreatinine = (dp: number): string => {
   if (!Number.isFinite(dp)) return "";
   if (dp > 0.81) return "High Transporter";
@@ -118,7 +116,7 @@ function fromPropsToEntries(petResults: PETTestProps["petResults"]): PETEntry[] 
     if (!seed) return;
     const payload: PETData =
       seed.data && typeof seed.data === "object"
-        ? { ...emptyPET(), ...seed.data } // keep old payload if present
+        ? { ...emptyPET(), ...seed.data }
         : { ...emptyPET(), date: seed.date || "" };
     
     // Recalculate ratios if measurements exist (to ensure they're up to date)
@@ -143,7 +141,6 @@ function fromPropsToEntries(petResults: PETTestProps["petResults"]): PETEntry[] 
   return entries;
 }
 
-// Map dynamic list -> legacy shape (first/second/third)
 function toLegacyShape(entries: PETEntry[]) {
   const a = entries || [];
   const pack = (idx: number) =>
@@ -153,17 +150,46 @@ function toLegacyShape(entries: PETEntry[]) {
   return { first: pack(0), second: pack(1), third: pack(2) };
 }
 
-export default function PETTest({ petResults, onUpdate }: PETTestProps) {
+export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps) {
+  const { searchPatientByPhn, patient, isSearching } = usePatientContext();
+  const [searchPhn, setSearchPhn] = useState("");
+  const [localSearching, setLocalSearching] = useState(false);
   const [tests, setTests] = useState<PETEntry[]>(() => fromPropsToEntries(petResults));
   const [activeId, setActiveId] = useState<string | null>(tests[0]?.id ?? null);
 
-  // keep parent in sync when list changes
+  // Load patient's PET tests when a patient is found
+  useEffect(() => {
+    if (patient?.phn) {
+      // Here you would typically fetch the patient's existing PET tests from your backend
+      // For now, we'll use the existing petResults or start fresh
+      const patientTests = fromPropsToEntries(petResults);
+      setTests(patientTests);
+      setActiveId(patientTests[0]?.id ?? null);
+    }
+  }, [patient?.phn, petResults]);
+
+  // Keep parent in sync when list changes
   useEffect(() => {
     onUpdate(toLegacyShape(tests));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tests]);
 
-  // ---------- Add/Remove/Select ----------
+  const handleSearch = async () => {
+    if (searchPhn.trim()) {
+      setLocalSearching(true);
+      try {
+        await searchPatientByPhn(searchPhn.trim());
+      } catch (error) {
+        console.log('Search completed with error');
+      } finally {
+        setLocalSearching(false);
+      }
+    }
+  };
+
+  const isLoading = isSearching || localSearching;
+
+  // PET Test Management Functions
   const nextLabel = useMemo(() => `Test ${tests.length + 1}`, [tests.length]);
 
   const addTest = () => {
@@ -296,10 +322,23 @@ export default function PETTest({ petResults, onUpdate }: PETTestProps) {
             <div className="space-y-2">
               <Label>Test Date</Label>
               <Input
-                type="date"
-                value={active.payload.date}
-                onChange={(e) => updatePayload(active.id, "date", e.target.value)}
+                value={searchPhn}
+                onChange={(e) => setSearchPhn(e.target.value)}
+                placeholder="Enter Patient PHN..."
+                className="h-10 border-2 border-gray-200 focus:border-blue-500 pr-10"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+                disabled={isLoading}
               />
+              {isLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                </div>
+              )}
             </div>
 
             <div className="overflow-x-auto">

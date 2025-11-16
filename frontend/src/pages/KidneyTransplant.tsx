@@ -24,11 +24,9 @@ import { usePatientContext } from "../context/PatientContext";
 import React from "react";
 
 // Import types from your interfaces
-import { 
-  RecipientAssessmentForm 
-} from "@/types/recipient";
+import { RecipientAssessmentForm } from "@/types/recipient";
 
-import {DonorAssessmentForm} from "@/types/donor";
+import { DonorAssessmentForm } from "@/types/donor";
 export type ActiveView =
   | "dashboard"
   | "donor-assessment"
@@ -308,6 +306,21 @@ const initialRecipientFormState: RecipientAssessmentForm = {
     immunologicalRisk: "",
   },
   transfusionHistory: [],
+  completedBy: {
+    staffName: "",
+    staffRole: "",
+    staffId: "",
+    department: "",
+    signature: "",
+    completionDate: new Date().toISOString().split("T")[0],
+  },
+  reviewedBy: {
+    consultantName: "",
+    consultantId: "",
+    reviewDate: "",
+    approvalStatus: "pending",
+    notes: "",
+  },
 };
 
 // FIXED Reducer function with safe navigation
@@ -315,23 +328,23 @@ const formReducer = (state: any, action: { type: string; payload: any }) => {
   switch (action.type) {
     case "UPDATE_FIELD":
       const { form, field, value } = action.payload;
-      
+
       // Safety check
       if (!state[form]) {
         console.warn(`Form ${form} does not exist in state`);
         return state;
       }
-      
+
       const path = field.split(".");
       const newState = { ...state };
-      
+
       // Ensure the form exists
       if (!newState[form]) {
         newState[form] = {};
       }
-      
+
       let current = newState[form];
-      
+
       // Navigate through the path, creating objects if they don't exist
       for (let i = 0; i < path.length - 1; i++) {
         if (current[path[i]] === undefined || current[path[i]] === null) {
@@ -339,11 +352,11 @@ const formReducer = (state: any, action: { type: string; payload: any }) => {
         }
         current = current[path[i]];
       }
-      
+
       // Set the final value
       current[path[path.length - 1]] = value;
       return newState;
-      
+
     case "SET_FORM_DATA":
       return {
         ...state,
@@ -478,13 +491,16 @@ const KidneyTransplant = () => {
       };
 
       // API call to submit donor data
-      const response = await fetch("http://localhost:8081/api/donor-assessment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(assessmentPayload),
-      });
+      const response = await fetch(
+        "http://localhost:8081/api/donor-assessment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(assessmentPayload),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -546,13 +562,16 @@ const KidneyTransplant = () => {
       };
 
       // API call to submit recipient data
-      const response = await fetch("http://localhost:8081/api/recipient-assessment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(assessmentPayload),
-      });
+      const response = await fetch(
+        "http://localhost:8081/api/recipient-assessment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(assessmentPayload),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -618,8 +637,10 @@ const KidneyTransplant = () => {
       {activeView === "follow-up" && (
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-slate-800">
-            Patient Follow-Up
+            Follow Up Management
           </h2>
+
+          
           <FollowUpForm setActiveView={setActiveView} />
         </div>
       )}

@@ -15,11 +15,14 @@ public class FollowUp {
 	private Long id;
 
 	private String date;
-	private String notes;
-	private String sCreatinine;
-    private String eGFR;
 
-    @ManyToOne
-    @JoinColumn(name = "patient_phn")
-    private Patient patient;
-	}
+	@Column(columnDefinition = "TEXT")
+	private String doctorNote; // Match frontend
+
+	private String sCreatinine;
+	private String eGFR;
+
+	@ManyToOne
+	@JoinColumn(name = "patient_phn")
+	private Patient patient;
+}
