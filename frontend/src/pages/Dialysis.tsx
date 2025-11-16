@@ -16,6 +16,7 @@ import {
   TrendingUp,
   AlertCircle
 } from "lucide-react";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 const Dialysis = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -179,7 +180,7 @@ const Dialysis = () => {
                 {appointments.map((apt, index) => (
                   <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
-                      <div className="font-medium">{new Date(apt.date).toLocaleDateString()}</div>
+                        <div className="font-medium">{formatDateToDDMMYYYY(apt.date)}</div>
                       <div className="text-sm text-muted-foreground">
                         {apt.count} scheduled • {apt.available} available
                       </div>
@@ -255,9 +256,9 @@ const Dialysis = () => {
                 <div key={patient.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium">{patient.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {patient.sessions} total sessions • Next: {patient.nextSession}
-                    </div>
+                      <div className="text-sm text-muted-foreground">
+                        {patient.sessions} total sessions • Next: {formatDateToDDMMYYYY(patient.nextSession)}
+                      </div>
                   </div>
                   <div className="text-right space-y-1">
                     <Badge 

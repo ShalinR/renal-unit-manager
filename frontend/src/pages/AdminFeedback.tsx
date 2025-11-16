@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, User, Calendar, CheckCircle, Clock, XCircle, Loader2 } from "lucide-react";
+import { formatDateTimeDisplay } from "@/lib/dateUtils";
 import { feedbackApi } from "@/services/feedbackApi";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -218,9 +219,7 @@ const AdminFeedback = () => {
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
-                            <span>
-                              {new Date(feedback.createdAt).toLocaleString()}
-                            </span>
+                            <span>{formatDateTimeDisplay(feedback.createdAt)}</span>
                           </div>
                         </div>
                         <div className="mt-4 p-4 bg-muted rounded-lg">

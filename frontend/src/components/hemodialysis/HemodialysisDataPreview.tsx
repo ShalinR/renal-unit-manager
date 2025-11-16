@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { formatDateDisplay } from '@/lib/dateUtils';
+import { formatDateDisplay, formatDateTimeDisplay } from '@/lib/dateUtils';
 import { 
   FileText, 
   Download, 
@@ -440,10 +440,10 @@ export const HemodialysisDataPreview: React.FC<HemodialysisDataPreviewProps> = (
                 <Separator />
                 <div className="text-xs text-muted-foreground space-y-1">
                   {record.createdAt && (
-                    <p>Created: {new Date(record.createdAt).toLocaleString()}</p>
+                    <p>Created: {formatDateTimeDisplay(record.createdAt)}</p>
                   )}
                   {record.updatedAt && (
-                    <p>Last Updated: {new Date(record.updatedAt).toLocaleString()}</p>
+                    <p>Last Updated: {formatDateTimeDisplay(record.updatedAt)}</p>
                   )}
                 </div>
               </>

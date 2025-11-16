@@ -13,15 +13,15 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, UserCheck, Users, Heart, TrendingUp } from "lucide-react";
+import { Stethoscope, UserPlus, Users, Scissors, ClipboardList, FileText } from "lucide-react";
 import DonorAssessment from "../components/DonorAssessment";
 import RecipientAssessment from "../components/RecipientAssessment";
 import FollowUpForm from "../components/FollowUp";
 import KTFormData from "../components/KTSurgery";
-import { FileText } from "lucide-react";
 import KidneyTransplantSummary from "../components/KidneyTransplantSummary";
 import { usePatientContext } from "../context/PatientContext";
 import React from "react";
+import { useLocation } from "react-router-dom";
 
 // Import types from your interfaces
 import { RecipientAssessmentForm } from "@/types/recipient";
@@ -385,14 +385,21 @@ const KidneyTransplant = () => {
   // Access the setPatientData function from the context
   const { patient, setPatientData, setPatient } = usePatientContext();
 
+  // react-router location for reading navigate state
+  const location = useLocation();
+
   // Fetch patient data when the component mounts or patient context changes
   useEffect(() => {
     let isMounted = true;
 
     // If navigation requested a specific open view, honor it
-    const navState: any = (window as any)?.history?.state?.usr || null;
-    if (navState?.open) {
-      setActiveView(navState.open);
+    // Prefer react-router location.state (navigate(..., { state }))
+    const locState: any = (location && (location.state as any)) || null;
+    const legacyNav: any = (window as any)?.history?.state?.usr || null;
+    const openFromLoc = locState?.open || (locState?.usr && locState?.usr.open);
+    const open = openFromLoc || legacyNav?.open;
+    if (open) {
+      setActiveView(open);
     }
 
     const fetchPatientProfile = async (phn: string) => {
@@ -652,7 +659,6 @@ const KidneyTransplant = () => {
       {activeView === "summary" && (
         <KidneyTransplantSummary
           setActiveView={setActiveView}
-          patientProfile={patientProfile}
         />
       )}
       {activeView === "dashboard" && (
@@ -662,7 +668,7 @@ const KidneyTransplant = () => {
               <Stethoscope className="w-9 h-9 text-primary" />
             </div>
             <h1 className="text-4xl font-bold text-foreground">
-              Kidney Transplant
+              Kidney Transplant Management
             </h1>
           </div>
 
@@ -670,7 +676,7 @@ const KidneyTransplant = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {[
                 {
-                  icon: UserCheck,
+                  icon: UserPlus,
                   title: "Donor Assessment",
                   view: "donor-assessment",
                 },
@@ -679,8 +685,8 @@ const KidneyTransplant = () => {
                   title: "Recipient Assessment",
                   view: "recipient-assessment",
                 },
-                { icon: Heart, title: "Kidney Transplant Surgery", view: "kt" },
-                { icon: TrendingUp, title: "Follow Up", view: "follow-up" },
+                { icon: Scissors, title: "Kidney Transplant Surgery", view: "kt" },
+                { icon: ClipboardList, title: "Follow Up", view: "follow-up" },
                 { icon: FileText, title: "Patient Summary", view: "summary" },
               ].map((item) => (
                 <Card

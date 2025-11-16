@@ -231,7 +231,7 @@ const Peritoneal = () => {
         />
 
         <div className="flex justify-between items-center gap-3">
-          <Button variant="default" onClick={() => setActiveView("dashboard")}>Back</Button>
+          <Button variant="default" onClick={() => setActiveView("dashboard")}>Back to Dashboard</Button>
         </div>
       </div>
     );
@@ -365,8 +365,8 @@ const Peritoneal = () => {
         <div className="fixed top-4 right-4 z-50">
           {activeView !== "dashboard" && (
             <Button variant="default" onClick={() => setActiveView("dashboard")}>
-              Dashboard
-            </Button>
+                Back to Dashboard
+              </Button>
           )}
         </div>
       </header>

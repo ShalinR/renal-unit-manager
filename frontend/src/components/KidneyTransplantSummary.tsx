@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,9 @@ import {
   Activity,
   FileText,
 } from "lucide-react";
+import { formatDateToDDMMYYYY, formatTimeDisplay } from "@/lib/dateUtils";
+import { getPatientProfile } from "../services/patientProfileApi";
+import { usePatientContext } from "../context/PatientContext";
 
 import type { ActiveView } from "../pages/KidneyTransplant";
 
@@ -26,16 +29,88 @@ type RecipientAssessmentForm = {
 
 interface KidneyTransplantSummaryProps {
   setActiveView: (view: ActiveView) => void;
-  patientProfile: any; // This will be the PatientProfileDTO from the backend
 }
 
 const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
   setActiveView,
-  patientProfile,
 }) => {
+  const { patient } = usePatientContext();
+  const [patientProfile, setPatientProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadPatientProfile = async () => {
+      if (!patient?.phn) {
+        console.error("❌ No patient PHN found in context:", patient);
+        setError("No patient selected");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        console.log(`📋 KidneyTransplantSummary: Loading complete profile for PHN: ${patient.phn}`);
+        const profile = await getPatientProfile(patient.phn);
+
+        if (profile) {
+          console.log("✅ KidneyTransplantSummary: Profile loaded successfully", profile);
+          console.log("Profile structure:", {
+            name: profile.name,
+            phn: profile.phn,
+            hasRecipientAssessment: !!profile.recipientAssessment,
+            hasDonorAssessment: !!profile.donorAssessment,
+            hasKtSurgery: !!profile.ktSurgery,
+            followUpCount: profile.followUps?.length || 0,
+          });
+          setPatientProfile(profile);
+          setError(null);
+        } else {
+          console.error("❌ Profile is null");
+          setError("Patient profile not found");
+        }
+      } catch (err) {
+        console.error("❌ KidneyTransplantSummary: Error loading profile:", err);
+        setError(`Failed to load patient profile: ${err instanceof Error ? err.message : String(err)}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPatientProfile();
+  }, [patient?.phn]);
+
   const handlePrint = () => {
     window.print();
   };
+
+  // If data is not yet loaded, show a loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-xl font-semibold text-gray-700">
+          Loading Patient Summary...
+        </div>
+      </div>
+    );
+  }
+
+  // If error occurred, show error message
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="text-xl font-semibold text-red-700 mb-4">{error}</div>
+          <Button
+            onClick={() => setActiveView("dashboard")}
+            className="mt-4"
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // If data is not yet loaded, show a loading state
   if (!patientProfile) {
@@ -50,15 +125,37 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
 
   // Destructure the data from the patientProfile prop
   const {
-    patient: recipientData,
-    donor: donorData,
-    ktSurgery: ktSurgeryData,
-    followUps,
-  } = patientProfile;
+    patient: recipientData = patientProfile,
+    donor: donorData = patientProfile.donorAssessment,
+    ktSurgery: ktSurgeryData = patientProfile.ktSurgery,
+    followUps = patientProfile.followUps || [],
+    recipientAssessment = {},
+    name,
+    nic: nicNo = patientProfile.nicNo,
+  } = patientProfile || {};
+
+  // Safely extract and merge all patient data
+  const finalRecipientData = {
+    id: patientProfile.patientId,
+    phn: patientProfile.phn || patient?.phn,
+    name: patientProfile.name,
+    age: patientProfile.age,
+    gender: patientProfile.gender,
+    dateOfBirth: patientProfile.dateOfBirth,
+    occupation: patientProfile.occupation,
+    address: patientProfile.address,
+    nicNo: patientProfile.nicNo,
+    contactDetails: patientProfile.contactDetails,
+    emailAddress: patientProfile.emailAddress,
+  };
+
+  const finalDonorData = patientProfile.donorAssessment || {};
+  const finalKTSurgeryData = patientProfile.ktSurgery || {};
+  const finalFollowUps = patientProfile.followUps || [];
 
   // Use the latest follow-up for summary details
   const latestFollowUp =
-    followUps && followUps.length > 0 ? followUps[followUps.length - 1] : {};
+    finalFollowUps && finalFollowUps.length > 0 ? finalFollowUps[finalFollowUps.length - 1] : {};
 
   const handleExport = () => {
     const htmlContent = `
@@ -66,7 +163,7 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Kidney Transplant Summary - ${recipientData.name}</title>
+        <title>Kidney Transplant Summary - ${finalRecipientData.name}</title>
         <style>
           body {
             font-family: 'Calibri', 'Arial', sans-serif;
@@ -211,10 +308,10 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
       <body>
         <div class="header">
           <h1>KIDNEY TRANSPLANT SUMMARY</h1>
-          <div class="patient-info">
-            <strong>${recipientData.name}</strong> |
-            NIC: ${recipientData.nic} |
-            Date: ${latestFollowUp?.date || "N/A"}
+            <div class="patient-info">
+            <strong>${safeGet(finalRecipientData.name)}</strong> |
+            NIC: ${safeGet(finalRecipientData.nicNo)} |
+            Date: ${safeGet(formatDateToDDMMYYYY(latestFollowUp?.date))}
           </div>
         </div>
 
@@ -222,12 +319,12 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
         <div class="section">
           <div class="section-title">Patient Information</div>
           <table>
-            <tr><td>Full Name</td><td>${recipientData.name}</td></tr>
-            <tr><td>NIC Number</td><td>${recipientData.nic}</td></tr>
-            <tr><td>Gender</td><td>${recipientData.gender}</td></tr>
-            <tr><td>Age</td><td>${recipientData.age}</td></tr>
-            <tr><td>Address</td><td>${recipientData.address || "N/A"}</td></tr>
-            <tr><td>Phone</td><td>${recipientData.contactDetails || "N/A"}</td></tr>
+            <tr><td>Full Name</td><td>${safeGet(finalRecipientData.name)}</td></tr>
+            <tr><td>NIC Number</td><td>${safeGet(finalRecipientData.nicNo)}</td></tr>
+            <tr><td>Gender</td><td>${safeGet(finalRecipientData.gender)}</td></tr>
+            <tr><td>Age</td><td>${safeGet(finalRecipientData.age)}</td></tr>
+            <tr><td>Address</td><td>${safeGet(finalRecipientData.address)}</td></tr>
+            <tr><td>Phone</td><td>${safeGet(finalRecipientData.contactDetails)}</td></tr>
           </table>
         </div>
 
@@ -235,12 +332,12 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
         <div class="section">
           <div class="section-title">Donor Information</div>
           <table>
-            <tr><td>Donor Name</td><td>${donorData?.name || "N/A"}</td></tr>
-            <tr><td>Relationship</td><td>${donorData?.relationToRecipient || "N/A"}</td></tr>
-            <tr><td>Blood Type</td><td>${donorData?.immunologicalDetails?.bloodGroup?.d || ""}${donorData?.immunologicalDetails?.bloodGroup?.r || ""}</td></tr>
-            <tr><td>T cell cross match</td><td>${donorData?.immunologicalDetails?.crossMatch?.tCell || "N/A"}</td></tr>
-            <tr><td>B cell cross match</td><td>${donorData?.immunologicalDetails?.crossMatch?.bCell || "N/A"}</td></tr>
-            <tr><td>Contact</td><td>${donorData?.contactDetails || "N/A"}</td></tr>
+            <tr><td>Donor Name</td><td>${safeGet(finalDonorData?.name)}</td></tr>
+            <tr><td>Relationship</td><td>${safeGet(finalDonorData?.relationToRecipient)}</td></tr>
+            <tr><td>Blood Type</td><td>${safeGet(`${finalDonorData?.immunologicalDetails?.bloodGroup?.d || ""}${finalDonorData?.immunologicalDetails?.bloodGroup?.r || ""}`)}</td></tr>
+            <tr><td>T cell cross match</td><td>${safeGet(finalDonorData?.immunologicalDetails?.crossMatch?.tCell)}</td></tr>
+            <tr><td>B cell cross match</td><td>${safeGet(finalDonorData?.immunologicalDetails?.crossMatch?.bCell)}</td></tr>
+            <tr><td>Contact</td><td>${safeGet(finalDonorData?.contactDetails)}</td></tr>
           </table>
         </div>
 
@@ -248,12 +345,12 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
         <div class="section">
           <div class="section-title">Transplant Details</div>
           <table>
-            <tr><td>Transplant Date</td><td>${ktSurgeryData?.ktDate || "N/A"}</td></tr>
-            <tr><td>Transplant Type</td><td>${ktSurgeryData?.ktType || "N/A"}</td></tr>
-            <tr><td>Surgeon</td><td>${ktSurgeryData?.ktSurgeon || "N/A"}</td></tr>
-            <tr><td>Unit</td><td>${ktSurgeryData?.ktUnit || "N/A"}</td></tr>
-            <tr><td>Side</td><td>${ktSurgeryData?.sideOfKT || "N/A"}</td></tr>
-            <tr><td>Donor Relationship</td><td>${ktSurgeryData?.donorRelationship || "N/A"}</td></tr>
+            <tr><td>Transplant Date</td><td>${safeGet(formatDateToDDMMYYYY(finalKTSurgeryData?.ktDate))}</td></tr>
+            <tr><td>Transplant Type</td><td>${safeGet(finalKTSurgeryData?.ktType)}</td></tr>
+            <tr><td>Surgeon</td><td>${safeGet(finalKTSurgeryData?.ktSurgeon)}</td></tr>
+            <tr><td>Unit</td><td>${safeGet(finalKTSurgeryData?.ktUnit)}</td></tr>
+            <tr><td>Side</td><td>${safeGet(finalKTSurgeryData?.sideOfKT)}</td></tr>
+            <tr><td>Donor Relationship</td><td>${safeGet(finalKTSurgeryData?.donorRelationship)}</td></tr>
           </table>
         </div>
 
@@ -263,34 +360,34 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
           <div class="grid-3">
             <div class="metric-box">
               <div class="metric-label">Blood Pressure</div>
-              <div class="metric-value">${latestFollowUp?.examination?.bp || "N/A"}</div>
+              <div class="metric-value">${safeGet(latestFollowUp?.examination?.bp)}</div>
             </div>
             <div class="metric-box">
               <div class="metric-label">Creatinine</div>
-              <div class="metric-value">${latestFollowUp?.investigations?.sCreatinine || "N/A"}</div>
+              <div class="metric-value">${safeGet(latestFollowUp?.investigations?.sCreatinine)}</div>
             </div>
             <div class="metric-box">
               <div class="metric-label">Weight</div>
-              <div class="metric-value">${latestFollowUp?.examination?.bw || "N/A"}</div>
+              <div class="metric-value">${safeGet(latestFollowUp?.examination?.bw)}</div>
             </div>
           </div>
-          <div class="note-box">${latestFollowUp?.doctorsNotes || "No notes available."}</div>
+          <div class="note-box">${safeGet(latestFollowUp?.doctorNote || latestFollowUp?.doctorsNotes, "No notes available.")}</div>
         </div>
 
         <!-- SECTION 5 -->
         <div class="section">
           <div class="section-title">Follow-up Summary</div>
           <table>
-            <tr><td>Last Follow-up</td><td>${latestFollowUp?.date || "N/A"}</td></tr>
-            <tr><td>Post-KT Duration</td><td>${latestFollowUp?.postKTDuration || "N/A"}</td></tr>
-            <tr><td>Medications</td><td>${ktSurgeryData?.currentMeds || "N/A"}</td></tr>
-            <tr><td>Doctor's Notes</td><td>${latestFollowUp?.doctorsNotes || "N/A"}</td></tr>
+            <tr><td>Last Follow-up</td><td>${safeGet(formatDateToDDMMYYYY(latestFollowUp?.date))}</td></tr>
+            <tr><td>Post-KT Duration</td><td>${safeGet(latestFollowUp?.postKTDuration)}</td></tr>
+            <tr><td>Medications</td><td>${safeGet(finalKTSurgeryData?.currentMeds)}</td></tr>
+            <tr><td>Doctor's Notes</td><td>${safeGet(latestFollowUp?.doctorNote || latestFollowUp?.doctorsNotes)}</td></tr>
           </table>
         </div>
 
         <div class="footer">
           <p><strong>Kidney Transplant Summary Report</strong></p>
-          <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+          <p>Generated on ${formatDateToDDMMYYYY(new Date().toISOString())} at ${formatTimeDisplay(new Date().toISOString())}</p>
           <p>This is a confidential medical document</p>
         </div>
       </body>
@@ -300,7 +397,7 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    const safeName = String(recipientData.name || "recipient").replace(
+    const safeName = String(finalRecipientData.name || "recipient").replace(
       /\s+/g,
       "-"
     );
@@ -330,6 +427,14 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
       : "None";
   };
 
+  // Safe value getter with fallback
+  const safeGet = (value: any, fallback: string = "N/A"): string => {
+    if (value === null || value === undefined || value === "") {
+      return fallback;
+    }
+    return String(value);
+  };
+
   const InfoCard = ({ icon: Icon, title, children, className = "" }) => (
     <Card className={`border border-gray-200 bg-white ${className}`}>
       <CardHeader className="pb-4 border-b border-gray-100">
@@ -346,7 +451,7 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
     <div className={`flex justify-between items-start py-2.5 ${className}`}>
       <span className="text-gray-600 text-sm min-w-0 flex-1">{label}</span>
       <span className="text-gray-900 text-sm font-medium ml-4 text-right">
-        {value || "—"}
+        {safeGet(value)}
       </span>
     </div>
   );
@@ -382,13 +487,13 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   Kidney Transplant Summary
                 </h1>
               </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">{recipientData.name}</span>
-                <span className="mx-2">•</span>
-                <span>NIC: {recipientData.nic}</span>
-                <span className="mx-2">•</span>
-                <span>Last Updated: {latestFollowUp?.date || "N/A"}</span>
-              </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">{finalRecipientData.name}</span>
+                    <span className="mx-2">•</span>
+                    <span>NIC: {finalRecipientData.nicNo}</span>
+                    <span className="mx-2">•</span>
+                    <span>Last Updated: {formatDateToDDMMYYYY(latestFollowUp?.date) || "N/A"}</span>
+                  </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -430,16 +535,16 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard icon={User} title="Patient Information">
               <div className="space-y-1">
-                <DataRow label="Full Name" value={recipientData.name} />
-                <DataRow label="Age" value={`${recipientData.age} years`} />
-                <DataRow label="Gender" value={recipientData.gender} />
+                <DataRow label="Full Name" value={safeGet(finalRecipientData?.name)} />
+                <DataRow label="Age" value={finalRecipientData?.age ? `${finalRecipientData.age} years` : "N/A"} />
+                <DataRow label="Gender" value={safeGet(finalRecipientData?.gender)} />
                 <DataRow
                   label="Date of Birth"
-                  value={recipientData.dateOfBirth}
+                  value={safeGet(formatDateToDDMMYYYY(finalRecipientData?.dateOfBirth))}
                 />
-                <DataRow label="NIC Number" value={recipientData.nic} />
-                <DataRow label="Contact" value={recipientData.contactDetails} />
-                <DataRow label="Email" value={recipientData.emailAddress} />
+                <DataRow label="NIC Number" value={safeGet(finalRecipientData?.nicNo)} />
+                <DataRow label="Contact" value={safeGet(finalRecipientData?.contactDetails)} />
+                <DataRow label="Email" value={safeGet(finalRecipientData?.emailAddress)} />
               </div>
             </InfoCard>
 
@@ -455,7 +560,7 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                     patientProfile.recipientAssessment?.comorbidities
                   )}
                 />
-                <DataRow label="Occupation" value={recipientData.occupation} />
+                <DataRow label="Occupation" value={finalRecipientData.occupation} />
                 <DataRow
                   label="Drug History"
                   value={patientProfile.recipientAssessment?.drugHistory}
@@ -513,11 +618,11 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   Surgery Details
                 </h4>
                 <div className="space-y-1">
-                  <DataRow label="Date" value={ktSurgeryData?.ktDate} />
-                  <DataRow label="Type" value={ktSurgeryData?.ktType} />
-                  <DataRow label="Unit" value={ktSurgeryData?.ktUnit} />
-                  <DataRow label="Surgeon" value={ktSurgeryData?.ktSurgeon} />
-                  <DataRow label="Side" value={ktSurgeryData?.sideOfKT} />
+                  <DataRow label="Date" value={safeGet(formatDateToDDMMYYYY(finalKTSurgeryData?.ktDate))} />
+                  <DataRow label="Type" value={safeGet(finalKTSurgeryData?.ktType)} />
+                  <DataRow label="Unit" value={safeGet(finalKTSurgeryData?.ktUnit)} />
+                  <DataRow label="Surgeon" value={safeGet(finalKTSurgeryData?.ktSurgeon)} />
+                  <DataRow label="Side" value={safeGet(finalKTSurgeryData?.sideOfKT)} />
                 </div>
               </div>
               <div>
@@ -527,16 +632,16 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                 <div className="space-y-1">
                   <DataRow
                     label="Primary Diagnosis"
-                    value={ktSurgeryData?.primaryDiagnosis}
+                    value={safeGet(finalKTSurgeryData?.primaryDiagnosis)}
                   />
-                  <DataRow label="RRT Mode" value={ktSurgeryData?.modeOfRRT} />
+                  <DataRow label="RRT Mode" value={safeGet(finalKTSurgeryData?.modeOfRRT)} />
                   <DataRow
                     label="RRT Duration"
-                    value={ktSurgeryData?.durationRRT}
+                    value={safeGet(finalKTSurgeryData?.durationRRT)}
                   />
                   <DataRow
                     label="Pre-KT Creatinine"
-                    value={`${ktSurgeryData?.preKTCreatinine} mg/dL`}
+                    value={finalKTSurgeryData?.preKTCreatinine ? `${finalKTSurgeryData.preKTCreatinine} mg/dL` : "N/A"}
                   />
                 </div>
               </div>
@@ -547,19 +652,19 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                 <div className="space-y-1">
                   <DataRow
                     label="Post-KT Creatinine"
-                    value={`${ktSurgeryData?.postKTCreatinine} mg/dL`}
+                    value={finalKTSurgeryData?.postKTCreatinine ? `${finalKTSurgeryData.postKTCreatinine} mg/dL` : "N/A"}
                   />
                   <DataRow
                     label="Delayed Graft Function"
-                    value={ktSurgeryData?.delayedGraft}
+                    value={safeGet(finalKTSurgeryData?.delayedGraft)}
                   />
                   <DataRow
                     label="Post-KT Dialysis"
-                    value={ktSurgeryData?.postKTDialysis}
+                    value={safeGet(finalKTSurgeryData?.postKTDialysis)}
                   />
                   <DataRow
                     label="Acute Rejection"
-                    value={ktSurgeryData?.acuteRejection}
+                    value={safeGet(finalKTSurgeryData?.acuteRejection)}
                   />
                 </div>
               </div>
@@ -575,14 +680,14 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                     Induction & Maintenance
                   </h4>
                   <div className="space-y-1">
-                    <DataRow label="Pre-KT" value={ktSurgeryData?.preKT} />
+                    <DataRow label="Pre-KT" value={safeGet(finalKTSurgeryData?.preKT)} />
                     <DataRow
                       label="Induction Therapy"
-                      value={ktSurgeryData?.inductionTherapy}
+                      value={safeGet(finalKTSurgeryData?.inductionTherapy)}
                     />
                     <DataRow
                       label="Maintenance"
-                      value={ktSurgeryData?.maintenance}
+                      value={safeGet(finalKTSurgeryData?.maintenance)}
                     />
                   </div>
                 </div>
@@ -592,7 +697,7 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   </h4>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <p className="text-sm text-gray-900">
-                      {ktSurgeryData?.currentMeds}
+                      {safeGet(finalKTSurgeryData?.currentMeds, "No medications recorded")}
                     </p>
                   </div>
                 </div>
@@ -608,11 +713,11 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   <div className="space-y-1">
                     <DataRow
                       label="Cotrimoxazole"
-                      value={`${ktSurgeryData?.cotrimoxazole} (${ktSurgeryData?.cotriDuration})`}
+                      value={`${safeGet(finalKTSurgeryData?.cotrimoxazole)} (${safeGet(finalKTSurgeryData?.cotriDuration)})`}
                     />
                     <DataRow
                       label="Valganciclovir"
-                      value={`${ktSurgeryData?.valganciclovir} (${ktSurgeryData?.valganDuration})`}
+                      value={`${safeGet(finalKTSurgeryData?.valganciclovir)} (${safeGet(finalKTSurgeryData?.valganDuration)})`}
                     />
                   </div>
                 </div>
@@ -622,7 +727,7 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   </h4>
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                     <p className="text-sm text-green-900">
-                      {ktSurgeryData?.vaccination}
+                      {safeGet(finalKTSurgeryData?.vaccination, "No vaccination data recorded")}
                     </p>
                   </div>
                 </div>
@@ -638,22 +743,22 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   Physical Examination
                 </h4>
                 <div className="space-y-1">
-                  <DataRow label="Date" value={latestFollowUp?.date} />
+                  <DataRow label="Date" value={safeGet(formatDateToDDMMYYYY(latestFollowUp?.date))} />
                   <DataRow
                     label="Post-KT Duration"
-                    value={latestFollowUp?.postKTDuration}
+                    value={safeGet(latestFollowUp?.postKTDuration)}
                   />
                   <DataRow
                     label="Weight"
-                    value={latestFollowUp?.examination?.bw}
+                    value={safeGet(latestFollowUp?.examination?.bw)}
                   />
                   <DataRow
                     label="BMI"
-                    value={latestFollowUp?.examination?.bmi}
+                    value={safeGet(latestFollowUp?.examination?.bmi)}
                   />
                   <DataRow
                     label="Blood Pressure"
-                    value={latestFollowUp?.examination?.bp}
+                    value={safeGet(latestFollowUp?.examination?.bp)}
                   />
                 </div>
               </div>
@@ -665,25 +770,25 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                 <div className="grid grid-cols-2 gap-3">
                   <KeyMetric
                     label="Na+"
-                    value={latestFollowUp?.investigations?.seNa}
+                    value={safeGet(latestFollowUp?.investigations?.seNa)}
                     unit="mmol/L"
                     status="normal"
                   />
                   <KeyMetric
                     label="K+"
-                    value={latestFollowUp?.investigations?.seK}
+                    value={safeGet(latestFollowUp?.investigations?.seK)}
                     unit="mmol/L"
                     status="normal"
                   />
                   <KeyMetric
                     label="Hemoglobin"
-                    value={latestFollowUp?.investigations?.seHb}
+                    value={safeGet(latestFollowUp?.investigations?.seHb)}
                     unit="g/dL"
                     status="normal"
                   />
                   <KeyMetric
                     label="Proteinuria"
-                    value={latestFollowUp?.investigations?.urinePCR}
+                    value={safeGet(latestFollowUp?.investigations?.urinePCR)}
                     unit="g/g"
                     status="normal"
                   />
@@ -696,7 +801,7 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                 </h4>
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    {latestFollowUp?.doctorsNotes}
+                    {safeGet(latestFollowUp?.doctorNote || latestFollowUp?.doctorsNotes, "No notes available.")}
                   </p>
                 </div>
                 <div className="mt-4">
@@ -705,12 +810,12 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   </h5>
                   <div className="text-xs text-gray-600 space-y-1.5">
                     <div>
-                      • Prednisolone: {latestFollowUp?.treatment?.prednisolone}
+                      • Prednisolone: {safeGet(latestFollowUp?.treatment?.prednisolone)}
                     </div>
                     <div>
-                      • Tacrolimus: {latestFollowUp?.treatment?.tacrolimus}
+                      • Tacrolimus: {safeGet(latestFollowUp?.treatment?.tacrolimus)}
                     </div>
-                    <div>• MMF: {latestFollowUp?.treatment?.mmf}</div>
+                    <div>• MMF: {safeGet(latestFollowUp?.treatment?.mmf)}</div>
                   </div>
                 </div>
               </div>
@@ -721,16 +826,16 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <InfoCard icon={User} title="Donor Information">
               <div className="space-y-1">
-                <DataRow label="Name" value={donorData?.name} />
-                <DataRow label="Age" value={`${donorData?.age} years`} />
+                <DataRow label="Name" value={safeGet(finalDonorData?.name)} />
+                <DataRow label="Age" value={finalDonorData?.age ? `${safeGet(finalDonorData.age)} years` : "N/A"} />
                 <DataRow
                   label="Relation"
-                  value={donorData?.relationToRecipient}
+                  value={safeGet(finalDonorData?.relationToRecipient)}
                 />
-                <DataRow label="Contact" value={donorData?.contactDetails} />
+                <DataRow label="Contact" value={safeGet(finalDonorData?.contactDetails)} />
                 <DataRow
                   label="Blood Group"
-                  value={`${donorData?.immunologicalDetails?.bloodGroup?.d || ""}${donorData?.immunologicalDetails?.bloodGroup?.r || ""}`}
+                  value={safeGet(`${finalDonorData?.immunologicalDetails?.bloodGroup?.d || ""}${finalDonorData?.immunologicalDetails?.bloodGroup?.r || ""}`)}
                 />
               </div>
             </InfoCard>
@@ -744,21 +849,15 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   <div className="space-y-1">
                     <DataRow
                       label="Blood Group"
-                      value={`${patientProfile.recipientAssessment?.immunologicalDetails?.bloodGroup?.d || ""}${patientProfile.recipientAssessment?.immunologicalDetails?.bloodGroup?.r || ""}`}
+                      value={safeGet(`${patientProfile.recipientAssessment?.immunologicalDetails?.bloodGroup?.d || ""}${patientProfile.recipientAssessment?.immunologicalDetails?.bloodGroup?.r || ""}`)}
                     />
                     <DataRow
                       label="PRA (Pre)"
-                      value={
-                        patientProfile.recipientAssessment?.immunologicalDetails
-                          ?.pra?.pre
-                      }
+                      value={safeGet(patientProfile.recipientAssessment?.immunologicalDetails?.pra?.pre)}
                     />
                     <DataRow
                       label="DSA"
-                      value={
-                        patientProfile.recipientAssessment?.immunologicalDetails
-                          ?.dsa
-                      }
+                      value={safeGet(patientProfile.recipientAssessment?.immunologicalDetails?.dsa)}
                     />
                   </div>
                 </div>
@@ -769,18 +868,15 @@ const KidneyTransplantSummary: React.FC<KidneyTransplantSummaryProps> = ({
                   <div className="space-y-1">
                     <DataRow
                       label="T Cell Match"
-                      value={donorData?.immunologicalDetails?.crossMatch?.tCell}
+                      value={safeGet(finalDonorData?.immunologicalDetails?.crossMatch?.tCell)}
                     />
                     <DataRow
                       label="B Cell Match"
-                      value={donorData?.immunologicalDetails?.crossMatch?.bCell}
+                      value={safeGet(finalDonorData?.immunologicalDetails?.crossMatch?.bCell)}
                     />
                     <DataRow
                       label="Risk Level"
-                      value={
-                        patientProfile.recipientAssessment?.immunologicalDetails
-                          ?.immunologicalRisk
-                      }
+                      value={safeGet(patientProfile.recipientAssessment?.immunologicalDetails?.immunologicalRisk)}
                     />
                   </div>
                 </div>

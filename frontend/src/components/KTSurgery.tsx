@@ -290,7 +290,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-white dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header Section */}
         <div className="mb-8">
@@ -316,37 +316,47 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           </div>
 
           {/* Progress Stepper */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-blue-100 dark:border-slate-700 p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Assessment Progress</h2>
-              <span className="text-sm text-blue-600 dark:text-blue-300">Step {step + 1} of {FORM_STEPS.length}</span>
+          <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-blue-900">Assessment Progress</h2>
+              <span className="text-sm text-blue-600">Step {step + 1} of {FORM_STEPS.length}</span>
             </div>
             <div className="w-full max-w-full overflow-x-auto pb-2">
-              <div className="flex items-center gap-3 min-w-[700px] md:min-w-0">
-                {FORM_STEPS.map((formStep, idx) => {
-                  const Icon = formStep.icon;
-                  const isActive = step === idx;
-                  const isCompleted = step > idx;
-                  return (
-                    <div key={formStep.label} className="flex-1 min-w-[120px]">
-                      <div className={
-                        `flex flex-col items-center p-3 rounded-lg transition-all duration-200
-                        ${isActive 
-                          ? "bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 dark:border-blue-400 text-blue-700 dark:text-blue-200" 
-                          : isCompleted
-                          ? "bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-300"
-                          : "bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-400"
-                        }`
-                      }>
-                        <Icon className={`w-5 h-5 mb-2 ${isActive ? "text-blue-600 dark:text-blue-400" : isCompleted ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
-                        <span className={`text-xs font-medium text-center ${isActive ? "text-blue-700 dark:text-blue-200" : isCompleted ? "text-blue-600 dark:text-blue-300" : "text-gray-400 dark:text-slate-500"}`}>
-                          {formStep.label}
-                        </span>
+              <div className="flex items-center gap-4 min-w-[900px]">
+              {FORM_STEPS.map((formStep, idx) => {
+                const Icon = formStep.icon;
+                const isActive = step === idx;
+                const isCompleted = step > idx;
+
+                return (
+                  <div key={formStep.label} className="flex items-center flex-1 min-w-[120px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isCompleted || isActive) setStep(idx);
+                      }}
+                      className="flex flex-col items-center w-full"
+                    >
+                      <div
+                        className={`flex items-center justify-center w-10 h-10 rounded-full z-10 transition-colors ${
+                          isActive
+                            ? 'bg-blue-600 text-white'
+                            : isCompleted
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      <span title={formStep.label} className={`mt-2 text-xs truncate w-full text-center ${isActive ? 'text-blue-700' : isCompleted ? 'text-blue-600' : 'text-gray-400'}`}>{formStep.label}</span>
+                    </button>
+
+                    {idx < FORM_STEPS.length - 1 && (
+                      <div className={`h-1 flex-1 ml-3 mr-3 ${step > idx ? 'bg-blue-500' : 'bg-gray-200'} rounded`}></div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1583,6 +1593,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           </div>
         </form>
       </div>
+    </div>
     </div>
   );
 };

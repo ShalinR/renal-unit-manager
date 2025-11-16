@@ -42,6 +42,8 @@ import {
   Laptop,
   MessageSquare,
 } from "lucide-react";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
+import UserSettings from "./UserSettings";
 
 import { useTheme } from "@/hooks/useTheme";
 import GlobalSearch from "./GlobalSearch";
@@ -83,11 +85,13 @@ const Layout = ({ children }: LayoutProps) => {
     navigate("/login", { replace: true });
   };
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-900">
         {/* Sidebar */}
-        <Sidebar className="border-r border-slate-200 bg-white dark:bg-slate-950 dark:border-slate-800">
+        <Sidebar className="border-r border-slate-200 bg-gradient-to-b from-sky-50 via-blue-50 to-sky-100 dark:bg-slate-950 dark:border-slate-800">
           <SidebarHeader>
             <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-teal-500 rounded-xl flex items-center justify-center shadow-md">
@@ -117,16 +121,15 @@ const Layout = ({ children }: LayoutProps) => {
                         onClick={() => navigate(item.url)}
                         isActive={location.pathname === item.url}
                         className={`
-                          flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 w-full dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50
-                          ${ // This logic can be simplified or moved into variants if using CVA
-                            location.pathname === item.url
-                              ? "bg-blue-50 text-blue-700 shadow-sm"
-                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                          }
+                          relative flex items-center gap-3 rounded-lg pl-6 pr-4 py-3 text-sm font-semibold transition-all duration-200 w-full text-black dark:text-black hover:bg-blue-100 dark:hover:bg-slate-800
+                          ${location.pathname === item.url ? "bg-blue-200 shadow-sm" : ""}
                         `}
                       >
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.title}</span>
+                        {location.pathname === item.url && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 transition-all" />
+                        )}
+                        <item.icon className="h-5 w-5 text-blue-700" />
+                        <span className="text-black">{item.title}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -141,15 +144,15 @@ const Layout = ({ children }: LayoutProps) => {
                             onClick={() => navigate(item.url)}
                             isActive={location.pathname === item.url}
                             className={`
-                              flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 w-full dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50
-                              ${location.pathname === item.url
-                                ? "bg-blue-50 text-blue-700 shadow-sm"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                              }
+                              relative flex items-center gap-3 rounded-lg pl-6 pr-4 py-3 text-sm font-semibold transition-all duration-200 w-full text-black dark:text-black hover:bg-blue-100 dark:hover:bg-slate-800
+                              ${location.pathname === item.url ? "bg-blue-200 shadow-sm" : ""}
                             `}
                           >
-                            <item.icon className="h-5 w-5" />
-                            <span>{item.title}</span>
+                            {location.pathname === item.url && (
+                              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 transition-all" />
+                            )}
+                            <item.icon className="h-5 w-5 text-blue-700" />
+                            <span className="text-black">{item.title}</span>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       ))}
@@ -159,23 +162,7 @@ const Layout = ({ children }: LayoutProps) => {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter>
-            <div className="flex justify-center p-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={cycleTheme}
-                className="rounded-full"
-              >
-                {getThemeIcon() === "sun" && <Sun className="h-[1.2rem] w-[1.2rem]" />}
-                {getThemeIcon() === "moon" && <Moon className="h-[1.2rem] w-[1.2rem]" />}
-                {getThemeIcon() === "system" && (
-                  <Laptop className="h-[1.2rem] w-[1.2rem]" />
-                )}
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-            </div>
-          </SidebarFooter>
+          {/* Sidebar footer intentionally left empty; theme toggle moved to header to avoid duplicate controls */}
         </Sidebar>
 
         {/* Main */}
@@ -191,12 +178,7 @@ const Layout = ({ children }: LayoutProps) => {
                       ?.title || "Renal Unit Dashboard"}
                   </h1>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {currentUser.role} •{" "}
-                    {new Date().toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {currentUser.role} • {formatDateToDDMMYYYY(new Date().toISOString())}
                   </p>
                 </div>
               </div>
@@ -213,14 +195,10 @@ const Layout = ({ children }: LayoutProps) => {
                     className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                     onClick={cycleTheme}
                   >
-                    {getThemeIcon() === "sun" && (
-                      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                    )}
-                    {getThemeIcon() === "moon" && (
-                      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                    )}
-                    {getThemeIcon() === "system" && (
-                      <Laptop className="h-[1.2rem] w-[1.2rem]" />
+                    {getThemeIcon() === "sun" ? (
+                      <Sun className="h-[1.2rem] w-[1.2rem]" />
+                    ) : (
+                      <Moon className="h-[1.2rem] w-[1.2rem]" />
                     )}
                     <span className="sr-only">Toggle theme</span>
                   </Button>
@@ -236,13 +214,23 @@ const Layout = ({ children }: LayoutProps) => {
                     </span>
                   </Button>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                  >
-                    <Calendar className="h-5 w-5" />
-                  </Button>
+                  {/* Calendar popover - shows today's date and allows picking another date */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                      >
+                        <Calendar className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 p-3">
+                      <div className="text-sm text-slate-700 mb-2">Today</div>
+                      <div className="text-lg font-semibold text-slate-900 mb-3">{formatDateToDDMMYYYY(new Date().toISOString())}</div>
+                      {/* only show date; date picker removed per request */}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -300,7 +288,7 @@ const Layout = ({ children }: LayoutProps) => {
                           <User className="mr-3 h-4 w-4 text-slate-500" />
                           <span className="text-sm text-slate-700">Profile</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors cursor-pointer">
+                        <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors cursor-pointer">
                           <Settings className="mr-3 h-4 w-4 text-slate-500" />
                           <span className="text-sm text-slate-700">Settings</span>
                         </DropdownMenuItem>
@@ -326,6 +314,9 @@ const Layout = ({ children }: LayoutProps) => {
               <GlobalSearch />
             </div>
           </header>
+
+          {/* User Settings Modal */}
+          <UserSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
 
           {/* Page Content */}
           <div className="flex-1 p-6 bg-slate-50 dark:bg-slate-900">

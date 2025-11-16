@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Droplets, ArrowLeft, Plus, Trash2, Save, Eye, FileText, Loader2 } from "lucide-react";
+import { formatDateToDDMMYYYY, formatDateTimeDisplay } from '@/lib/dateUtils';
 import { usePatientContext } from "@/context/PatientContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -324,7 +325,7 @@ const PDInvestigation = () => {
                   </div>
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>Patient: {summary.patientName} (PHN: {summary.patientId})</p>
-                    <p>Created: {new Date(summary.createdAt).toLocaleString()}</p>
+                    <p>Created: {formatDateTimeDisplay(summary.createdAt)}</p>
                     {summary.filledBy && <p>Filled by: {summary.filledBy}</p>}
                   </div>
                 </div>
@@ -377,9 +378,7 @@ const PDInvestigation = () => {
             <p className="text-muted-foreground">
               Patient: {selectedSummary.patientName} (PHN: {selectedSummary.patientId})
             </p>
-            <p className="text-sm text-muted-foreground">
-              Created: {new Date(selectedSummary.createdAt).toLocaleString()}
-            </p>
+            <p className="text-sm text-muted-foreground">Created: {formatDateTimeDisplay(selectedSummary.createdAt)}</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -409,8 +408,8 @@ const PDInvestigation = () => {
                 <TableHead className="min-w-[100px] font-semibold">Unit</TableHead>
                 {selectedSummary.dates.map((date) => (
                   <TableHead key={date} className="min-w-[150px]">
-                    {new Date(date).toLocaleDateString()}
-                  </TableHead>
+                      {formatDateToDDMMYYYY(date)}
+                    </TableHead>
                 ))}
               </TableRow>
             </TableHeader>

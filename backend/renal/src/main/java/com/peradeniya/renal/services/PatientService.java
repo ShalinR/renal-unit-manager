@@ -15,13 +15,19 @@ public class PatientService {
     private final PatientRepository repository;
     private final RecipientAssessmentService recipientAssessmentService;
     private final DonorAssessmentService donorAssessmentService;
+    private final KTSurgeryService ktSurgeryService;
+    private final FollowUpService followUpService;
 
     public PatientService(PatientRepository repository,
                           RecipientAssessmentService recipientAssessmentService,
-                          DonorAssessmentService donorAssessmentService) {
+                          DonorAssessmentService donorAssessmentService,
+                          KTSurgeryService ktSurgeryService,
+                          FollowUpService followUpService) {
         this.repository = repository;
         this.recipientAssessmentService = recipientAssessmentService;
         this.donorAssessmentService = donorAssessmentService;
+        this.ktSurgeryService = ktSurgeryService;
+        this.followUpService = followUpService;
     }
 
     public Patient save(Patient patient) {
@@ -141,8 +147,24 @@ public class PatientService {
             dto.setDonorAssessment(donorAssessments.get(0)); // Get the latest one
         }
 
-        // Note: If you want to include KT Surgery and FollowUps later,
-        // inject those services and fetch the data here
+        // Fetch and set KT Surgery - get the latest one
+        try {
+            java.util.Optional<KTSurgeryDTO> ktSurgery = ktSurgeryService.getKTSurgeryByPatientPhn(patient.getPhn());
+            if (ktSurgery.isPresent()) {
+                dto.setKtSurgery(ktSurgery.get());
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Could not fetch KT Surgery for patient: " + patient.getPhn());
+        }
+
+        // Fetch and set follow-ups
+        try {
+            List<FollowUpDTO> followUps = followUpService.getByPatientPhn(patient.getPhn());
+            dto.setFollowUps(followUps);
+        } catch (Exception e) {
+            System.out.println("⚠️ Could not fetch follow-ups for patient: " + patient.getPhn());
+            dto.setFollowUps(java.util.List.of());
+        }
 
         return dto;
     }
