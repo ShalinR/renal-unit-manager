@@ -4,20 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/CorsConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/CorsConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/AuthenticationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/AuthenticationController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientRegistrationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientRegistrationController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PatientRegistrationDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PatientRegistrationDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/filter/JwtAuthenticationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/filter/JwtAuthenticationFilter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/PatientRegistrationEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/PatientRegistrationEntity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/PatientRegistrationRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/PatientRegistrationRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientRegistrationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientRegistrationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../create_patient_registration_table.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../create_patient_registration_table.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/context/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/context/AuthContext.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -43,30 +30,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.RenalApplication.executor": "Run",
-    "JUnit.RenalApplicationTests.executor": "Debug",
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "Spring Boot.RenalApplication.executor": "Run",
-    "git-widget-placeholder": "peritoneal",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/renal-unit-manager/backend",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.RenalApplication.executor&quot;: &quot;Run&quot;,
+    &quot;JUnit.RenalApplicationTests.executor&quot;: &quot;Debug&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;Spring Boot.RenalApplication.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;peritoneal&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/renal-unit-manager/backend&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
