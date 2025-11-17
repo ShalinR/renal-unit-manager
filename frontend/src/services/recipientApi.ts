@@ -241,7 +241,7 @@ const convertToDTO = (form: RecipientAssessmentForm): RecipientAssessmentDTO => 
 const convertToForm = (response: RecipientAssessmentResponseDTO): RecipientAssessmentForm => {
   return {
     id: response.id,
-    phn: response.phn,
+    phn: response.phn || response.patientPhn || "",
     name: response.name,
     age: response.age,
     gender: response.gender,

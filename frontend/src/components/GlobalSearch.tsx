@@ -11,12 +11,14 @@ const GlobalSearch: React.FC = () => {
 
   const handleSearch = async () => {
     if (searchPhn.trim()) {
+      console.log('GlobalSearch: click search', searchPhn);
       setLocalSearching(true);
       try {
         await searchPatientByPhn(searchPhn.trim());
+        console.log('GlobalSearch: searchPatientByPhn returned');
       } catch (error) {
         // Error is already handled in the context
-        console.log('Search completed with error');
+        console.log('GlobalSearch: search completed with error', error);
       } finally {
         setLocalSearching(false);
       }

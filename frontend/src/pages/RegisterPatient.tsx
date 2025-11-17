@@ -86,12 +86,12 @@ const RegisterPatient = () => {
     
     setIsSubmitting(false);
     
-    // Navigate back to Patient Overview
-    navigate("/patient-overview");
+    // Navigate back to dashboard (patient overview removed)
+    navigate("/");
   };
 
   const handleCancel = () => {
-    navigate("/patient-overview");
+    navigate("/");
   };
 
   return (

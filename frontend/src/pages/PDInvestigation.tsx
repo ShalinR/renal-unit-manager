@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Droplets, ArrowLeft, Plus, Trash2, Save, Eye, FileText, Loader2 } from "lucide-react";
+import { Droplets, ArrowLeft, Plus, Trash2, Save, Eye, FileText, Loader2, Download } from "lucide-react";
+import { formatDateToDDMMYYYY, formatDateTimeDisplay } from '@/lib/dateUtils';
 import { usePatientContext } from "@/context/PatientContext";
 import { useToast } from "@/hooks/use-toast";
+import { exportInvestigationData, flattenPDInvestigationData } from '@/lib/exportUtils';
 
 interface InvestigationParameter {
   id: string;
@@ -324,7 +326,7 @@ const PDInvestigation = () => {
                   </div>
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>Patient: {summary.patientName} (PHN: {summary.patientId})</p>
-                    <p>Created: {new Date(summary.createdAt).toLocaleString()}</p>
+                    <p>Created: {formatDateTimeDisplay(summary.createdAt)}</p>
                     {summary.filledBy && <p>Filled by: {summary.filledBy}</p>}
                   </div>
                 </div>
@@ -350,6 +352,15 @@ const PDInvestigation = () => {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => handleExportSummary(summary, 'excel')}
+                    className="flex items-center gap-2"
+                    title="Export to Excel"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleDeleteSummary(summary)}
                     className="flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
@@ -365,6 +376,25 @@ const PDInvestigation = () => {
     );
   };
 
+  const handleExportSummary = (summary: SavedInvestigationSummary, format: 'csv' | 'excel' = 'excel') => {
+    const flatData = flattenPDInvestigationData(summary, INVESTIGATION_PARAMETERS);
+    if (flatData.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'No data available to export.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const filename = `PD_Investigation_${summary.patientId}_${summary.id}_${new Date().toISOString().split('T')[0]}`;
+    exportInvestigationData(flatData, filename, format);
+    toast({
+      title: 'Export Successful',
+      description: `Data exported as ${format.toUpperCase()}`,
+    });
+  };
+
   // Render view mode for selected summary
   const renderViewSummary = () => {
     if (!selectedSummary) return null;
@@ -377,11 +407,25 @@ const PDInvestigation = () => {
             <p className="text-muted-foreground">
               Patient: {selectedSummary.patientName} (PHN: {selectedSummary.patientId})
             </p>
-            <p className="text-sm text-muted-foreground">
-              Created: {new Date(selectedSummary.createdAt).toLocaleString()}
-            </p>
+            <p className="text-sm text-muted-foreground">Created: {formatDateTimeDisplay(selectedSummary.createdAt)}</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleExportSummary(selectedSummary, 'excel')}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export Excel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleExportSummary(selectedSummary, 'csv')}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
             <Button
               variant="outline"
               onClick={() => handleDeleteSummary(selectedSummary)}
@@ -409,8 +453,8 @@ const PDInvestigation = () => {
                 <TableHead className="min-w-[100px] font-semibold">Unit</TableHead>
                 {selectedSummary.dates.map((date) => (
                   <TableHead key={date} className="min-w-[150px]">
-                    {new Date(date).toLocaleDateString()}
-                  </TableHead>
+                      {formatDateToDDMMYYYY(date)}
+                    </TableHead>
                 ))}
               </TableRow>
             </TableHeader>

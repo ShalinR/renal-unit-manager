@@ -94,11 +94,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
     setLoadingFollowups(true);
     try {
       const data = await followupApi.list(phn);
-      setFollowUps((data as any[]).map((d: any) => ({ 
-        id: d.id?.toString() || '', 
-        date: d.dateOfVisit || d.date || '', 
-        doctorNote: d.doctorNote || d.notes || '' 
-      })));
+      setFollowUps((data as any[]).map((d: any) => ({ id: d.id, date: d.dateOfVisit, doctorNote: d.notes })));
     } catch (error) {
       console.error("Error loading followups:", error);
     } finally {
@@ -117,18 +113,15 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
       return;
     }
     try {
-      const response = await followupApi.create(currentPatient.phn, {
+      await followupApi.create(currentPatient.phn, {
         dateOfVisit: newFollowUp.date,
         notes: newFollowUp.doctorNote,
-        doctorNote: newFollowUp.doctorNote, // Send both fields for compatibility
       });
-      console.log("Follow-up saved successfully:", response);
       setNewFollowUp({ date: new Date().toISOString().split('T')[0], doctorNote: '' });
       await loadFollowups(currentPatient.phn);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving followup:", error);
-      const errorMessage = error?.message || 'Failed to save note. Please try again.';
-      alert(errorMessage);
+      alert('Failed to save note');
     }
   };
 
@@ -223,6 +216,9 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            {/* intentionally left empty: title area could go here in future */}
+          </div>
+          <div>
             <Button
               variant="outline"
               size="sm"
@@ -292,6 +288,12 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">Lab Investigations</h1>
+              <p className="text-slate-600">Manage frequent and annual investigation records</p>
+            </div>
+          </div>
+          <div>
             <Button
               variant="outline"
               size="sm"
@@ -301,10 +303,6 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
               <ArrowLeft className="w-4 h-4" />
               Back to Dashboard
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">Lab Investigations</h1>
-              <p className="text-slate-600">Manage frequent and annual investigation records</p>
-            </div>
           </div>
         </div>
 
@@ -733,6 +731,17 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">Doctor's Notes</h1>
+              <p className="text-slate-600">Manage clinical notes and observations</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {currentPatient?.phn && (
+              <div className="text-sm text-blue-700 bg-blue-50 px-4 py-2 rounded border border-blue-200">
+                <strong>Patient:</strong> {currentPatient.name} (PHN: {currentPatient.phn})
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -742,16 +751,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
               <ArrowLeft className="w-4 h-4" />
               Back to Dashboard
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">Doctor's Notes</h1>
-              <p className="text-slate-600">Manage clinical notes and observations</p>
-            </div>
           </div>
-          {currentPatient?.phn && (
-            <div className="text-sm text-blue-700 bg-blue-50 px-4 py-2 rounded border border-blue-200">
-              <strong>Patient:</strong> {currentPatient.name} (PHN: {currentPatient.phn})
-            </div>
-          )}
         </div>
 
         <QuickActions />

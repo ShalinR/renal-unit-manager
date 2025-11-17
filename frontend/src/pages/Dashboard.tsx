@@ -9,6 +9,7 @@ import {
   LogOut,
   User
 } from "lucide-react";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
@@ -161,9 +162,7 @@ const Dashboard = () => {
           <Card className="inline-block bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
             <CardContent className="p-6">
               <h3 className="font-semibold text-lg mb-2">System Status</h3>
-              <p className="text-muted-foreground">
-                All systems operational • Last updated: {new Date().toLocaleDateString()}
-              </p>
+                <p className="text-muted-foreground">All systems operational • Last updated: {formatDateToDDMMYYYY(new Date().toISOString())}</p>
             </CardContent>
           </Card>
         </div>

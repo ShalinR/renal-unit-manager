@@ -165,6 +165,13 @@ export interface DonorAssessmentResponseDTO {
   relationToRecipient?: string;
   relationType?: string;
   comorbidities?: any;
+  complains?: string;
+  systemicInquiry?: any;
+  drugHistory?: string;
+  allergyHistory?: any;
+  familyHistory?: any;
+  substanceUse?: any;
+  socialHistory?: any;
   examination?: any;
   immunologicalDetails?: any;
   patientPhn?: string;
@@ -347,6 +354,10 @@ export interface DonorAssessmentForm {
     dsa: string;
     immunologicalRisk: string;
   };
+  // Optional assignment/status fields (may be present when displaying existing donors)
+  status?: string;
+  assignedRecipientPhn?: string;
+  assignedRecipientName?: string;
 }
 
 export interface DonorAssignmentDTO {

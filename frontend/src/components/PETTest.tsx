@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,43 +151,37 @@ function toLegacyShape(entries: PETEntry[]) {
 }
 
 export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps) {
-  const { searchPatientByPhn, patient, isSearching } = usePatientContext();
-  const [searchPhn, setSearchPhn] = useState("");
-  const [localSearching, setLocalSearching] = useState(false);
-  const [tests, setTests] = useState<PETEntry[]>(() => fromPropsToEntries(petResults));
-  const [activeId, setActiveId] = useState<string | null>(tests[0]?.id ?? null);
+  const { patient } = usePatientContext();
+  const initialTests = fromPropsToEntries(petResults);
+  const [tests, setTests] = useState<PETEntry[]>(initialTests);
+  const [activeId, setActiveId] = useState<string | null>(initialTests[0]?.id ?? null);
+  const [errors, setErrors] = useState<{ [key: string]: { [field: string]: string } }>({});
 
-  // Load patient's PET tests when a patient is found
+  // Load patient's PET tests when petResults change from external source
+  // Use a ref to track if we're updating from internal changes
+  const isInternalUpdate = useRef(false);
+  
   useEffect(() => {
-    if (patient?.phn) {
-      // Here you would typically fetch the patient's existing PET tests from your backend
-      // For now, we'll use the existing petResults or start fresh
-      const patientTests = fromPropsToEntries(petResults);
-      setTests(patientTests);
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+    
+    const patientTests = fromPropsToEntries(petResults);
+    setTests(patientTests);
+    // Only update activeId if it's null or the current active test doesn't exist
+    if (!activeId || !patientTests.find(t => t.id === activeId)) {
       setActiveId(patientTests[0]?.id ?? null);
     }
-  }, [patient?.phn, petResults]);
+  }, [petResults]);
 
   // Keep parent in sync when list changes
   useEffect(() => {
+    isInternalUpdate.current = true;
     onUpdate(toLegacyShape(tests));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tests]);
 
-  const handleSearch = async () => {
-    if (searchPhn.trim()) {
-      setLocalSearching(true);
-      try {
-        await searchPatientByPhn(searchPhn.trim());
-      } catch (error) {
-        console.log('Search completed with error');
-      } finally {
-        setLocalSearching(false);
-      }
-    }
-  };
-
-  const isLoading = isSearching || localSearching;
 
   // PET Test Management Functions
   const nextLabel = useMemo(() => `Test ${tests.length + 1}`, [tests.length]);
@@ -227,6 +221,19 @@ export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps
     setTests(prev =>
       prev.map(t => (t.id === id ? { ...t, payload: { ...t.payload, [key]: value } } : t))
     );
+    // Clear field error when user starts typing
+    if (errors[id]?.[key]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        if (newErrors[id]) {
+          delete newErrors[id][key];
+          if (Object.keys(newErrors[id]).length === 0) {
+            delete newErrors[id];
+          }
+        }
+        return newErrors;
+      });
+    }
   };
 
   // ---------- Auto-calculate ratios from measurements ----------
@@ -322,22 +329,13 @@ export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps
             <div className="space-y-2">
               <Label>Test Date</Label>
               <Input
-                value={searchPhn}
-                onChange={(e) => setSearchPhn(e.target.value)}
-                placeholder="Enter Patient PHN..."
-                className="h-10 border-2 border-gray-200 focus:border-blue-500 pr-10"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSearch();
-                  }
-                }}
-                disabled={isLoading}
+                type="date"
+                value={active.payload.date}
+                onChange={(e) => updatePayload(active.id, "date", e.target.value)}
+                className={`h-10 ${errors[active.id]?.date ? "border-red-500" : ""}`}
               />
-              {isLoading && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                </div>
+              {errors[active.id]?.date && (
+                <p className="text-sm text-red-500">{errors[active.id].date}</p>
               )}
             </div>
 

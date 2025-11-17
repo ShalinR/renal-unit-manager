@@ -33,15 +33,16 @@ import {
   Eye,
   UserPlus,
   ArrowRight,
-  CheckCircle2,
   Loader2,
   AlertCircle,
   Search,
+  Trash2,
 } from "lucide-react";
 import { DonorDetailsModal } from "./DonorDetailsModal";
 import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
 import { Patient, PatientBasicDTO } from "../types/patient";
+import { useAuth } from "@/context/AuthContext";
 
 const FORM_STEPS = [
   { title: "Personal Info", icon: User },
@@ -90,6 +91,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
   const [searchedPatient, setSearchedPatient] = useState<Patient | null>(null);
   const [donorType, setDonorType] = useState<"new" | "existing">("new");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [donorFilter, setDonorFilter] = useState<string>("");
 
   const { patient } = usePatientContext();
 
@@ -100,7 +102,12 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
     isLoading,
     error,
     fetchAllDonors,
+    removeDonor,
+    unassignDonor,
   } = useDonorContext();
+
+  const { user } = useAuth();
+  const isAdmin = !!user && !!user.role && user.role.toLowerCase().includes("admin");
   // Single source of truth for form data
   const [formData, setFormData] = useState<DonorAssessmentForm>({
     name: "",
@@ -852,18 +859,30 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
     </Card>
   );
 
-  const renderAvailableDonors = () => (
+  const renderAvailableDonors = () => {
+    // Show all donors (both assigned and unassigned)
+    const allDonors = donors && Array.isArray(donors) ? donors : [];
+    const availableDonorsCount = allDonors.filter((d) => !d.status || d.status !== "assigned").length;
+
+    return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-semibold text-slate-800 mb-1">
-            Available Donors ({donors.length})
+            All Donors ({allDonors.length})
           </h2>
           <p className="text-slate-600">
-            Review and select from registered donors
+            View all registered donors and their assignment status ({availableDonorsCount} available)
           </p>
         </div>
-        <Button
+        <div className="flex items-center gap-3">
+          <Input
+            placeholder="Search donors by name, PHN, blood group or relation"
+            value={donorFilter}
+            onChange={(e) => setDonorFilter(e.target.value)}
+            className="h-10 w-80"
+          />
+          <Button
           onClick={() => setCurrentView("form")}
           className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
           disabled={isLoading}
@@ -871,6 +890,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
           <UserPlus className="w-4 h-4 mr-2" />
           {isLoading ? "Loading..." : "Add New Donor"}
         </Button>
+        </div>
       </div>
 
       {error && (
@@ -902,7 +922,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
             <p className="text-slate-600">Fetching donor data from server...</p>
           </CardContent>
         </Card>
-      ) : donors.length === 0 ? (
+      ) : allDonors.length === 0 ? (
         <Card className="border border-slate-200 shadow-sm">
           <CardContent className="p-8 text-center">
             <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
@@ -932,6 +952,9 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
                     <th className="text-left py-4 px-6 font-medium text-slate-700">
                       Donor
                     </th>
+                      <th className="text-left py-4 px-6 font-medium text-slate-700">
+                        PHN
+                      </th>
                     <th className="text-left py-4 px-6 font-medium text-slate-700">
                       Blood Type
                     </th>
@@ -950,7 +973,18 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {donors.map((donor) => (
+                  {(allDonors
+                    .filter((d) => {
+                      const q = donorFilter.trim().toLowerCase();
+                      if (!q) return true;
+                      return (
+                        (d.name || "").toLowerCase().includes(q) ||
+                        (d.patientPhn || "").toLowerCase().includes(q) ||
+                        (d.bloodGroup || "").toLowerCase().includes(q) ||
+                        (d.relationToRecipient || "").toLowerCase().includes(q)
+                      );
+                    })
+                    .map((donor) => (
                     <tr
                       key={donor.id}
                       className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -964,13 +998,16 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
                         </div>
                       </td>
                       <td className="py-4 px-6 text-slate-600">
+                        {donor.patientPhn || 'N/A'}
+                      </td>
+                      <td className="py-4 px-6 text-slate-600">
                         <span className="font-medium">{donor.bloodGroup}</span>
                       </td>
                       <td className="py-4 px-6 text-slate-600">
                         {donor.age} years
                       </td>
                       <td className="py-4 px-6 text-slate-600">
-                        {donor.relationToRecipient}
+                        {donor.relationToRecipient || "N/A"}
                       </td>
                       <td className="py-4 px-6">
                         <span
@@ -989,23 +1026,55 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
                               donor.status.slice(1)
                             : "Available"}
                         </span>
+                        {donor.assignedRecipientName && (
+                          <div className="text-xs text-slate-600 mt-1">
+                            Assigned to: {donor.assignedRecipientName}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4 px-6">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-slate-600 border-slate-300 hover:bg-slate-50"
-                          onClick={() => {
-                            setSelectedDonor(convertDonorToFormData(donor));
-                            setShowDonorModal(true);
-                          }}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View Details
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-slate-600 border-slate-300 hover:bg-slate-50"
+                            onClick={() => {
+                              setSelectedDonor(convertDonorToFormData(donor));
+                              setShowDonorModal(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View Details
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-200 hover:bg-red-50"
+                              onClick={async () => {
+                                if (!confirm(`Delete donor ${donor.name}? This cannot be undone.`)) return;
+                                try {
+                                  // If donor is currently assigned, unassign first
+                                  if (donor.status === 'assigned') {
+                                    await unassignDonor(donor.id);
+                                  }
+                                  await removeDonor(donor.id);
+                                  // Optionally refresh list
+                                  await fetchAllDonors();
+                                } catch (err) {
+                                  console.error('Failed to delete donor:', err);
+                                  alert('Failed to delete donor. See console for details.');
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
@@ -1013,7 +1082,8 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
         </Card>
       )}
     </div>
-  );
+    );
+  };
 
   const renderFormStep = () => {
     switch (currentStep) {
@@ -3217,7 +3287,7 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-white dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">

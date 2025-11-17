@@ -32,6 +32,10 @@ type FormData = {
   thirdFlushing: string;          
 };
 
+type ValidationErrors = {
+  [key in keyof FormData]?: string;
+};
+
 const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
   const { toast } = useToast();
   const { patient } = usePatientContext();
@@ -55,6 +59,9 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
     secondFlushing: "",
     thirdFlushing: "",
   });
+
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<Set<keyof FormData>>(new Set());
 
   // Load existing patient registration data when patient is selected
   useEffect(() => {
@@ -105,16 +112,120 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateField = (field: keyof FormData, value: any): string | undefined => {
+    switch (field) {
+      case "initiationDate":
+        if (!value || value.trim() === "") {
+          return "Initiation date is required";
+        }
+        break;
+      case "insertionDoneBy":
+        if (!value || value.trim() === "") {
+          return "Insertion done by is required";
+        }
+        break;
+      case "Designation":
+        if (!value || value.trim() === "") {
+          return "Designation is required";
+        }
+        break;
+      case "counsellingDate":
+        if (value && formData.initiationDate) {
+          const counselling = new Date(value);
+          const initiation = new Date(formData.initiationDate);
+          if (counselling > initiation) {
+            return "Counselling date cannot be after initiation date";
+          }
+        }
+        break;
+      case "catheterInsertionDate":
+        if (value && formData.initiationDate) {
+          const insertion = new Date(value);
+          const initiation = new Date(formData.initiationDate);
+          if (insertion > initiation) {
+            return "Catheter insertion date cannot be after initiation date";
+          }
+        }
+        break;
+    }
+    return undefined;
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    
+    // Required fields
+    if (!formData.initiationDate) {
+      newErrors.initiationDate = "Initiation date is required";
+    }
+    if (!formData.insertionDoneBy) {
+      newErrors.insertionDoneBy = "Insertion done by is required";
+    }
+    if (!formData.Designation) {
+      newErrors.Designation = "Designation is required";
+    }
+
+    // Date validation
+    if (formData.counsellingDate && formData.initiationDate) {
+      const counselling = new Date(formData.counsellingDate);
+      const initiation = new Date(formData.initiationDate);
+      if (counselling > initiation) {
+        newErrors.counsellingDate = "Counselling date cannot be after initiation date";
+      }
+    }
+
+    if (formData.catheterInsertionDate && formData.initiationDate) {
+      const insertion = new Date(formData.catheterInsertionDate);
+      const initiation = new Date(formData.initiationDate);
+      if (insertion > initiation) {
+        newErrors.catheterInsertionDate = "Catheter insertion date cannot be after initiation date";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBlur = (field: keyof FormData) => {
+    setTouched((prev) => new Set(prev).add(field));
+    const error = validateField(field, formData[field]);
+    if (error) {
+      setErrors((prev) => ({ ...prev, [field]: error }));
+    }
+  };
+
+  const getError = (field: keyof FormData): string | undefined => {
+    return touched.has(field) ? errors[field] : undefined;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Minimal validation focusing on required core fields
-    if (!formData.insertionDoneBy || !formData.Designation || !formData.initiationDate) {
+    // Mark all fields as touched
+    const allFields: (keyof FormData)[] = [
+      "initiationDate",
+      "insertionDoneBy",
+      "Designation",
+      "counsellingDate",
+      "catheterInsertionDate",
+    ];
+    allFields.forEach((field) => setTouched((prev) => new Set(prev).add(field)));
+
+    // Validate form
+    if (!validateForm()) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in Insertion Done By, Designation, and Initiation Date.",
+        title: "Validation Error",
+        description: "Please fix the errors before submitting.",
         variant: "destructive",
       });
       return;
@@ -205,17 +316,27 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
                   type="date"
                   value={formData.counsellingDate}
                   onChange={(e) => updateFormData("counsellingDate", e.target.value)}
+                  onBlur={() => handleBlur("counsellingDate")}
+                  className={getError("counsellingDate") ? "border-red-500" : ""}
                 />
+                {getError("counsellingDate") && (
+                  <p className="text-sm text-red-500">{getError("counsellingDate")}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="initiationDate">Initiation Date</Label>
+                <Label htmlFor="initiationDate">Initiation Date <span className="text-red-500">*</span></Label>
                 <Input
                   id="initiationDate"
                   type="date"
                   value={formData.initiationDate}
                   onChange={(e) => updateFormData("initiationDate", e.target.value)}
+                  onBlur={() => handleBlur("initiationDate")}
+                  className={getError("initiationDate") ? "border-red-500" : ""}
                   required
                 />
+                {getError("initiationDate") && (
+                  <p className="text-sm text-red-500">{getError("initiationDate")}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -235,17 +356,27 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
                   type="date"
                   value={formData.catheterInsertionDate}
                   onChange={(e) => updateFormData("catheterInsertionDate", e.target.value)}
+                  onBlur={() => handleBlur("catheterInsertionDate")}
+                  className={getError("catheterInsertionDate") ? "border-red-500" : ""}
                 />
+                {getError("catheterInsertionDate") && (
+                  <p className="text-sm text-red-500">{getError("catheterInsertionDate")}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="insertionDoneBy">Insertion Done By</Label>
+                <Label htmlFor="insertionDoneBy">Insertion Done By <span className="text-red-500">*</span></Label>
                 <Input
-                          placeholder="Name of the person"
-                          value={formData.insertionDoneBy}
-                          onChange={(e) => updateFormData("insertionDoneBy", e.target.value)}
-                        />
-                 
+                  id="insertionDoneBy"
+                  placeholder="Name of the person"
+                  value={formData.insertionDoneBy}
+                  onChange={(e) => updateFormData("insertionDoneBy", e.target.value)}
+                  onBlur={() => handleBlur("insertionDoneBy")}
+                  className={getError("insertionDoneBy") ? "border-red-500" : ""}
+                />
+                {getError("insertionDoneBy") && (
+                  <p className="text-sm text-red-500">{getError("insertionDoneBy")}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -268,12 +399,15 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="Designation">Designation</Label>
+                <Label htmlFor="Designation">Designation <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.Designation}
                   onValueChange={(value) => updateFormData("Designation", value)}
                 >
-                  <SelectTrigger id="Designation">
+                  <SelectTrigger 
+                    id="Designation"
+                    className={getError("Designation") ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select designation" />
                   </SelectTrigger>
                   <SelectContent>
@@ -284,6 +418,9 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                {getError("Designation") && (
+                  <p className="text-sm text-red-500">{getError("Designation")}</p>
+                )}
               </div>
 
               <div className="space-y-2">

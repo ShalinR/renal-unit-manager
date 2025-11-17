@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Activity, ArrowLeft } from "lucide-react";
+import { Activity, ArrowLeft, Download } from "lucide-react";
+import { exportInvestigationData, flattenHDInvestigationData } from '@/lib/exportUtils';
 
 interface InvestigationData {
   patientId: string;
@@ -203,6 +204,34 @@ const HDInvestigation = () => {
                 onClick={() => navigate("/investigation")}
               >
                 Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const flatData = flattenHDInvestigationData(formData);
+                  const filename = `HD_Investigation_${formData.patientId || 'unknown'}_${formData.date || new Date().toISOString().split('T')[0]}`;
+                  exportInvestigationData(flatData, filename, 'excel');
+                }}
+                disabled={!formData.patientId || !formData.date}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export Excel
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const flatData = flattenHDInvestigationData(formData);
+                  const filename = `HD_Investigation_${formData.patientId || 'unknown'}_${formData.date || new Date().toISOString().split('T')[0]}`;
+                  exportInvestigationData(flatData, filename, 'csv');
+                }}
+                disabled={!formData.patientId || !formData.date}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
               </Button>
               <Button type="submit" className="flex-1">
                 Submit Investigation

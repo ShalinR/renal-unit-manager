@@ -6,11 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Heart, ArrowLeft, Loader2, Calendar, Eye, FileText, X } from "lucide-react";
+import { Heart, ArrowLeft, Loader2, Calendar, Eye, FileText, X, Download } from "lucide-react";
+import { formatDateToDDMMYYYY, formatDateTimeDisplay } from "@/lib/dateUtils";
 import { usePatientContext } from "@/context/PatientContext";
 import { ktInvestigationApi } from "@/services/ktInvestigationApi";
+import { exportInvestigationData, flattenKTInvestigationData } from '@/lib/exportUtils';
 
 interface StandardInvestigationData {
   patientId: string;
@@ -179,7 +183,29 @@ const KTInvestigation = () => {
   }, [globalPatient, patient, viewMode]);
 
   const handleChange = (field: keyof StandardInvestigationData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+
+      // Auto-calculate BMI when weight (bw) or height changes
+      try {
+        const bwStr = field === 'bw' ? value : prev.bw;
+        const heightStr = field === 'height' ? value : prev.height;
+        const bwNum = parseFloat(String(bwStr || '').replace(/[^0-9.\-]/g, ''));
+        const heightNum = parseFloat(String(heightStr || '').replace(/[^0-9.\-]/g, ''));
+        if (!Number.isNaN(bwNum) && !Number.isNaN(heightNum) && heightNum > 0) {
+          const heightM = heightNum / 100; // convert cm to meters
+          const bmi = bwNum / (heightM * heightM);
+          next.bmi = Number.isFinite(bmi) ? String(parseFloat(bmi.toFixed(1))) : '';
+        } else {
+          // clear BMI if inputs invalid
+          next.bmi = '';
+        }
+      } catch (e) {
+        next.bmi = '';
+      }
+
+      return next;
+    });
   };
 
   const loadInvestigations = async (phn: string) => {
@@ -234,6 +260,266 @@ const KTInvestigation = () => {
     }
   };
 
+  const renderPayload = (payloadStr?: string) => {
+    if (!payloadStr) return null;
+    let data: any = null;
+    try {
+      data = JSON.parse(payloadStr);
+    } catch (err) {
+      return (
+        <div className="mt-2 p-3 sm:p-4 bg-muted rounded-lg max-h-[60vh] overflow-auto">
+          <pre className="text-xs sm:text-sm whitespace-pre-wrap break-words">{payloadStr}</pre>
+        </div>
+      );
+    }
+
+    const Field = ({ label, value, abnormal }: { label: string; value: any; abnormal?: { severity: 'high' | 'low' | 'warn'; message?: string } }) => (
+      <div>
+        <Label className="text-muted-foreground text-xs">{label}</Label>
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-sm text-black dark:text-white break-words">{value === '' || value === null || value === undefined ? '—' : String(value)}</p>
+          {abnormal && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className={`${abnormal.severity === 'high' ? 'bg-red-600 text-white' : abnormal.severity === 'low' ? 'bg-yellow-500 text-black' : 'bg-amber-500 text-black'} px-2 py-0.5 text-xs`}>{abnormal.severity === 'high' ? 'High' : abnormal.severity === 'low' ? 'Low' : 'Warn'}</Badge>
+              </TooltipTrigger>
+              <TooltipContent>{abnormal.message || `${label} is ${abnormal.severity}`}</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+    );
+
+    const parseNumber = (v: any) => {
+      const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+      return Number.isFinite(n) ? n : NaN;
+    };
+
+    const abnormalFor = (key: string, val: any) => {
+      const n = parseNumber(val);
+      if (isNaN(n)) return undefined;
+      switch (key) {
+        case 'creatinine':
+          if (n > 120) return { severity: 'high' as const, message: 'Raised creatinine — consider review' };
+          return undefined;
+        case 'eGFR':
+          if (n < 60) return { severity: 'low' as const, message: 'Reduced eGFR — CKD stage possible' };
+          return undefined;
+        case 'tacrolimus':
+          if (n < 5) return { severity: 'low' as const, message: 'Low tacrolimus level — risk of rejection' };
+          if (n > 15) return { severity: 'high' as const, message: 'High tacrolimus level — toxicity risk' };
+          return undefined;
+        case 'seNa':
+          if (n < 135) return { severity: 'low' as const, message: 'Hyponatraemia' };
+          if (n > 145) return { severity: 'high' as const, message: 'Hypernatraemia' };
+          return undefined;
+        case 'seK':
+          if (n < 3.5) return { severity: 'low' as const, message: 'Hypokalaemia' };
+          if (n > 5.5) return { severity: 'high' as const, message: 'Hyperkalaemia' };
+          return undefined;
+        default:
+          return undefined;
+      }
+    };
+
+    return (
+      <div className="space-y-4 mt-2">
+        <div className="flex gap-2 justify-end">
+          <Button size="sm" variant="outline" onClick={() => {
+            const flatData = flattenKTInvestigationData(data);
+            const filename = `KT_Investigation_${data.patientId || 'unknown'}_${data.date || new Date().toISOString().split('T')[0]}`;
+            exportInvestigationData(flatData, filename, 'excel');
+          }} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => {
+            const flatData = flattenKTInvestigationData(data);
+            const filename = `KT_Investigation_${data.patientId || 'unknown'}_${data.date || new Date().toISOString().split('T')[0]}`;
+            exportInvestigationData(flatData, filename, 'csv');
+          }} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => {
+            // Copy as report (plain text)
+            const reportLines: string[] = [];
+            reportLines.push(`Investigation Report — ${data.patientId || ''} ${data.date || ''}`);
+            reportLines.push('');
+            Object.entries(data).forEach(([k, v]) => {
+              if (k === 'notes' || typeof v === 'object') return;
+              reportLines.push(`${k}: ${v}`);
+            });
+            reportLines.push('');
+            reportLines.push(`Notes: ${data.notes || ''}`);
+            navigator.clipboard?.writeText(reportLines.join('\n'));
+            alert('Report copied to clipboard');
+          }}>Copy as report</Button>
+
+          <Button size="sm" onClick={() => {
+            // Open printable view
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>Investigation Report</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#111} h1{font-size:18px} .section{margin-bottom:12px;} .label{font-weight:600;margin-bottom:4px;} .value{margin-bottom:6px}</style></head><body><h1>Investigation Report</h1><p><strong>Patient:</strong> ${data.patientId || ''} ${data.date || ''}</p>${Object.entries(data).map(([k,v])=>{ if(k==='notes') return `<div class="section"><div class="label">Notes</div><div class="value">${String(v||'—')}</div></div>`; if(typeof v === 'object') return ''; return `<div class="section"><div class="label">${k}</div><div class="value">${String(v||'—')}</div></div>`}).join('')}<script>window.onload=()=>{window.print();}</script></body></html>`;
+            const w = window.open('', '_blank');
+            if (w) {
+              w.document.open();
+              w.document.write(html);
+              w.document.close();
+            } else {
+              alert('Unable to open print window — please allow popups');
+            }
+          }}>Print</Button>
+        </div>
+
+        <Accordion type="multiple" defaultValue={[] as string[]}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AccordionItem value="basic">
+            <AccordionTrigger>Basic Information</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Date" value={data.date || data?.dateOfKT || '—'} />
+                <Field label="Type" value={data.typeOfKT || data?.type || '—'} />
+                <Field label="Post KT duration" value={data.postKTDuration} />
+                <Field label="Body Weight (kg)" value={data.bw} />
+                <Field label="Height (cm)" value={data.height} />
+                <Field label="BMI" value={data.bmi} />
+                <Field label="Blood Pressure" value={data.bp} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </div>
+
+        <AccordionItem value="immuno">
+          <AccordionTrigger>Immunosuppression & Renal Function</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="Tacrolimus" value={data.tacrolimus} abnormal={abnormalFor('tacrolimus', data.tacrolimus)} />
+              <Field label="S. Creatinine" value={data.creatinine} abnormal={abnormalFor('creatinine', data.creatinine)} />
+              <Field label="eGFR" value={data.eGFR} abnormal={abnormalFor('eGFR', data.eGFR)} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="electrolytes">
+          <AccordionTrigger>Electrolytes</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="Na+" value={data.seNa} abnormal={abnormalFor('seNa', data.seNa)} />
+              <Field label="K+" value={data.seK} abnormal={abnormalFor('seK', data.seK)} />
+              <Field label="Calcium" value={data.sCalcium} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="fbc">
+          <AccordionTrigger>Full Blood Count (FBC)</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <Field label="Hb" value={data.hb} />
+              <Field label="PCV" value={data.pcv} />
+              <Field label="WBC Total" value={data.wbcTotal} />
+              <Field label="Neutrophils" value={data.wbcN} />
+              <Field label="Lymphocytes" value={data.wbcL} />
+              <Field label="Platelets" value={data.platelet} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="urine">
+          <AccordionTrigger>Urine / Protein</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="Protein" value={data.urineProtein} />
+              <Field label="Pus cells" value={data.urinePusCells} />
+              <Field label="RBC" value={data.urineRBC} />
+              <Field label="Urine PCR" value={data.urinePCR} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="diabetes">
+          <AccordionTrigger>Metabolic / Diabetes</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="FBS" value={data.fbs} />
+              <Field label="PPBS" value={data.ppbs} />
+              <Field label="HbA1c" value={data.hba1c} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="lipids">
+          <AccordionTrigger>Lipid Profile</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <Field label="Total Cholesterol" value={data.cholesterolTotal} />
+              <Field label="Triglycerides" value={data.triglycerides} />
+              <Field label="HDL" value={data.hdl} />
+              <Field label="LDL" value={data.ldl} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="lfts">
+          <AccordionTrigger>LFTs & Others</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <Field label="S. Albumin" value={data.sAlbumin} />
+              <Field label="ALP" value={data.alp} />
+              <Field label="ALT" value={data.alt} />
+              <Field label="AST" value={data.ast} />
+              <Field label="S. Bilirubin" value={data.sBilirubin} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="infectious">
+          <AccordionTrigger>Infectious Screening / Annual</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="CMV PCR" value={data.cmvPCR} />
+              <Field label="BKV PCR" value={data.bkvPCR} />
+              <Field label="EBV PCR" value={data.ebvPCR} />
+              <Field label="Hep BsAg" value={data.hepBsAg} />
+              <Field label="Hep C Ab" value={data.hepCAb} />
+              <Field label="HIV Ab" value={data.hivAb} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="imaging">
+          <AccordionTrigger>Imaging</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="US KUB / Renal Doppler" value={data.imagingUS_KUB_Pelvis_RenalDoppler} />
+              <Field label="CXR" value={data.imagingCXR} />
+              <Field label="ECG" value={data.imagingECG} />
+              <Field label="2D Echo" value={data.imaging2DEcho} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="specialist">
+          <AccordionTrigger>Specialist Reviews & Procedures</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Dental review" value={data.specialistDental} />
+              <Field label="Ophthalmology review" value={data.specialistOphthalmology} />
+              <Field label="Endoscopy / Procedures" value={data.proceduresEndoscopy} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        </Accordion>
+
+        <div>
+          <h4 className="text-sm font-semibold mb-2">Notes</h4>
+          <div className="p-3 bg-muted rounded-md">
+            <p className="text-sm text-black dark:text-white whitespace-pre-wrap">{data.notes || '—'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const filteredInvestigations = investigations.filter(inv => {
     if (!filterDate) return true;
     return inv.date === filterDate;
@@ -256,25 +542,41 @@ const KTInvestigation = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Heart className="h-6 w-6 text-primary" />
+          <h1 className="text-3xl font-bold">Kidney Transplant Investigation</h1>
+        </div>
+
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/investigation')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
+          {(globalPatient || patient)?.phn && (
+            <div className="text-sm text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded border border-green-200 dark:border-green-800">
+              <strong>Patient:</strong> {(globalPatient || patient)?.name} (PHN: {(globalPatient || patient)?.phn})
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
-            <Heart className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-bold">Kidney Transplant Investigation</h1>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/investigation')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back To Dashboard
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                console.log("KTInvestigation: Follow Ups clicked", { patient: (globalPatient || patient)?.phn });
+                navigate('/kidney-transplant', { state: { open: 'follow-up' } });
+              }}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Follow Ups
+            </Button>
           </div>
         </div>
-        {(globalPatient || patient)?.phn && (
-          <div className="text-sm text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded border border-green-200 dark:border-green-800">
-            <strong>Patient:</strong> {(globalPatient || patient)?.name} (PHN: {(globalPatient || patient)?.phn})
-          </div>
-        )}
       </div>
 
       <Tabs value={mode} onValueChange={(value) => {
@@ -370,14 +672,7 @@ const KTInvestigation = () => {
                             <div key={date} className="space-y-3">
                               <div className="flex items-center gap-2 pb-2 border-b">
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <h3 className="font-semibold text-lg">
-                                  {new Date(date).toLocaleDateString('en-US', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
-                                </h3>
+                                <h3 className="font-semibold text-lg">{formatDateToDDMMYYYY(date)}</h3>
                                 <Badge variant="outline" className="ml-auto">
                                   {groupedByDate[date].filter(inv => inv.type === 'standard').length} {groupedByDate[date].filter(inv => inv.type === 'standard').length === 1 ? 'record' : 'records'}
                                 </Badge>
@@ -396,9 +691,7 @@ const KTInvestigation = () => {
                                             >
                                               Standard
                                             </Badge>
-                                            <span className="text-sm text-muted-foreground">
-                                              Created: {inv.createdAt ? new Date(inv.createdAt).toLocaleString() : 'N/A'}
-                                            </span>
+                                            <span className="text-sm text-muted-foreground">Created: {inv.createdAt ? formatDateTimeDisplay(inv.createdAt) : 'N/A'}</span>
                                           </div>
                                           <Button
                                             variant="outline"
@@ -433,15 +726,13 @@ const KTInvestigation = () => {
                   <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="text-lg sm:text-xl">Standard Investigation Details</DialogTitle>
-                      <DialogDescription className="text-sm">
-                        {new Date(selectedInvestigation.date).toLocaleDateString()} - Standard
-                      </DialogDescription>
+                      <DialogDescription className="text-sm">{formatDateToDDMMYYYY(selectedInvestigation.date)} - Standard</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div>
                           <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
-                          <p className="font-medium text-sm sm:text-base">{new Date(selectedInvestigation.date).toLocaleDateString()}</p>
+                          <p className="font-medium text-sm sm:text-base">{formatDateToDDMMYYYY(selectedInvestigation.date)}</p>
                         </div>
                         <div>
                           <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
@@ -450,24 +741,20 @@ const KTInvestigation = () => {
                         {selectedInvestigation.createdAt && (
                           <div>
                             <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.createdAt).toLocaleString()}</p>
+                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.createdAt)}</p>
                           </div>
                         )}
                         {selectedInvestigation.updatedAt && (
                           <div>
                             <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.updatedAt).toLocaleString()}</p>
+                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.updatedAt)}</p>
                           </div>
                         )}
                       </div>
                       {selectedInvestigation.payload && (
                         <div>
                           <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
-                          <div className="mt-2 p-3 sm:p-4 bg-muted rounded-lg max-h-[60vh] overflow-auto">
-                            <pre className="text-xs sm:text-sm whitespace-pre-wrap break-words">
-                              {JSON.stringify(JSON.parse(selectedInvestigation.payload), null, 2)}
-                            </pre>
-                          </div>
+                          {renderPayload(selectedInvestigation.payload)}
                         </div>
                       )}
                     </div>
@@ -502,10 +789,7 @@ const KTInvestigation = () => {
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">1. Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Date</Label>
-                    <Input type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} />
-                  </div>
+                  
                   <div>
                     <Label>Date of KT</Label>
                     <Input type="date" value={formData.dateOfKT} onChange={(e) => handleChange('dateOfKT', e.target.value)} />
@@ -800,14 +1084,7 @@ const KTInvestigation = () => {
                             <div key={date} className="space-y-3">
                               <div className="flex items-center gap-2 pb-2 border-b">
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <h3 className="font-semibold text-lg">
-                                  {new Date(date).toLocaleDateString('en-US', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
-                                </h3>
+                                <h3 className="font-semibold text-lg">{formatDateToDDMMYYYY(date)}</h3>
                                 <Badge variant="outline" className="ml-auto">
                                   {groupedByDate[date].filter(inv => inv.type === 'annual').length} {groupedByDate[date].filter(inv => inv.type === 'annual').length === 1 ? 'record' : 'records'}
                                 </Badge>
@@ -826,9 +1103,7 @@ const KTInvestigation = () => {
                                             >
                                               Annual
                                             </Badge>
-                                            <span className="text-sm text-muted-foreground">
-                                              Created: {inv.createdAt ? new Date(inv.createdAt).toLocaleString() : 'N/A'}
-                                            </span>
+                                            <span className="text-sm text-muted-foreground">Created: {inv.createdAt ? formatDateTimeDisplay(inv.createdAt) : 'N/A'}</span>
                                           </div>
                                           <Button
                                             variant="outline"
@@ -863,15 +1138,13 @@ const KTInvestigation = () => {
                   <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="text-lg sm:text-xl">Annual Investigation Details</DialogTitle>
-                      <DialogDescription className="text-sm">
-                        {new Date(selectedInvestigation.date).toLocaleDateString()} - Annual
-                      </DialogDescription>
+                      <DialogDescription className="text-sm">{formatDateToDDMMYYYY(selectedInvestigation.date)} - Annual</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div>
                           <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
-                          <p className="font-medium text-sm sm:text-base">{new Date(selectedInvestigation.date).toLocaleDateString()}</p>
+                          <p className="font-medium text-sm sm:text-base">{formatDateToDDMMYYYY(selectedInvestigation.date)}</p>
                         </div>
                         <div>
                           <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
@@ -880,24 +1153,20 @@ const KTInvestigation = () => {
                         {selectedInvestigation.createdAt && (
                           <div>
                             <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.createdAt).toLocaleString()}</p>
+                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.createdAt)}</p>
                           </div>
                         )}
                         {selectedInvestigation.updatedAt && (
                           <div>
                             <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{new Date(selectedInvestigation.updatedAt).toLocaleString()}</p>
+                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.updatedAt)}</p>
                           </div>
                         )}
                       </div>
                       {selectedInvestigation.payload && (
                         <div>
                           <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
-                          <div className="mt-2 p-3 sm:p-4 bg-muted rounded-lg max-h-[60vh] overflow-auto">
-                            <pre className="text-xs sm:text-sm whitespace-pre-wrap break-words">
-                              {JSON.stringify(JSON.parse(selectedInvestigation.payload), null, 2)}
-                            </pre>
-                          </div>
+                          {renderPayload(selectedInvestigation.payload)}
                         </div>
                       )}
                     </div>

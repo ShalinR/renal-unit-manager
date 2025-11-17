@@ -78,6 +78,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     assignedRecipientPhn: (donor as any).assignedRecipientPhn || '', // Safe access
     assignedRecipientName: (donor as any).assignedRecipientName || '', // Safe access
     
+    // ✅ INCLUDE ALL ASSESSMENT DATA
     comorbidities: donor.comorbidities || {
       dl: false,
       dm: false,
@@ -85,6 +86,22 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       htn: false,
       ihd: false,
     },
+    complains: donor.complains || '',
+    systemicInquiry: donor.systemicInquiry || {
+      constitutional: { loa: false, low: false },
+      cvs: { chestPain: false, odema: false, sob: false },
+      respiratory: { cough: false, hemoptysis: false, wheezing: false },
+      git: { constipation: false, diarrhea: false, melena: false, prBleeding: false },
+      renal: { hematuria: false, frothyUrine: false },
+      neuro: { seizures: false, visualDisturbance: false, headache: false, limbWeakness: false },
+      gynecology: { pvBleeding: false, menopause: false, menorrhagia: false, lrmp: false },
+      sexualHistory: '',
+    },
+    drugHistory: donor.drugHistory || '',
+    allergyHistory: donor.allergyHistory || { foods: false, drugs: false, p: false },
+    familyHistory: donor.familyHistory || { dm: '', htn: '', ihd: '', stroke: '', renal: '' },
+    substanceUse: donor.substanceUse || { smoking: false, alcohol: false, other: '' },
+    socialHistory: donor.socialHistory || { spouseDetails: '', childrenDetails: '', income: '', other: '' },
     examination: donor.examination || {
       height: "",
       weight: "",
@@ -101,18 +118,45 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       BrcostExamination: "",
       neurologicalExam: { cranialNerves: false, upperLimb: false, lowerLimb: false, coordination: false },
     },
-    immunologicalDetails: donor.immunologicalDetails || {
-      bloodGroup: { d: "", r: "" },
-      crossMatch: { tCell: "", bCell: "" },
-      hlaTyping: {
-        donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-        recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-        conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-      },
-      pra: { pre: "", post: "" },
-      dsa: "",
-      immunologicalRisk: "",
-    },
+    immunologicalDetails: (() => {
+      const id = donor.immunologicalDetails;
+      // Backend uses praPre / praPost on the ImmunologicalDetailsDTO, while frontend expects a nested `pra` object.
+      // Normalize both shapes into the frontend structure here.
+      return id
+        ? {
+            bloodGroup: id.bloodGroup || { d: "", r: "" },
+            crossMatch: id.crossMatch || { tCell: "", bCell: "" },
+            hlaTyping: id.hlaTyping || {
+              donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+              recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+              conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+            },
+            pra: id.pra
+              ? {
+                  pre: id.pra.pre || "",
+                  post: id.pra.post || "",
+                }
+              : {
+                  pre: id.praPre || "",
+                  post: id.praPost || "",
+                },
+            dsa: id.dsa || "",
+            immunologicalRisk: id.immunologicalRisk || "",
+          }
+        : {
+            // Default immunological structure
+            bloodGroup: { d: "", r: "" },
+            crossMatch: { tCell: "", bCell: "" },
+            hlaTyping: {
+              donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+              recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+              conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+            },
+            pra: { pre: "", post: "" },
+            dsa: "",
+            immunologicalRisk: "",
+          };
+    })(),
   });
 
   // ✅ Function that always fetches ALL donors (for donor assessment)

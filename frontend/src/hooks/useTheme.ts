@@ -1,36 +1,26 @@
 import { useEffect, useState } from 'react';
 
-type Theme = 'dark' | 'light' | 'system';
+type Theme = 'dark' | 'light';
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem('theme') as Theme) || 'system'
-  );
+  // Default to 'light' unless user previously saved 'dark'
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = localStorage.getItem('theme');
+    return stored === 'dark' ? 'dark' : 'light';
+  });
 
   useEffect(() => {
-    const isDark =
-      theme === 'dark' ||
-      (theme === 'system' &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches);
-    
+    const isDark = theme === 'dark';
     document.documentElement.classList.toggle('dark', isDark);
   }, [theme]);
 
   const cycleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+    const newTheme: Theme = theme === 'light' ? 'dark' : 'light';
     localStorage.setItem('theme', newTheme);
     setTheme(newTheme);
   };
 
-  const getThemeIcon = () => {
-    if (theme === 'light') {
-      return 'sun';
-    }
-    if (theme === 'dark') {
-      return 'moon';
-    }
-    return 'system';
-  };
+  const getThemeIcon = () => (theme === 'light' ? 'sun' : 'moon');
 
   return { theme, cycleTheme, getThemeIcon };
 }

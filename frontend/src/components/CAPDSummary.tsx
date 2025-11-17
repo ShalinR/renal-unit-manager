@@ -140,6 +140,42 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
     "idle" | "saving" | "saved" | "error"
   >("idle");
 
+  const validateFormData = (): string | null => {
+    // Validate that at least one PET test or Adequacy test has data
+    const hasPETData = Object.values(formData.petResults).some(
+      (result) => result.date && result.data
+    );
+    const hasAdequacyData = Object.values(formData.adequacyResults).some(
+      (result) => result.date && result.data
+    );
+
+    if (!hasPETData && !hasAdequacyData) {
+      return "Please add at least one PET test or Adequacy test before saving.";
+    }
+
+    // Validate PET test dates if they exist
+    for (const [key, result] of Object.entries(formData.petResults)) {
+      if (result.date && !result.data) {
+        return `PET test ${key} has a date but no measurement data. Please complete the test or remove the date.`;
+      }
+      if (result.data && !result.date) {
+        return `PET test ${key} has measurement data but no date. Please add a test date.`;
+      }
+    }
+
+    // Validate Adequacy test dates if they exist
+    for (const [key, result] of Object.entries(formData.adequacyResults)) {
+      if (result.date && !result.data) {
+        return `Adequacy test ${key} has a date but no measurement data. Please complete the test or remove the date.`;
+      }
+      if (result.data && !result.date) {
+        return `Adequacy test ${key} has measurement data but no date. Please add a test date.`;
+      }
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -149,6 +185,17 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
       toast({
         title: "Patient Not Selected",
         description: "Please search for a patient by PHN first before saving CAPD summary.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate form data
+    const validationError = validateFormData();
+    if (validationError) {
+      toast({
+        title: "Validation Error",
+        description: validationError,
         variant: "destructive",
       });
       return;

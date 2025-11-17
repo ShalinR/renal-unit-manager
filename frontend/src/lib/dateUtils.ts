@@ -2,12 +2,7 @@ export function formatDateDisplay(dateString: string): string {
   if (!dateString) return '';
   
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return formatDateToDDMMYYYY(dateString);
   } catch (error) {
     return dateString;
   }
@@ -17,14 +12,10 @@ export function formatDateTimeDisplay(dateString: string): string {
   if (!dateString) return '';
   
   try {
+    const datePart = formatDateToDDMMYYYY(dateString);
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const timePart = isNaN(date.getTime()) ? '' : date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return timePart ? `${datePart} ${timePart}` : datePart;
   } catch (error) {
     return dateString;
   }
@@ -35,10 +26,7 @@ export function formatTimeDisplay(dateString: string): string {
   
   try {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return isNaN(date.getTime()) ? '' : date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   } catch (error) {
     return dateString;
   }

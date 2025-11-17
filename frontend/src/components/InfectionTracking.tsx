@@ -87,6 +87,11 @@ const InfectionTracking = ({
     tunnelInfections || []
   );
   
+  // Validation errors state
+  const [peritonitisErrors, setPeritonitisErrors] = useState<{ [key: string]: { [field: string]: string } }>({});
+  const [exitSiteErrors, setExitSiteErrors] = useState<{ [key: string]: { [field: string]: string } }>({});
+  const [tunnelErrors, setTunnelErrors] = useState<{ [key: string]: { [field: string]: string } }>({});
+  
   // Get patient context and toast at component level
   const { patient } = usePatientContext();
   const { toast } = useToast();
@@ -121,6 +126,19 @@ const InfectionTracking = ({
       onUpdatePeritonitis(updated);
       return updated;
     });
+    // Clear field error when user starts typing
+    if (peritonitisErrors[id]?.[field]) {
+      setPeritonitisErrors(prev => {
+        const newErrors = { ...prev };
+        if (newErrors[id]) {
+          delete newErrors[id][field];
+          if (Object.keys(newErrors[id]).length === 0) {
+            delete newErrors[id];
+          }
+        }
+        return newErrors;
+      });
+    }
   };
   const removePeritonitisEpisode = (id: string) => {
     setPeritonitisEpisodes(prev => {
@@ -130,9 +148,51 @@ const InfectionTracking = ({
     });
   };
 
+  const validatePeritonitisEpisode = (episode: PeritonitisEpisode): { [field: string]: string } => {
+    const errors: { [field: string]: string } = {};
+    if (!episode.date || episode.date.trim() === "") {
+      errors.date = "Episode date is required";
+    }
+    if (!episode.managementType || episode.managementType.trim() === "") {
+      errors.managementType = "Management type is required";
+    }
+    if (!episode.outcome || episode.outcome.trim() === "") {
+      errors.outcome = "Outcome is required";
+    }
+    return errors;
+  };
+
   const handleSavePeritonitis = async () => {
     if (peritonitisEpisodes.length === 0) {
-      alert("No peritonitis episodes to save.");
+      toast({
+        title: "No Episodes",
+        description: "No peritonitis episodes to save.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate all episodes
+    const validationErrors: { [key: string]: { [field: string]: string } } = {};
+    let hasErrors = false;
+    
+    peritonitisEpisodes.forEach((episode) => {
+      const errors = validatePeritonitisEpisode(episode);
+      if (Object.keys(errors).length > 0) {
+        validationErrors[episode.id] = errors;
+        hasErrors = true;
+      }
+    });
+
+    if (hasErrors) {
+      const errorMessages = Object.values(validationErrors)
+        .flatMap(err => Object.values(err))
+        .join(", ");
+      toast({
+        title: "Validation Error",
+        description: `Please fix the following errors: ${errorMessages}`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -188,11 +248,54 @@ const InfectionTracking = ({
     }
   };
 
+  const validateExitSiteEpisode = (episode: ExitSiteEpisode): { [field: string]: string } => {
+    const errors: { [field: string]: string } = {};
+    if (!episode.dateOnset || episode.dateOnset.trim() === "") {
+      errors.dateOnset = "Date of onset is required";
+    }
+    if (!episode.managementType || episode.managementType.trim() === "") {
+      errors.managementType = "Management type is required";
+    }
+    return errors;
+  };
+
   const handleSaveExitSite = async () => {
     if (exitSiteEpisodes.length === 0) {
-      alert("No exit site infection episodes to save.");
+      toast({
+        title: "No Episodes",
+        description: "No exit site infection episodes to save.",
+        variant: "destructive",
+      });
       return;
     }
+
+    // Validate all episodes
+    const validationErrors: { [key: string]: { [field: string]: string } } = {};
+    let hasErrors = false;
+    
+    exitSiteEpisodes.forEach((episode) => {
+      const errors = validateExitSiteEpisode(episode);
+      if (Object.keys(errors).length > 0) {
+        validationErrors[episode.id] = errors;
+        hasErrors = true;
+      }
+    });
+
+    if (hasErrors) {
+      setExitSiteErrors(validationErrors);
+      const errorMessages = Object.values(validationErrors)
+        .flatMap(err => Object.values(err))
+        .join(", ");
+      toast({
+        title: "Validation Error",
+        description: `Please fix the following errors: ${errorMessages}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Clear errors if validation passes
+    setExitSiteErrors({});
 
     const phn = patient?.phn;
     
@@ -280,6 +383,19 @@ const InfectionTracking = ({
       onUpdateExitSite(updated);
       return updated;
     });
+    // Clear field error when user starts typing
+    if (exitSiteErrors[id]?.[field]) {
+      setExitSiteErrors(prev => {
+        const newErrors = { ...prev };
+        if (newErrors[id]) {
+          delete newErrors[id][field];
+          if (Object.keys(newErrors[id]).length === 0) {
+            delete newErrors[id];
+          }
+        }
+        return newErrors;
+      });
+    }
   };
   const removeExitSiteEpisode = (id: string) => {
     setExitSiteEpisodes(prev => {
@@ -310,6 +426,19 @@ const InfectionTracking = ({
       onUpdateTunnel(updated);
       return updated;
     });
+    // Clear field error when user starts typing
+    if (tunnelErrors[id]?.[key]) {
+      setTunnelErrors(prev => {
+        const newErrors = { ...prev };
+        if (newErrors[id]) {
+          delete newErrors[id][key];
+          if (Object.keys(newErrors[id]).length === 0) {
+            delete newErrors[id];
+          }
+        }
+        return newErrors;
+      });
+    }
   };
   const removeTunnelEpisode = (id: string) => {
     setTunnelEpisodes(prev => {
@@ -319,11 +448,54 @@ const InfectionTracking = ({
     });
   };
 
+  const validateTunnelEpisode = (episode: TunnelEpisode): { [field: string]: string } => {
+    const errors: { [field: string]: string } = {};
+    if (!episode.date || episode.date.trim() === "") {
+      errors.date = "Episode date is required";
+    }
+    if (!episode.treatment || episode.treatment.trim() === "") {
+      errors.treatment = "Treatment is required";
+    }
+    return errors;
+  };
+
   const handleSaveTunnel = async () => {
     if (tunnelEpisodes.length === 0) {
-      alert("No tunnel infection episodes to save.");
+      toast({
+        title: "No Episodes",
+        description: "No tunnel infection episodes to save.",
+        variant: "destructive",
+      });
       return;
     }
+
+    // Validate all episodes
+    const validationErrors: { [key: string]: { [field: string]: string } } = {};
+    let hasErrors = false;
+    
+    tunnelEpisodes.forEach((episode) => {
+      const errors = validateTunnelEpisode(episode);
+      if (Object.keys(errors).length > 0) {
+        validationErrors[episode.id] = errors;
+        hasErrors = true;
+      }
+    });
+
+    if (hasErrors) {
+      setTunnelErrors(validationErrors);
+      const errorMessages = Object.values(validationErrors)
+        .flatMap(err => Object.values(err))
+        .join(", ");
+      toast({
+        title: "Validation Error",
+        description: `Please fix the following errors: ${errorMessages}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Clear errors if validation passes
+    setTunnelErrors({});
 
     const phn = patient?.phn;
     
@@ -445,14 +617,18 @@ const InfectionTracking = ({
                       <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Date</Label>
+                            <Label>Date <span className="text-red-500">*</span></Label>
                             <Input
                               type="date"
                               value={episode.date}
                               onChange={(e) =>
                                 updatePeritonitisEpisode(episode.id, "date", e.target.value)
                               }
+                              className={peritonitisErrors[episode.id]?.date ? "border-red-500" : ""}
                             />
+                            {peritonitisErrors[episode.id]?.date && (
+                              <p className="text-sm text-red-500">{peritonitisErrors[episode.id].date}</p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label>PD Full Reports</Label>
@@ -501,14 +677,18 @@ const InfectionTracking = ({
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Type</Label>
+                            <Label>Type <span className="text-red-500">*</span></Label>
                             <Input
                               value={episode.managementType}
                               onChange={(e) =>
                                 updatePeritonitisEpisode(episode.id, "managementType", e.target.value)
                               }
                               placeholder="IV/Oral/etc"
+                              className={peritonitisErrors[episode.id]?.managementType ? "border-red-500" : ""}
                             />
+                            {peritonitisErrors[episode.id]?.managementType && (
+                              <p className="text-sm text-red-500">{peritonitisErrors[episode.id].managementType}</p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label>Duration</Label>
@@ -524,14 +704,18 @@ const InfectionTracking = ({
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Outcome</Label>
+                            <Label>Outcome <span className="text-red-500">*</span></Label>
                             <Input
                               value={episode.outcome}
                               onChange={(e) =>
                                 updatePeritonitisEpisode(episode.id, "outcome", e.target.value)
                               }
                               placeholder="Treatment outcome"
+                              className={peritonitisErrors[episode.id]?.outcome ? "border-red-500" : ""}
                             />
+                            {peritonitisErrors[episode.id]?.outcome && (
+                              <p className="text-sm text-red-500">{peritonitisErrors[episode.id].outcome}</p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label>Reason for Peritonitis</Label>

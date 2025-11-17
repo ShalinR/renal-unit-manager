@@ -125,7 +125,7 @@ const Ward = () => {
               </div>
             </div>
             
-            <div className="rounded-md border">
+            <div className="responsive-table rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>

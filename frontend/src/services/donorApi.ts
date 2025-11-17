@@ -81,9 +81,22 @@ export const fetchDonorById = async (id: number): Promise<DonorAssessmentRespons
 };
 
 export const createDonor = async (donorData: DonorAssessmentDataDTO, patientPhn: string): Promise<DonorAssessmentResponseDTO> => {
+  // Normalize immunological PRA fields: frontend uses nested `pra: { pre, post }`,
+  // backend expects `praPre` and `praPost` on the ImmunologicalDetailsDTO.
+  const normalizedData = { ...donorData } as any;
+  if (normalizedData.immunologicalDetails) {
+    const immuno = { ...normalizedData.immunologicalDetails };
+    if (immuno.pra && (immuno.pra.pre || immuno.pra.post)) {
+      immuno.praPre = immuno.pra.pre;
+      immuno.praPost = immuno.pra.post;
+      delete immuno.pra; // remove nested shape to match backend DTO
+    }
+    normalizedData.immunologicalDetails = immuno;
+  }
+
   const donorAssessmentDTO: DonorAssessmentDTO = {
     phn: patientPhn,
-    data: donorData
+    data: normalizedData
   };
 
   return handleApiRequest<DonorAssessmentResponseDTO>(`${API_BASE_URL}`, {
@@ -93,9 +106,21 @@ export const createDonor = async (donorData: DonorAssessmentDataDTO, patientPhn:
 };
 
 export const updateDonor = async (id: number, donorData: Partial<DonorAssessmentDataDTO>): Promise<DonorAssessmentResponseDTO> => {
+  // Normalize PRA if present (same as createDonor)
+  const normalized = { ...donorData } as any;
+  if (normalized.immunologicalDetails) {
+    const immuno = { ...normalized.immunologicalDetails };
+    if (immuno.pra && (immuno.pra.pre || immuno.pra.post)) {
+      immuno.praPre = immuno.pra.pre;
+      immuno.praPost = immuno.pra.post;
+      delete immuno.pra;
+    }
+    normalized.immunologicalDetails = immuno;
+  }
+
   return handleApiRequest<DonorAssessmentResponseDTO>(`${API_BASE_URL}/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(donorData),
+    body: JSON.stringify(normalized),
   });
 };
 

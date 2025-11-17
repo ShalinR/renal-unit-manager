@@ -168,7 +168,17 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
   };
 
   const getStatusBadge = () => {
-    return <Badge variant="default" className="bg-green-100 text-green-800">Available</Badge>;
+    const status = donorData.status || 'available';
+    if (status === 'assigned') {
+      return <Badge className="bg-blue-100 text-blue-800">Assigned</Badge>;
+    }
+    if (status === 'evaluating') {
+      return <Badge className="bg-yellow-100 text-yellow-800">Evaluating</Badge>;
+    }
+    if (status === 'rejected') {
+      return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+    }
+    return <Badge className="bg-green-100 text-green-800">Available</Badge>;
   };
 
   // Helper to check if value exists and return it, otherwise return 'N/A'
@@ -249,11 +259,19 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-600">Relation to Recipient</label>
-                <p className="text-gray-900">{getValue(donorData.relationToRecipient)}</p>
+                  <p className="text-gray-900">{getValue(donorData.relationToRecipient)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Relation Type</label>
-                <p className="text-gray-900">{getValue(donorData.relationType)}</p>
+                  <p className="text-gray-900">{getValue(donorData.relationType)}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-600">Assignment</label>
+                  {donorData.status === 'assigned' ? (
+                    <p className="text-gray-900">Assigned to: {donorData.assignedRecipientName || donorData.assignedRecipientPhn || 'N/A'}</p>
+                  ) : (
+                    <p className="text-gray-900">Not assigned</p>
+                  )}
               </div>
             </CardContent>
           </Card>

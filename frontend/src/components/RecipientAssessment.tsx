@@ -87,12 +87,14 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     fetchAllDonors,
     getAvailableDonors,
     setSelectedDonor: setContextSelectedDonor,
+    updateDonor,
+    assignDonorToRecipient,
   } = useDonorContext();
 
   const [transfusions, setTransfusions] = useState<
     { date: string; indication: string; volume: string }[]
   >([{ date: "", indication: "", volume: "" }]);
-  const handleSelectDonor = (donor: Donor) => {
+  const handleSelectDonor = async (donor: Donor) => {
     console.log("🔗 Selecting donor:", {
       id: donor.id,
       patientPhn: donor.patientPhn,
@@ -104,13 +106,56 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     handleRecipientFormChange("donorPhn", donor.patientPhn || ""); // ✅ FIXED
     handleRecipientFormChange("donorName", donor.name || "Unknown Donor"); // ✅ FIXED
     handleRecipientFormChange("donorBloodGroup", donor.bloodGroup || "");
+    
+    // ✅ Auto-populate donor's relationship information from current donor data
+    if (donor.relationToRecipient) {
+      handleRecipientFormChange("relationToRecipient", donor.relationToRecipient);
+    }
+    if (donor.relationType) {
+      handleRecipientFormChange("relationType", donor.relationType);
+    }
+    
     setDonorSearchResults(donor);
 
+    // Immediately update donor's relationship fields in DonorContext so
+    // the donor form (and DonorAssessmentTabs) reflects the selected
+    // relationship without waiting for the full recipient save.
+    try {
+      const updatedRelationToRecipient = recipientForm.relationToRecipient || donor.relationToRecipient || "";
+      const updatedRelationType = recipientForm.relationType || donor.relationType || "";
+
+      updateDonor(donor.id, {
+        ...donor,
+        relationToRecipient: updatedRelationToRecipient,
+        relationType: updatedRelationType,
+        // preserve existing assigned recipient info
+        assignedRecipientPhn: donor.assignedRecipientPhn || "",
+        assignedRecipientName: donor.assignedRecipientName || "",
+      });
+      console.log("🔄 Donor relationship updated in context for donor:", donor.id);
+
+      // Persist assignment immediately on select (user requested "Persist on select")
+      if (patient?.phn) {
+        try {
+          console.log(`🔗 Persisting donor ${donor.id} assignment to recipient ${patient.phn}`);
+          await assignDonorToRecipient(donor.id, patient.phn, patient?.name || "");
+          // Refresh donor list from backend to ensure latest state
+          await fetchAllDonors();
+          console.log(`✅ Donor ${donor.id} persisted as assigned to ${patient.phn}`);
+        } catch (assignErr) {
+          console.error("❌ Failed to persist donor assignment on select:", assignErr);
+        }
+      }
+    } catch (err) {
+      console.error("❌ Failed to update donor relationship in context:", err);
+    }
     console.log("✅ Updated form with donor:", {
       donorId: recipientForm.donorId,
       donorPhn: recipientForm.donorPhn,
       donorName: recipientForm.donorName,
       donorBloodGroup: recipientForm.donorBloodGroup,
+      relationToRecipient: recipientForm.relationToRecipient,
+      relationType: recipientForm.relationType,
     });
   };
   // ✅ NEW API service using the proper service
@@ -347,6 +392,44 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
       });
     }
   }, [recipientForm.phn]);
+
+  // Auto-fill PHN and basic patient info when a patient is selected via global search
+  useEffect(() => {
+    if (!patient?.phn) return;
+
+    // Always set PHN from selected patient so the form shows it immediately after search.
+    // We still keep other form fields but prefer patient values when available.
+    setRecipientForm((prev) => ({
+      ...prev,
+      phn: patient.phn,
+      name: patient.name || prev.name,
+      age: Number(patient.age) || prev.age,
+      gender: patient.gender || prev.gender,
+      dateOfBirth: patient.dateOfBirth || prev.dateOfBirth,
+      contactDetails: patient.contact || prev.contactDetails,
+      emailAddress: patient.email || prev.emailAddress,
+    }));
+
+    // Debug visibility: ensure patient object is arriving
+    // and try to set the phn input value directly as a fallback.
+    try {
+       
+      console.log("RecipientAssessment: patient selected:", patient);
+      const phnInput = document.getElementById("phn") as HTMLInputElement | null;
+      if (phnInput) {
+        phnInput.value = patient.phn || "";
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [patient?.phn, patient?.name, patient?.age, patient?.gender, patient?.dateOfBirth, patient?.contact, patient?.email]);
+
+  // When entering the confirmation step, re-run validation for step 6
+  useEffect(() => {
+    if (step === 6) {
+      validateStep(6);
+    }
+  }, [step, recipientForm]);
 
 
 const searchDonorByPhn = async () => {
@@ -608,6 +691,36 @@ const searchDonorByPhn = async () => {
       if (savedAssessment) {
         console.log("✅ Assessment saved successfully:", savedAssessment);
         setRecipientForm(savedAssessment);
+
+        // Assignment is persisted when selecting a donor (on-select),
+        // so we avoid calling the assign endpoint again here to prevent
+        // duplicate requests. The donor relationship/local state is still
+        // updated below and we refresh donors via fetchAllDonors().
+
+        // ✅ Auto-update donor's relationship information when assignment changes
+        if (savedAssessment.donorId && savedAssessment.relationToRecipient) {
+          try {
+            console.log("🔄 Updating donor relationship information...");
+            // Find the donor to update
+            const donorToUpdate = donors.find(d => d.id === savedAssessment.donorId);
+            if (donorToUpdate) {
+              updateDonor(savedAssessment.donorId, {
+                ...donorToUpdate,
+                relationToRecipient: savedAssessment.relationToRecipient,
+                relationType: savedAssessment.relationType,
+                assignedRecipientPhn: patient?.phn,
+                assignedRecipientName: patient?.name,
+                status: "assigned",
+              });
+              console.log("✅ Donor relationship information updated locally");
+            }
+            // Refresh the donors list to show updated relationships and status
+            await fetchAllDonors();
+          } catch (error) {
+            console.error("❌ Error updating donor relationship:", error);
+            // Don't fail the entire operation if donor update fails
+          }
+        }
 
         // Update donor search results after save
         if (savedAssessment.donorId) {
@@ -920,7 +1033,7 @@ const searchDonorByPhn = async () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-white dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header Section */}
         <div className="mb-8">
@@ -979,52 +1092,38 @@ const searchDonorByPhn = async () => {
                 Step {step + 1} of {FORM_STEPS.length}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               {FORM_STEPS.map((formStep, idx) => {
                 const Icon = formStep.icon;
                 const isActive = step === idx;
                 const isCompleted = step > idx;
 
                 return (
-                  <div key={formStep.label} className="flex-1">
-                    <div
-                      className={`
-                        flex flex-col items-center p-3 rounded-lg transition-all duration-200 cursor-pointer
-                        ${
-                          isActive
-                            ? "bg-blue-100 border-2 border-blue-500 text-blue-700"
-                            : isCompleted
-                              ? "bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100"
-                              : "bg-gray-50 border border-gray-200 text-gray-400 hover:bg-gray-100"
-                        }
-                      `}
+                  <div key={formStep.label} className="flex items-center flex-1">
+                    <button
+                      type="button"
                       onClick={() => {
-                        if (isCompleted || isActive) {
-                          setStep(idx);
-                        }
+                        if (isCompleted || isActive) setStep(idx);
                       }}
+                      className="flex flex-col items-center w-full"
                     >
-                      <Icon
-                        className={`w-5 h-5 mb-2 ${
+                      <div
+                        className={`flex items-center justify-center w-10 h-10 rounded-full z-10 transition-colors ${
                           isActive
-                            ? "text-blue-600"
+                            ? 'bg-blue-600 text-white'
                             : isCompleted
-                              ? "text-blue-500"
-                              : "text-gray-400"
-                        }`}
-                      />
-                      <span
-                        className={`text-xs font-medium text-center ${
-                          isActive
-                            ? "text-blue-700"
-                            : isCompleted
-                              ? "text-blue-600"
-                              : "text-gray-400"
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-600'
                         }`}
                       >
-                        {formStep.label}
-                      </span>
-                    </div>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <span className={`mt-2 text-xs ${isActive ? 'text-blue-700' : isCompleted ? 'text-blue-600' : 'text-gray-400'}`}>{formStep.label}</span>
+                    </button>
+
+                    {idx < FORM_STEPS.length - 1 && (
+                      <div className={`h-1 flex-1 ml-3 mr-3 ${step > idx ? 'bg-blue-500' : 'bg-gray-200'} rounded`}></div>
+                    )}
                   </div>
                 );
               })}
@@ -2976,10 +3075,6 @@ const searchDonorByPhn = async () => {
                       </>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    Auto-save:{" "}
-                    {recipientForm.name ? "Active" : "Waiting for data"}
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -3034,7 +3129,7 @@ const searchDonorByPhn = async () => {
               ) : (
                 <Button
                   type="submit"
-                  disabled={isSubmitting || Object.keys(errors).length > 0}
+                  disabled={isSubmitting}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
@@ -3079,23 +3174,6 @@ const searchDonorByPhn = async () => {
             </div>
           </div>
         </form>
-
-        {/* Unsaved Changes Warning */}
-        <div className="fixed bottom-4 right-4">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg max-w-sm">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-yellow-800 text-sm">
-                  Auto-save Active
-                </p>
-                <p className="text-yellow-700 text-xs">
-                  Your progress is automatically saved as you work
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

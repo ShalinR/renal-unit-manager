@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Download, ArrowLeft, AlertCircle, Stethoscope, RefreshCw } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { usePatientContext } from "@/context/PatientContext";
+import { exportInvestigationData, flattenPeritonealData } from '@/lib/exportUtils';
 
 interface CAPDData {
   counsellingDate: string;
@@ -191,10 +192,34 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to CAPD Summary
         </Button>
-        {/* <Button>
-          <Download className="w-4 h-4 mr-2" />
-          Export Report
-        </Button> */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!capdData) return;
+              const flatData = flattenPeritonealData(capdData);
+              const filename = `Peritoneal_Dialysis_${phn || 'unknown'}_${new Date().toISOString().split('T')[0]}`;
+              exportInvestigationData(flatData, filename, 'excel');
+            }}
+            disabled={!capdData}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export Excel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!capdData) return;
+              const flatData = flattenPeritonealData(capdData);
+              const filename = `Peritoneal_Dialysis_${phn || 'unknown'}_${new Date().toISOString().split('T')[0]}`;
+              exportInvestigationData(flatData, filename, 'csv');
+            }}
+            disabled={!capdData}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Basic Information */}
