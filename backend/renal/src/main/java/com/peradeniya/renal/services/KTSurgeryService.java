@@ -98,6 +98,10 @@ public class KTSurgeryService {
         entity.setGender(dto.getGender());
         entity.setAddress(dto.getAddress());
         entity.setContact(dto.getContact());
+        // Anthropometrics
+        entity.setHeight(dto.getHeight());
+        entity.setWeight(dto.getWeight());
+        entity.setBmi(dto.getBmi());
 
         // Medical History
         entity.setDiabetes(dto.getDiabetes());
@@ -215,6 +219,10 @@ public class KTSurgeryService {
         dto.setGender(entity.getGender());
         dto.setAddress(entity.getAddress());
         dto.setContact(entity.getContact());
+        // Anthropometrics
+        dto.setHeight(entity.getHeight());
+        dto.setWeight(entity.getWeight());
+        dto.setBmi(entity.getBmi());
 
         // Medical History
         dto.setDiabetes(entity.getDiabetes());

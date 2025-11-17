@@ -5,6 +5,7 @@ import com.peradeniya.renal.dto.PatientProfileDTO;
 import com.peradeniya.renal.model.Patient;
 import com.peradeniya.renal.services.PatientService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,7 @@ public class PatientController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
         service.deleteById(id);

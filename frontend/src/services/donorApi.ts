@@ -35,22 +35,34 @@ const handleApiRequest = async <T>(url: string, options: RequestInit = {}): Prom
       },
     });
 
+    // Read response body as text first to avoid json() errors on empty bodies
+    const text = await response.text();
+
     if (!response.ok) {
-      let errorData;
+      let errorMessage = `HTTP error! status: ${response.status}`;
       try {
-        errorData = await response.json();
+        if (text) {
+          const parsed = JSON.parse(text);
+          errorMessage = parsed?.message || JSON.stringify(parsed) || errorMessage;
+        }
       } catch {
-        errorData = { message: `HTTP error! status: ${response.status}` };
+        // ignore JSON parse errors here and keep default message
       }
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(errorMessage);
     }
 
-    // For DELETE requests that might not return content
-    if (response.status === 204) {
+    // If there's no body (204 or empty), return empty object/undefined casted to T
+    if (!text) {
       return {} as T;
     }
 
-    return await response.json();
+    try {
+      return JSON.parse(text) as T;
+    } catch (err) {
+      // If response isn't valid JSON, return raw text as any (caller should handle)
+      // This avoids throwing unexpected JSON parse errors in the UI
+      return (text as unknown) as T;
+    }
   } catch (error) {
     console.error('API request failed:', error);
     console.log('Request URL:', url);

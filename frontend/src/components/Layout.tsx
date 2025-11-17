@@ -91,7 +91,7 @@ const Layout = ({ children }: LayoutProps) => {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-900">
         {/* Sidebar */}
-        <Sidebar className="border-r border-slate-200 bg-gradient-to-b from-sky-50 via-blue-50 to-sky-100 dark:bg-slate-950 dark:border-slate-800">
+        <Sidebar className="border-r border-slate-200 bg-gradient-to-b from-sky-50 via-blue-50 to-sky-100 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 dark:border-slate-800">
           <SidebarHeader>
             <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-teal-500 rounded-xl flex items-center justify-center shadow-md">
@@ -121,15 +121,15 @@ const Layout = ({ children }: LayoutProps) => {
                         onClick={() => navigate(item.url)}
                         isActive={location.pathname === item.url}
                         className={`
-                          relative flex items-center gap-3 rounded-lg pl-6 pr-4 py-3 text-sm font-semibold transition-all duration-200 w-full text-black dark:text-black hover:bg-blue-100 dark:hover:bg-slate-800
-                          ${location.pathname === item.url ? "bg-blue-200 shadow-sm" : ""}
+                          relative flex items-center gap-3 rounded-lg pl-6 pr-4 py-3 text-sm font-semibold transition-all duration-200 w-full text-black dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-slate-800
+                          ${location.pathname === item.url ? "bg-blue-200 shadow-sm dark:bg-slate-800/60" : ""}
                         `}
                       >
                         {location.pathname === item.url && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 transition-all" />
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 dark:bg-blue-400 transition-all" />
                         )}
-                        <item.icon className="h-5 w-5 text-blue-700" />
-                        <span className="text-black">{item.title}</span>
+                        <item.icon className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+                        <span className="text-black dark:text-slate-100">{item.title}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -144,15 +144,15 @@ const Layout = ({ children }: LayoutProps) => {
                             onClick={() => navigate(item.url)}
                             isActive={location.pathname === item.url}
                             className={`
-                              relative flex items-center gap-3 rounded-lg pl-6 pr-4 py-3 text-sm font-semibold transition-all duration-200 w-full text-black dark:text-black hover:bg-blue-100 dark:hover:bg-slate-800
-                              ${location.pathname === item.url ? "bg-blue-200 shadow-sm" : ""}
-                            `}
+                                relative flex items-center gap-3 rounded-lg pl-6 pr-4 py-3 text-sm font-semibold transition-all duration-200 w-full text-black dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-slate-800
+                                ${location.pathname === item.url ? "bg-blue-200 shadow-sm dark:bg-slate-800/60" : ""}
+                              `}
                           >
-                            {location.pathname === item.url && (
-                              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 transition-all" />
-                            )}
-                            <item.icon className="h-5 w-5 text-blue-700" />
-                            <span className="text-black">{item.title}</span>
+                              {location.pathname === item.url && (
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 dark:bg-blue-400 transition-all" />
+                              )}
+                              <item.icon className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+                              <span className="text-black dark:text-slate-100">{item.title}</span>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       ))}

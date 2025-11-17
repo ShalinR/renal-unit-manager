@@ -9,6 +9,10 @@ export interface KTFormData  {
   gender: string;
   address: string;
   contact: string;
+  // Anthropometrics
+  height?: string; // in cm
+  weight?: string; // in kg
+  bmi?: string;
   
   // Medical History
   diabetes: string;

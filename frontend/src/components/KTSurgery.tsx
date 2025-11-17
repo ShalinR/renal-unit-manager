@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText, UserCheck } from "lucide-react";
+import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText, UserCheck, Eye, X } from "lucide-react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { transplantApi, handleApiError } from "../services/transplantApi";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 import type { KTFormData, ImmunologicalDetails } from "../types/transplant";
 import type { ActiveView } from "../pages/KidneyTransplant";
@@ -26,6 +30,9 @@ const initialForm: KTFormData = {
   gender: "",
   address: "",
   contact: "",
+  height: "",
+  weight: "",
+  bmi: "",
   diabetes: "",
   hypertension: "",
   ihd: "",
@@ -128,7 +135,9 @@ const FORM_STEPS = [
 
 const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const [form, setForm] = useState<KTFormData>(initialForm);
+  const [savedRecord, setSavedRecord] = useState<KTFormData | null>(null);
   const [step, setStep] = useState(0);
+  const [viewDetails, setViewDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { patient } = usePatientContext();
 
@@ -212,6 +221,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           if (savedData) {
             console.log("✅ KTSurgery.tsx: Successfully loaded saved data:", savedData);
             setForm(savedData);
+            setSavedRecord(savedData);
             setStep(0); // Reset to first step
           } else {
             console.log(`ℹ️ KTSurgery.tsx: No saved data found for PHN ${patient.phn}. Form will use patient auto-population only.`);
@@ -229,7 +239,186 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   }, [patient?.phn]);
 
   const handleChange = (field: keyof KTFormData, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value } as KTFormData;
+
+      // Auto-calculate BMI when height or weight changes. Height expected in cm, weight in kg.
+      if (field === 'height' || field === 'weight') {
+        const rawHeight = field === 'height' ? value : (prev.height || '');
+        const rawWeight = field === 'weight' ? value : (prev.weight || '');
+        const h = Number(String(rawHeight).replace(/[^0-9.\-]/g, ''));
+        const w = Number(String(rawWeight).replace(/[^0-9.\-]/g, ''));
+        if (Number.isFinite(h) && Number.isFinite(w) && h > 0) {
+          const bmiVal = w / ((h / 100) * (h / 100));
+          next.bmi = (Math.round(bmiVal * 10) / 10).toString();
+        } else {
+          next.bmi = '';
+        }
+      }
+
+      return next;
+    });
+  };
+
+  const parseNumber = (v: any) => {
+    const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  const abnormalFor = (key: string, val: any) => {
+    const n = parseNumber(val);
+    if (Number.isNaN(n)) return undefined;
+    switch (key) {
+      case 'preKTCreatinine':
+      case 'postKTCreatinine':
+        if (n > 120) return { severity: 'high' as const, message: 'Raised creatinine — consider review' };
+        return undefined;
+      case 'tacrolimus':
+        if (n < 5) return { severity: 'low' as const, message: 'Low tacrolimus level — risk of rejection' };
+        if (n > 15) return { severity: 'high' as const, message: 'High tacrolimus level — toxicity risk' };
+        return undefined;
+      default:
+        return undefined;
+    }
+  };
+
+  const Field = ({ label, value, abnormal }: { label: string; value: any; abnormal?: { severity: 'high' | 'low' | 'warn'; message?: string } }) => (
+    <div>
+      <Label className="text-muted-foreground text-xs">{label}</Label>
+      <div className="flex items-center gap-2">
+        <p className="font-medium text-sm text-black dark:text-white break-words">{value === '' || value === null || value === undefined ? '—' : String(value)}</p>
+        {abnormal && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge className={`${abnormal.severity === 'high' ? 'bg-red-600 text-white' : abnormal.severity === 'low' ? 'bg-yellow-500 text-black' : 'bg-amber-500 text-black'} px-2 py-0.5 text-xs`}>{abnormal.severity === 'high' ? 'High' : abnormal.severity === 'low' ? 'Low' : 'Warn'}</Badge>
+            </TooltipTrigger>
+            <TooltipContent>{abnormal.message || `${label} is ${abnormal.severity}`}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderPayload = (data?: KTFormData | null) => {
+    if (!data) return null;
+    return (
+      <div className="space-y-4 mt-2">
+        <div className="flex gap-2 justify-end">
+          <Button size="sm" variant="outline" onClick={() => {
+            const reportLines: string[] = [];
+            reportLines.push(`KT Surgery Report — ${data?.name || ''} ${data?.ktDate || ''}`);
+            reportLines.push('');
+            Object.entries(data).forEach(([k, v]) => {
+              if (k === 'immunologicalDetails' || typeof v === 'object') return;
+              reportLines.push(`${k}: ${v}`);
+            });
+            reportLines.push('');
+            reportLines.push(`Surgical Notes: ${data?.surgicalNotes || ''}`);
+            navigator.clipboard?.writeText(reportLines.join('\n'));
+            alert('Report copied to clipboard');
+          }}>Copy as report</Button>
+
+          <Button size="sm" onClick={() => {
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>KT Surgery Report</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#111} h1{font-size:18px} .section{margin-bottom:12px;} .label{font-weight:600;margin-bottom:4px;} .value{margin-bottom:6px}</style></head><body><h1>KT Surgery Report</h1><p><strong>Patient:</strong> ${data?.name || ''} ${data?.ktDate || ''}</p>${Object.entries(data).map(([k,v])=>{ if(k==='immunologicalDetails') return ''; if(typeof v === 'object') return ''; return `<div class="section"><div class="label">${k}</div><div class="value">${String(v||'—')}</div></div>`}).join('')}<script>window.onload=()=>{window.print();}</script></body></html>`;
+            const w = window.open('', '_blank');
+            if (w) {
+              w.document.open();
+              w.document.write(html);
+              w.document.close();
+            } else {
+              alert('Unable to open print window — please allow popups');
+            }
+          }}>Export / Print</Button>
+        </div>
+
+        <Accordion type="multiple" defaultValue={[] as string[]}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AccordionItem value="basic">
+              <AccordionTrigger>Basic Information</AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Date of KT" value={data.ktDate} />
+                  <Field label="Type of KT" value={data.ktType} />
+                  <Field label="Donor Relationship" value={data.donorRelationship} />
+                  <Field label="Transplant Unit" value={data.ktUnit} />
+                  <Field label="Surgeon" value={data.ktSurgeon} />
+                  <Field label="Height (cm)" value={data.height} />
+                  <Field label="Weight (kg)" value={data.weight} />
+                  <Field label="BMI (kg/m²)" value={data.bmi} />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </div>
+
+          <AccordionItem value="immuno">
+            <AccordionTrigger>Immunological</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Donor Blood Group" value={data.immunologicalDetails?.bloodGroupDonor || ''} />
+                <Field label="Recipient Blood Group" value={data.immunologicalDetails?.bloodGroupRecipient || ''} />
+                <Field label="PRA Pre" value={data.immunologicalDetails?.praPre || ''} />
+                <Field label="PRA Post" value={data.immunologicalDetails?.praPost || ''} />
+                <Field label="DSA" value={data.immunologicalDetails?.dsa || ''} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="infection">
+            <AccordionTrigger>Infection Screen</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="CMV Donor" value={data.cmvDonor} />
+                <Field label="CMV Recipient" value={data.cmvRecipient} />
+                <Field label="EBV Donor" value={data.ebvDonor} />
+                <Field label="EBV Recipient" value={data.ebvRecipient} />
+                <Field label="HIV Ab" value={data.hivAb} />
+                <Field label="HepBsAg" value={data.hepBsAg} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="surgery">
+            <AccordionTrigger>Surgery & Complications</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Pre-op Status" value={data.preOpStatus} />
+                <Field label="Surgical Notes" value={data.surgicalNotes} />
+                <Field label="Pre KT Creatinine" value={data.preKTCreatinine} abnormal={abnormalFor('preKTCreatinine', data.preKTCreatinine)} />
+                <Field label="Post KT Creatinine" value={data.postKTCreatinine} abnormal={abnormalFor('postKTCreatinine', data.postKTCreatinine)} />
+                <Field label="Delayed Graft" value={data.delayedGraftYes ? 'Yes' : 'No'} />
+                <Field label="Post KT Dialysis" value={data.postKTDialysisYes ? 'Yes' : 'No'} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="meds">
+            <AccordionTrigger>Medications & Recommendations</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Medications</Label>
+                    <div>
+                      {data.medications?.length ? data.medications.map((m, i) => (
+                        <div key={i} className="text-sm">{m.name} — {m.dosage}</div>
+                      )) : <div className="text-sm">—</div>}
+                    </div>
+                  </div>
+                  <Field label="Recommendations" value={data.recommendations} />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        <div>
+          <h4 className="text-sm font-semibold mb-2">Filled By</h4>
+          <div className="p-3 bg-muted rounded-md">
+            <p className="text-sm text-black dark:text-white whitespace-pre-wrap">{data.filledBy || '—'}</p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const nextStep = () => setStep((s) => Math.min(FORM_STEPS.length - 1, s + 1));
@@ -304,15 +493,28 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                 }
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveView("dashboard")}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveView("dashboard")}
                 className="flex items-center gap-2 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Button>
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Dashboard
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewDetails(true)}
+                disabled={!savedRecord && !form}
+                className="flex items-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                View Summary
+              </Button>
+            </div>
           </div>
 
           {/* Progress Stepper */}
@@ -439,6 +641,10 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     />
                   </div>
                 </div>
+                
+
+
+                  
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                     Gender <span className="text-red-500 ml-1">*</span>
@@ -1592,6 +1798,30 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             </div>
           </div>
         </form>
+        {/* Details Dialog for saved surgery or current form */}
+        <Dialog open={viewDetails} onOpenChange={(open) => { if (!open) setViewDetails(false); }}>
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl">KT Surgery Details</DialogTitle>
+              <DialogDescription className="text-sm">{(savedRecord || form)?.ktDate || ''}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label className="text-muted-foreground text-xs sm:text-sm">Patient</Label>
+                  <p className="font-medium text-sm sm:text-base">{(savedRecord || form)?.name || '—'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs sm:text-sm">Date of KT</Label>
+                  <p className="font-medium text-sm sm:text-base">{(savedRecord || form)?.ktDate || '—'}</p>
+                </div>
+              </div>
+              <div>
+                {renderPayload(savedRecord || form)}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
     </div>

@@ -32,6 +32,16 @@ public class KTSurgery {
     @Column(name = "contact", length = 50)
     private String contact;
 
+    // Anthropometrics
+    @Column(name = "height_cm", length = 20)
+    private String height;
+
+    @Column(name = "weight_kg", length = 20)
+    private String weight;
+
+    @Column(name = "bmi", length = 20)
+    private String bmi;
+
     // Medical History
     @Column(name = "diabetes", length = 10)
     private String diabetes;
@@ -331,6 +341,15 @@ public class KTSurgery {
 
     public String getContact() { return contact; }
     public void setContact(String contact) { this.contact = contact; }
+
+    public String getHeight() { return height; }
+    public void setHeight(String height) { this.height = height; }
+
+    public String getWeight() { return weight; }
+    public void setWeight(String weight) { this.weight = weight; }
+
+    public String getBmi() { return bmi; }
+    public void setBmi(String bmi) { this.bmi = bmi; }
 
     public String getDiabetes() { return diabetes; }
     public void setDiabetes(String diabetes) { this.diabetes = diabetes; }

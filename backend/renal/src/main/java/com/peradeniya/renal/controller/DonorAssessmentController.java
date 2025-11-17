@@ -6,6 +6,7 @@ import com.peradeniya.renal.dto.DonorAssignmentDTO;
 import com.peradeniya.renal.services.DonorAssessmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ public class DonorAssessmentController {
         return ResponseEntity.ok(assessments);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.deleteById(id);

@@ -4,6 +4,8 @@ import com.peradeniya.renal.dto.*;
 import com.peradeniya.renal.model.*;
 import com.peradeniya.renal.repository.RecipientAssessmentRepository;
 import com.peradeniya.renal.repository.PatientRepository;
+import com.peradeniya.renal.dto.DonorAssignmentDTO;
+import com.peradeniya.renal.services.DonorAssessmentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +18,12 @@ public class RecipientAssessmentService {
 
     private final RecipientAssessmentRepository repository;
     private final PatientRepository patientRepository;
+    private final DonorAssessmentService donorAssessmentService;
 
-    public RecipientAssessmentService(RecipientAssessmentRepository repository, PatientRepository patientRepository) {
+    public RecipientAssessmentService(RecipientAssessmentRepository repository, PatientRepository patientRepository, DonorAssessmentService donorAssessmentService) {
         this.repository = repository;
         this.patientRepository = patientRepository;
+        this.donorAssessmentService = donorAssessmentService;
     }
 
     @Transactional
@@ -69,6 +73,20 @@ public class RecipientAssessmentService {
         latestAssessment.setDonorId(donorId);
 
         repository.save(latestAssessment);
+        // Also update donor status and assignment info in donor service so the donor
+        // is marked as "assigned" in the system when assigned from recipient form.
+        try {
+            DonorAssignmentDTO assignment = new DonorAssignmentDTO();
+            assignment.setDonorId(donorId);
+            assignment.setRecipientPhn(recipientPhn);
+            // Use the recipient name from the assessment if available
+            assignment.setRecipientName(latestAssessment.getName() != null ? latestAssessment.getName() : "");
+            donorAssessmentService.assignDonorToRecipient(assignment);
+        } catch (Exception e) {
+            // Log and continue — recipient assessment is saved but donor assignment failed
+            // In production you might want to surface this failure to the caller
+            System.err.println("Failed to update donor assignment: " + e.getMessage());
+        }
     }
 
 

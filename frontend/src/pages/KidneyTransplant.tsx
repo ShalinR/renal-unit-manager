@@ -18,7 +18,6 @@ import DonorAssessment from "../components/DonorAssessment";
 import RecipientAssessment from "../components/RecipientAssessment";
 import FollowUpForm from "../components/FollowUp";
 import KTFormData from "../components/KTSurgery";
-import KidneyTransplantSummary from "../components/KidneyTransplantSummary";
 import { usePatientContext } from "../context/PatientContext";
 import React from "react";
 import { useLocation } from "react-router-dom";
@@ -33,7 +32,9 @@ export type ActiveView =
   | "recipient-assessment"
   | "kt"
   | "follow-up"
-  | "summary";
+  | "summary"
+  | "summary-recipient"
+  | "summary-donor";
 
 // Define complete initial states with all nested structures
 const initialDonorFormState: DonorAssessmentForm = {
@@ -614,32 +615,36 @@ const KidneyTransplant = () => {
   return (
     <div>
       {activeView === "donor-assessment" && (
-        <DonorAssessment
-          donorForm={donorForm}
-          setDonorForm={(data) =>
-            dispatch({
-              type: "SET_FORM_DATA",
-              payload: { form: "donorForm", data },
-            })
-          }
-          setActiveView={setActiveView}
-          handleDonorFormChange={handleDonorFormChange}
-          handleDonorFormSubmit={handleDonorFormSubmit}
-        />
+        <>
+          <DonorAssessment
+            donorForm={donorForm}
+            setDonorForm={(data) =>
+              dispatch({
+                type: "SET_FORM_DATA",
+                payload: { form: "donorForm", data },
+              })
+            }
+            setActiveView={setActiveView}
+            handleDonorFormChange={handleDonorFormChange}
+            handleDonorFormSubmit={handleDonorFormSubmit}
+          />
+        </>
       )}
       {activeView === "recipient-assessment" && (
-        <RecipientAssessment
-          recipientForm={recipientForm}
-          setRecipientForm={(data) =>
-            dispatch({
-              type: "SET_FORM_DATA",
-              payload: { form: "recipientForm", data },
-            })
-          }
-          setActiveView={setActiveView}
-          handleRecipientFormChange={handleRecipientFormChange}
-          handleRecipientFormSubmit={handleRecipientFormSubmit}
-        />
+        <>
+          <RecipientAssessment
+            recipientForm={recipientForm}
+            setRecipientForm={(data) =>
+              dispatch({
+                type: "SET_FORM_DATA",
+                payload: { form: "recipientForm", data },
+              })
+            }
+            setActiveView={setActiveView}
+            handleRecipientFormChange={handleRecipientFormChange}
+            handleRecipientFormSubmit={handleRecipientFormSubmit}
+          />
+        </>
       )}
       {activeView === "follow-up" && (
         <div className="space-y-6">
@@ -656,11 +661,7 @@ const KidneyTransplant = () => {
           <KTFormData setActiveView={setActiveView} patientPhn={patient?.phn} />
         </div>
       )}
-      {activeView === "summary" && (
-        <KidneyTransplantSummary
-          setActiveView={setActiveView}
-        />
-      )}
+      {/* Summary views removed — Kidney Transplant Summary disabled in app */}
       {activeView === "dashboard" && (
         <div className="space-y-8">
           <div className="text-center space-y-4">
@@ -673,22 +674,21 @@ const KidneyTransplant = () => {
           </div>
 
           <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                {
-                  icon: UserPlus,
-                  title: "Donor Assessment",
-                  view: "donor-assessment",
-                },
-                {
-                  icon: Users,
-                  title: "Recipient Assessment",
-                  view: "recipient-assessment",
-                },
-                { icon: Scissors, title: "Kidney Transplant Surgery", view: "kt" },
-                { icon: ClipboardList, title: "Follow Up", view: "follow-up" },
-                { icon: FileText, title: "Patient Summary", view: "summary" },
-              ].map((item) => (
+                  {
+                    icon: UserPlus,
+                    title: "Donor Assessment",
+                    view: "donor-assessment",
+                  },
+                  {
+                    icon: Users,
+                    title: "Recipient Assessment",
+                    view: "recipient-assessment",
+                  },
+                  { icon: Scissors, title: "Kidney Transplant Surgery", view: "kt" },
+                  { icon: ClipboardList, title: "Follow Up", view: "follow-up" },
+                ].map((item) => (
                 <Card
                   key={item.title}
                   className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full"

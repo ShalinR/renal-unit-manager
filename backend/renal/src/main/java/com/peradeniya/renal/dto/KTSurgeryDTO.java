@@ -15,6 +15,10 @@ public class KTSurgeryDTO {
     private String gender;
     private String address;
     private String contact;
+    // Anthropometrics
+    private String height;
+    private String weight;
+    private String bmi;
 
     // Medical History
     private String diabetes;
@@ -140,6 +144,15 @@ public class KTSurgeryDTO {
 
     public String getContact() { return contact; }
     public void setContact(String contact) { this.contact = contact; }
+
+    public String getHeight() { return height; }
+    public void setHeight(String height) { this.height = height; }
+
+    public String getWeight() { return weight; }
+    public void setWeight(String weight) { this.weight = weight; }
+
+    public String getBmi() { return bmi; }
+    public void setBmi(String bmi) { this.bmi = bmi; }
 
     public String getDiabetes() { return diabetes; }
     public void setDiabetes(String diabetes) { this.diabetes = diabetes; }

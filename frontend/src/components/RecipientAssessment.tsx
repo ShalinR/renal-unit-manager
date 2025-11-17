@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -28,7 +28,9 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
+  Eye,
 } from "lucide-react";
+import RecipientSummaryOverlay from "@/components/RecipientSummaryOverlay";
 import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
 import { Donor } from "@/types/donor";
@@ -80,6 +82,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   const [donorSearchResults, setDonorSearchResults] = useState<any>(null);
   const [searchingDonor, setSearchingDonor] = useState(false);
   const [viewMode, setViewMode] = useState<boolean>(false); // NEW: View mode state
+  const [showRecipientSummary, setShowRecipientSummary] = useState(false);
   const [assignedDonor, setAssignedDonor] = useState<Donor | null>(null);
   const {
     donors,
@@ -94,6 +97,8 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   const [transfusions, setTransfusions] = useState<
     { date: string; indication: string; volume: string }[]
   >([{ date: "", indication: "", volume: "" }]);
+
+  // Build recipient summary sections
   const handleSelectDonor = async (donor: Donor) => {
     console.log("🔗 Selecting donor:", {
       id: donor.id,
@@ -586,15 +591,9 @@ const searchDonorByPhn = async () => {
           newErrors.confirmation =
             "Please complete all required steps before submitting";
         }
-        // Add validation for medical staff fields
+        // Require only staff name for completion; other staff fields removed
         if (!formToValidate.completedBy?.staffName?.trim()) {
           newErrors.staffName = "Staff name is required";
-        }
-        if (!formToValidate.completedBy?.staffRole?.trim()) {
-          newErrors.staffRole = "Staff role is required";
-        }
-        if (!formToValidate.completedBy?.department?.trim()) {
-          newErrors.department = "Department is required";
         }
         break;
     }
@@ -634,12 +633,6 @@ const searchDonorByPhn = async () => {
     }
     if (!currentForm.completedBy?.staffName?.trim()) {
       newErrors.staffName = "Staff name is required";
-    }
-    if (!currentForm.completedBy?.staffRole?.trim()) {
-      newErrors.staffRole = "Staff role is required";
-    }
-    if (!currentForm.completedBy?.department?.trim()) {
-      newErrors.department = "Department is required";
     }
 
     // If validation fails, update errors and return
@@ -1042,7 +1035,6 @@ const searchDonorByPhn = async () => {
               <div>
                 <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
                   Recipient Assessment {isEditing && "(Editing)"}
-                  {viewMode && " - View Mode"}
                 </h1>
                 <p className="text-blue-600 dark:text-blue-300">
                   {patient && patient.name
@@ -1060,6 +1052,15 @@ const searchDonorByPhn = async () => {
             </div>
 
             <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRecipientSummary(true)}
+                className="flex items-center gap-2 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-300 dark:hover:bg-green-900/30"
+              >
+                <Eye className="w-4 h-4" /> View Summary
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -2618,21 +2619,32 @@ const searchDonorByPhn = async () => {
                     >
                       Immunological Risk
                     </Label>
-                    <Input
-                      id="recipientImmunologicalRisk"
-                      value={
-                        recipientForm.immunologicalDetails?.immunologicalRisk ||
-                        ""
+                    <RadioGroup
+                      value={recipientForm.immunologicalDetails?.immunologicalRisk || ""}
+                      onValueChange={(value) =>
+                        handleNestedChange("immunologicalDetails.immunologicalRisk", value)
                       }
-                      onChange={(e) =>
-                        handleNestedChange(
-                          "immunologicalDetails.immunologicalRisk",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Immunological risk assessment"
-                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                    />
+                      className="flex gap-6"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="low" id="recipient-low" />
+                        <Label htmlFor="recipient-low" className="text-sm text-gray-700 cursor-pointer">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Low</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="average" id="recipient-average" />
+                        <Label htmlFor="recipient-average" className="text-sm text-gray-700 cursor-pointer">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Average</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="high" id="recipient-high" />
+                        <Label htmlFor="recipient-high" className="text-sm text-gray-700 cursor-pointer">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">High</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                 </div>
               </CardContent>
@@ -2652,203 +2664,28 @@ const searchDonorByPhn = async () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Personal Info Summary */}
-                  <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                      <User className="w-5 h-5" />
-                      Personal Information
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <strong>Name:</strong>{" "}
-                        {recipientForm.name || "Not provided"}
-                      </p>
-                      <p>
-                        <strong>Age:</strong>{" "}
-                        {recipientForm.age || "Not provided"}
-                      </p>
-                      <p>
-                        <strong>Gender:</strong>{" "}
-                        {recipientForm.gender || "Not provided"}
-                      </p>
-                      <p>
-                        <strong>NIC:</strong>{" "}
-                        {recipientForm.nicNo || "Not provided"}
-                      </p>
-                      <p>
-                        <strong>Contact:</strong>{" "}
-                        {recipientForm.contactDetails || "Not provided"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Donor Summary */}
-                  <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                    <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
-                      <Heart className="w-5 h-5" />
-                      Donor Information
-                    </h3>
-                    {recipientForm.donorId ? (
-                      <div className="space-y-2 text-sm">
-                        <p>
-                          <strong>Donor:</strong> {recipientForm.donorName}
-                        </p>
-                        <p>
-                          <strong>Blood Group:</strong>{" "}
-                          {recipientForm.donorBloodGroup}
-                        </p>
-                        <p>
-                          <strong>PHN:</strong> {recipientForm.donorPhn}
-                        </p>
-                        <p>
-                          <strong>Relationship:</strong>{" "}
-                          {recipientForm.relationToRecipient || "Not specified"}
-                        </p>
-                        <p>
-                          <strong>Type:</strong> {recipientForm.relationType}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-yellow-700 font-medium">
-                        No donor selected
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Medical Summary */}
-                  <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
-                    <h3 className="text-lg font-semibold text-purple-900 mb-4 flex items-center gap-2">
-                      <Activity className="w-5 h-5" />
-                      Medical Summary
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <strong>Diabetes:</strong>{" "}
-                        {recipientForm.comorbidities.dm ? "Yes" : "No"}
-                      </p>
-                      <p>
-                        <strong>Hypertension:</strong>{" "}
-                        {recipientForm.comorbidities.htn ? "Yes" : "No"}
-                      </p>
-                      <p>
-                        <strong>RRT Modality:</strong>
-                        {recipientForm.rrtDetails.modalityHD ? " HD" : ""}
-                        {recipientForm.rrtDetails.modalityCAPD ? " CAPD" : ""}
-                        {!recipientForm.rrtDetails.modalityHD &&
-                        !recipientForm.rrtDetails.modalityCAPD
-                          ? " Not specified"
-                          : ""}
-                      </p>
-                      <p>
-                        <strong>Transfusions:</strong>{" "}
-                        {transfusions.filter((t) => t.date).length} records
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Immunological Summary */}
-                  <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
-                    <h3 className="text-lg font-semibold text-orange-900 mb-4 flex items-center gap-2">
-                      <Shield className="w-5 h-5" />
-                      Immunological
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <strong>Blood Group:</strong>{" "}
-                        {recipientForm.immunologicalDetails?.bloodGroup?.d ||
-                          ""}{" "}
-                        {recipientForm.immunologicalDetails?.bloodGroup?.r ||
-                          ""}
-                      </p>
-                      <p>
-                        <strong>PRA Pre:</strong>{" "}
-                        {recipientForm.immunologicalDetails?.praPre ||
-                          "Not specified"}
-                      </p>
-                      <p>
-                        <strong>Immunological Risk:</strong>{" "}
-                        {recipientForm.immunologicalDetails
-                          ?.immunologicalRisk || "Not assessed"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                {/* Summary cards removed as requested */}
 
                 {/* Medical Staff Information */}
                 <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Medical Staff Information
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold text-gray-700">
-                        Completed By{" "}
-                        <span className="text-red-500 ml-1">*</span>
+                        Completed By (Staff Name) <span className="text-red-500 ml-1">*</span>
                       </Label>
                       <Input
                         value={recipientForm.completedBy?.staffName || ""}
                         onChange={(e) =>
-                          handleNestedChange(
-                            "completedBy.staffName",
-                            e.target.value
-                          )
+                          handleNestedChange("completedBy.staffName", e.target.value)
                         }
-                        placeholder="Enter staff name"
+                        placeholder="Staff full name"
                         className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
                       />
                     </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Staff Role <span className="text-red-500 ml-1">*</span>
-                      </Label>
-                      <Input
-                        value={recipientForm.completedBy?.staffRole || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "completedBy.staffRole",
-                            e.target.value
-                          )
-                        }
-                        placeholder="e.g., Transplant Coordinator, Nurse, Doctor"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Staff ID
-                      </Label>
-                      <Input
-                        value={recipientForm.completedBy?.staffId || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "completedBy.staffId",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Enter staff ID"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Department <span className="text-red-500 ml-1">*</span>
-                      </Label>
-                      <Input
-                        value={recipientForm.completedBy?.department || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "completedBy.department",
-                            e.target.value
-                          )
-                        }
-                        placeholder="e.g., Nephrology, Transplant Unit"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold text-gray-700">
                         Completion Date
@@ -2868,141 +2705,37 @@ const searchDonorByPhn = async () => {
                         className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
                       />
                     </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Signature
-                      </Label>
-                      <Input
-                        value={recipientForm.completedBy?.signature || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "completedBy.signature",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Staff signature"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
                   </div>
                 </div>
 
-                {/* Review and Approval Section */}
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                    Review & Approval
+                {/* Consent and Confirmation (mirrors Donor form) */}
+                <div className="bg-white p-6 rounded-lg border border-slate-200">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                    Consent and Confirmation
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Consultant Review
-                      </Label>
-                      <Input
-                        value={recipientForm.reviewedBy?.consultantName || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "reviewedBy.consultantName",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Consultant name"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                  <div className="space-y-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        required
                       />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Consultant ID
-                      </Label>
-                      <Input
-                        value={recipientForm.reviewedBy?.consultantId || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "reviewedBy.consultantId",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Consultant ID"
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      <span className="text-sm text-slate-700 leading-relaxed">
+                        I confirm that all information provided is accurate to the
+                        best of my knowledge and understand the importance of
+                        providing truthful medical information.
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        required
                       />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Review Date
-                      </Label>
-                      <Input
-                        type="date"
-                        value={recipientForm.reviewedBy?.reviewDate || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "reviewedBy.reviewDate",
-                            e.target.value
-                          )
-                        }
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Approval Status
-                      </Label>
-                      <RadioGroup
-                        value={
-                          recipientForm.reviewedBy?.approvalStatus || "pending"
-                        }
-                        onValueChange={(value) =>
-                          handleNestedChange("reviewedBy.approvalStatus", value)
-                        }
-                        className="flex gap-4 pt-2"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="pending" id="statusPending" />
-                          <Label
-                            htmlFor="statusPending"
-                            className="text-gray-700"
-                          >
-                            Pending
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem
-                            value="approved"
-                            id="statusApproved"
-                          />
-                          <Label
-                            htmlFor="statusApproved"
-                            className="text-gray-700"
-                          >
-                            Approved
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem
-                            value="rejected"
-                            id="statusRejected"
-                          />
-                          <Label
-                            htmlFor="statusRejected"
-                            className="text-gray-700"
-                          >
-                            Rejected
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Additional Notes
-                    </Label>
-                    <Textarea
-                      value={recipientForm.reviewedBy?.notes || ""}
-                      onChange={(e) =>
-                        handleNestedChange("reviewedBy.notes", e.target.value)
-                      }
-                      placeholder="Any additional comments or notes from the consultant..."
-                      rows={3}
-                      className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                    />
+                      <span className="text-sm text-slate-700 leading-relaxed">
+                        I consent to the processing of this information for
+                        assessment purposes and understand that this data will be
+                        used for medical evaluation and treatment planning.
+                      </span>
+                    </label>
                   </div>
                 </div>
 
@@ -3020,8 +2753,7 @@ const searchDonorByPhn = async () => {
                       </p>
                       {recipientForm.completedBy?.staffName && (
                         <p className="text-sm text-gray-500 mt-1">
-                          Completed by: {recipientForm.completedBy.staffName} (
-                          {recipientForm.completedBy.department})
+                          Completed by: {recipientForm.completedBy.staffName}
                         </p>
                       )}
                     </div>
@@ -3175,6 +2907,12 @@ const searchDonorByPhn = async () => {
           </div>
         </form>
       </div>
+      {showRecipientSummary && (
+        <RecipientSummaryOverlay
+          form={recipientForm}
+          onClose={() => setShowRecipientSummary(false)}
+        />
+      )}
     </div>
   );
 };
