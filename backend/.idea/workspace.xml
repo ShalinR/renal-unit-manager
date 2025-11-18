@@ -5,25 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../LoginLogo.jpeg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../create_kt_surgery_anthropometrics.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/RecipientSummaryOverlay.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/TransplantSummaryModal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/DonorAssessmentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/DonorAssessmentController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/KTSurgeryDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/KTSurgeryDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/KTSurgery.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/KTSurgery.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/RecipientAssessmentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/RecipientAssessmentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DONOR_ASSESSMENT_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../KIDNEY_TRANSPLANT_SUMMARY_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../KIDNEY_TRANSPLANT_SUMMARY_IMPLEMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/FeedbackDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/FeedbackDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/Feedback.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/Feedback.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/FeedbackRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/FeedbackRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/FeedbackService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/FeedbackService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/App.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/components/DonorAssessment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/DonorAssessment.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/FeedbackButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/FeedbackButton.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/KidneyTransplantSummary.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/components/RecipientAssessment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/RecipientAssessment.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/KidneyTransplant.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/KidneyTransplant.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/services/donorApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/donorApi.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/types/transplant.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/types/transplant.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/lol.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/AdminFeedback.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/AdminFeedback.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/feedbackApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/feedbackApi.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -117,6 +113,7 @@
       <workItem from="1763320073911" duration="2003000" />
       <workItem from="1763365853038" duration="1943000" />
       <workItem from="1763398302068" duration="1205000" />
+      <workItem from="1763462578758" duration="307000" />
     </task>
     <servers />
   </component>
