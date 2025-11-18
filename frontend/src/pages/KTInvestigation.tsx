@@ -10,10 +10,11 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Heart, ArrowLeft, Loader2, Calendar, Eye, FileText, X } from "lucide-react";
+import { Heart, ArrowLeft, Loader2, Calendar, Eye, FileText, X, Download } from "lucide-react";
 import { formatDateToDDMMYYYY, formatDateTimeDisplay } from "@/lib/dateUtils";
 import { usePatientContext } from "@/context/PatientContext";
 import { ktInvestigationApi } from "@/services/ktInvestigationApi";
+import { exportInvestigationData, flattenKTInvestigationData } from '@/lib/exportUtils';
 
 interface StandardInvestigationData {
   patientId: string;
@@ -325,6 +326,22 @@ const KTInvestigation = () => {
       <div className="space-y-4 mt-2">
         <div className="flex gap-2 justify-end">
           <Button size="sm" variant="outline" onClick={() => {
+            const flatData = flattenKTInvestigationData(data);
+            const filename = `KT_Investigation_${data.patientId || 'unknown'}_${data.date || new Date().toISOString().split('T')[0]}`;
+            exportInvestigationData(flatData, filename, 'excel');
+          }} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => {
+            const flatData = flattenKTInvestigationData(data);
+            const filename = `KT_Investigation_${data.patientId || 'unknown'}_${data.date || new Date().toISOString().split('T')[0]}`;
+            exportInvestigationData(flatData, filename, 'csv');
+          }} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => {
             // Copy as report (plain text)
             const reportLines: string[] = [];
             reportLines.push(`Investigation Report — ${data.patientId || ''} ${data.date || ''}`);
@@ -350,7 +367,7 @@ const KTInvestigation = () => {
             } else {
               alert('Unable to open print window — please allow popups');
             }
-          }}>Export / Print</Button>
+          }}>Print</Button>
         </div>
 
         <Accordion type="multiple" defaultValue={[] as string[]}>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, UserPlus, FileText, Clipboard, TrendingUp, AlertTriangle } from "lucide-react";
 import PatientRegistration from "@/components/PatientRegistration";
@@ -273,86 +273,79 @@ const Peritoneal = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {/* Patient Registration */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("register")}>
-                <CardHeader className="text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <UserPlus className="w-6 h-6 text-primary" />
-                  </div><CardTitle>Basic Information</CardTitle><CardDescription>Register new patients in the system</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Register Patient</Button>
-                </CardContent>
+              <Card className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full">
+                <div className="flex flex-col items-center text-center">
+                  <UserPlus className="w-10 h-10 text-primary mb-2" />
+                  <CardTitle className="text-xl font-medium mb-4">Basic Information</CardTitle>
+                </div>
+                <Button 
+                  className="w-full px-6 py-2 text-base" 
+                  onClick={() => setActiveView("register")}
+                >
+                  Access
+                </Button>
               </Card>
 
               {/* CAPD Summary */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("capd-summary")}>
-                <CardHeader className="text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <Clipboard className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>PET / Adequacy Test</CardTitle>
-                  <CardDescription>Complete patient dialysis summary with PET &amp; adequacy tests</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">CAPD Summary</Button>
-                </CardContent>
+              <Card className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full">
+                <div className="flex flex-col items-center text-center">
+                  <Clipboard className="w-10 h-10 text-primary mb-2" />
+                  <CardTitle className="text-xl font-medium mb-4">PET / Adequacy Test</CardTitle>
+                </div>
+                <Button 
+                  className="w-full px-6 py-2 text-base" 
+                  onClick={() => setActiveView("capd-summary")}
+                >
+                  Access
+                </Button>
               </Card>
 
               {/* View Results */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("preview")}>
-                <CardHeader className="text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>View Results</CardTitle>
-                  <CardDescription>Open the latest saved CAPD summary &amp; reports</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    className="w-full bg-blue-500" 
-                    variant="outline" 
-                    disabled={!patient?.phn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (patient?.phn) {
-                        setActiveView("preview");
-                      }
-                    }}
-                  >
-                    {patient?.phn ? (capdData ? "Open Preview" : "No Saved Results") : "Search Patient First"}
-                  </Button>
-                </CardContent>
+              <Card className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full">
+                <div className="flex flex-col items-center text-center">
+                  <FileText className="w-10 h-10 text-primary mb-2" />
+                  <CardTitle className="text-xl font-medium mb-4">View Results</CardTitle>
+                </div>
+                <Button 
+                  className="w-full px-6 py-2 text-base" 
+                  onClick={() => setActiveView("preview")}
+                  disabled={!patient?.phn}
+                >
+                  Access
+                </Button>
               </Card>
 
               {/* Monthly Assessment */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("monthly-assessment")}>
-                <CardHeader className="text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>Monthly Assessment</CardTitle>
-                  <CardDescription>Monthly patient progress and condition tracking</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full bg-blue-500" variant="outline">Monthly Review</Button>
-                </CardContent>
+              <Card className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full">
+                <div className="flex flex-col items-center text-center">
+                  <TrendingUp className="w-10 h-10 text-primary mb-2" />
+                  <CardTitle className="text-xl font-medium mb-4">Monthly Assessment</CardTitle>
+                </div>
+                <Button 
+                  className="w-full px-6 py-2 text-base" 
+                  onClick={() => setActiveView("monthly-assessment")}
+                >
+                  Access
+                </Button>
               </Card>
 
               {/* Complications */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer dark:bg-slate-900 dark:border-slate-800" onClick={() => setActiveView("complications")}>
-                <CardHeader className="text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <AlertTriangle className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>Complications</CardTitle>
-                  <CardDescription>Peritonitis, Exit-site & Tunnel infections</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full bg-blue-500" variant="default">Add Complication</Button>
-                </CardContent>
+              <Card className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full">
+                <div className="flex flex-col items-center text-center">
+                  <AlertTriangle className="w-10 h-10 text-primary mb-2" />
+                  <CardTitle className="text-xl font-medium mb-4">Complications</CardTitle>
+                </div>
+                <Button 
+                  className="w-full px-6 py-2 text-base" 
+                  onClick={() => setActiveView("complications")}
+                >
+                  Access
+                </Button>
               </Card>
+              </div>
             </div>
           </div>
         );

@@ -64,6 +64,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
   const [savedAssessments, setSavedAssessments] = useState<SavedAssessment[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: { [field: string]: string } }>({});
   const { patient } = usePatientContext();
   const { toast } = useToast();
 
@@ -128,10 +129,59 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
         assessment.id === id ? { ...assessment, [field]: value } : assessment
       )
     );
+    // Clear field error when user starts typing
+    if (fieldErrors[id]?.[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        if (newErrors[id]) {
+          delete newErrors[id][field];
+          if (Object.keys(newErrors[id]).length === 0) {
+            delete newErrors[id];
+          }
+        }
+        return newErrors;
+      });
+    }
   };
 
   const removeAssessment = (id: string) => {
     setAssessments(prev => prev.filter(assessment => assessment.id !== id));
+  };
+
+  const validateAssessment = (assessment: AssessmentData): { [field: string]: string } => {
+    const errors: { [field: string]: string } = {};
+    
+    if (!assessment.date || assessment.date.trim() === "") {
+      errors.date = "Assessment date is required";
+    }
+    
+    if (!assessment.exitSite || assessment.exitSite.trim() === "") {
+      errors.exitSite = "Exit site status is required";
+    }
+    
+    if (!assessment.bodyWeight || assessment.bodyWeight.trim() === "") {
+      errors.bodyWeight = "Body weight is required";
+    } else {
+      const weight = parseFloat(assessment.bodyWeight);
+      if (isNaN(weight) || weight <= 0 || weight > 500) {
+        errors.bodyWeight = "Body weight must be a valid number between 1 and 500 kg";
+      }
+    }
+    
+    if (!assessment.bloodPressure || assessment.bloodPressure.trim() === "") {
+      errors.bloodPressure = "Blood pressure is required";
+    }
+    
+    if (!assessment.numberOfExchanges || assessment.numberOfExchanges.trim() === "") {
+      errors.numberOfExchanges = "Number of exchanges is required";
+    } else {
+      const exchanges = parseFloat(assessment.numberOfExchanges);
+      if (isNaN(exchanges) || exchanges <= 0 || exchanges > 10) {
+        errors.numberOfExchanges = "Number of exchanges must be between 1 and 10";
+      }
+    }
+    
+    return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,6 +197,35 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
       });
       return;
     }
+
+    // Validate all assessments
+    const validationErrors: { [key: string]: { [field: string]: string } } = {};
+    let hasErrors = false;
+    
+    assessments.forEach((assessment) => {
+      const errors = validateAssessment(assessment);
+      if (Object.keys(errors).length > 0) {
+        validationErrors[assessment.id] = errors;
+        hasErrors = true;
+      }
+    });
+
+    if (hasErrors) {
+      // Set field errors for display
+      setFieldErrors(validationErrors);
+      const errorMessages = Object.values(validationErrors)
+        .flatMap(err => Object.values(err))
+        .join(", ");
+      toast({
+        title: "Validation Error",
+        description: `Please fix the following errors: ${errorMessages}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Clear errors if validation passes
+    setFieldErrors({});
 
     setSaving(true);
     
@@ -295,12 +374,16 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="space-y-2">
-                        <Label>Assessment Date</Label>
+                        <Label>Assessment Date <span className="text-red-500">*</span></Label>
                         <Input
                           type="date"
                           value={assessment.date}
                           onChange={(e) => updateAssessment(assessment.id, 'date', e.target.value)}
+                          className={fieldErrors[assessment.id]?.date ? "border-red-500" : ""}
                         />
+                        {fieldErrors[assessment.id]?.date && (
+                          <p className="text-sm text-red-500">{fieldErrors[assessment.id].date}</p>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -327,12 +410,16 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                           </div> */}
 
                           <div className="space-y-2">
-                            <Label>Exit Site Condition</Label>
+                            <Label>Exit Site Condition <span className="text-red-500">*</span></Label>
                             <Input
                               value={assessment.exitSite}
                               onChange={(e) => updateAssessment(assessment.id, 'exitSite', e.target.value)}
                               placeholder="Describe exit site condition"
+                              className={fieldErrors[assessment.id]?.exitSite ? "border-red-500" : ""}
                             />
+                            {fieldErrors[assessment.id]?.exitSite && (
+                              <p className="text-sm text-red-500">{fieldErrors[assessment.id].exitSite}</p>
+                            )}
                           </div>
 
                           <div className="space-y-2">
@@ -357,33 +444,45 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
 
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label>Body Weight (kg)</Label>
+                            <Label>Body Weight (kg) <span className="text-red-500">*</span></Label>
                             <Input
                               type="number"
                               step="0.1"
                               value={assessment.bodyWeight}
                               onChange={(e) => updateAssessment(assessment.id, 'bodyWeight', e.target.value)}
                               placeholder="Current weight"
+                              className={fieldErrors[assessment.id]?.bodyWeight ? "border-red-500" : ""}
                             />
+                            {fieldErrors[assessment.id]?.bodyWeight && (
+                              <p className="text-sm text-red-500">{fieldErrors[assessment.id].bodyWeight}</p>
+                            )}
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Blood Pressure (mmHg)</Label>
+                            <Label>Blood Pressure (mmHg) <span className="text-red-500">*</span></Label>
                             <Input
                               value={assessment.bloodPressure}
                               onChange={(e) => updateAssessment(assessment.id, 'bloodPressure', e.target.value)}
                               placeholder="e.g., 120/80"
+                              className={fieldErrors[assessment.id]?.bloodPressure ? "border-red-500" : ""}
                             />
+                            {fieldErrors[assessment.id]?.bloodPressure && (
+                              <p className="text-sm text-red-500">{fieldErrors[assessment.id].bloodPressure}</p>
+                            )}
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Number of Exchanges</Label>
+                            <Label>Number of Exchanges <span className="text-red-500">*</span></Label>
                             <Input
                               type="number"
                               value={assessment.numberOfExchanges}
                               onChange={(e) => updateAssessment(assessment.id, 'numberOfExchanges', e.target.value)}
                               placeholder="Daily exchanges"
+                              className={fieldErrors[assessment.id]?.numberOfExchanges ? "border-red-500" : ""}
                             />
+                            {fieldErrors[assessment.id]?.numberOfExchanges && (
+                              <p className="text-sm text-red-500">{fieldErrors[assessment.id].numberOfExchanges}</p>
+                            )}
                           </div>
 
                           <div className="space-y-2">

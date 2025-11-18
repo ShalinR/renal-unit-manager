@@ -35,10 +35,10 @@ export type ActiveView =
 // Define initial form state
 const initialFormState: HemodialysisRecord = {
   prescription: {
-    access: 'AV Fistula',
-    durationMinutes: 240,
-    bloodFlowRate: 350,
-    dryWeightKg: 70,
+    access: '' as any,
+    durationMinutes: undefined as any,
+    bloodFlowRate: undefined as any,
+    dryWeightKg: undefined as any,
     dialysisProfile: '',
     sodium: undefined,
     bicarbonate: undefined,
@@ -50,21 +50,21 @@ const initialFormState: HemodialysisRecord = {
     otherTreatment: undefined,
   },
   vascularAccess: {
-    access: 'AV Fistula',
+    access: '' as any,
     dateOfCreation: '',
     createdBy: '',
     complications: '',
   },
   session: {
     date: new Date().toISOString().split('T')[0],
-    durationMinutes: 240,
-    preDialysisWeightKg: 71,
-    postDialysisWeightKg: 70,
+    durationMinutes: undefined as any,
+    preDialysisWeightKg: undefined as any,
+    postDialysisWeightKg: undefined as any,
     bloodPressure: {
-      systolic: 120,
-      diastolic: 80,
+      systolic: undefined as any,
+      diastolic: undefined as any,
     },
-    bloodFlowRate: 350,
+    bloodFlowRate: undefined as any,
     pulseRate: undefined,
     oxygenSaturationPercent: undefined,
     arterialPressure: undefined,

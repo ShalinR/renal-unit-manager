@@ -21,6 +21,8 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<User> createUser(@RequestBody User user) {
@@ -41,6 +43,8 @@ public class UserController {
     @PostMapping("/reset-password")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> resetPassword(@RequestParam String username, @RequestParam String newPassword) {
+         newPassword = passwordEncoder.encode(newPassword);
+
         try {
             User user = userService.getUserByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));

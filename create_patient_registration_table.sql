@@ -40,3 +40,10 @@ CREATE INDEX idx_patient_id_registration ON patient_registration(patient_id);
 
 
 
+
+
+
+
+
+
+
