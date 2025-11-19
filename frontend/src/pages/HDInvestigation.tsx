@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Activity, ArrowLeft, Download } from "lucide-react";
+import { Activity, ArrowLeft, Download, CheckCircle, Loader } from "lucide-react";
 import { exportInvestigationData, flattenHDInvestigationData } from '@/lib/exportUtils';
+import { useToast } from "@/hooks/use-toast";
+import * as hdMonthlyReviewInvestigationApi from "@/services/hdMonthlyReviewInvestigationApi";
+import { usePatientContext } from "@/context/PatientContext";
 
 interface InvestigationData {
   patientId: string;
@@ -25,6 +28,12 @@ interface InvestigationData {
 
 const HDInvestigation = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { monthlyReviewId } = useParams<{ monthlyReviewId: string }>();
+  const location = useLocation();
+  const { patient } = usePatientContext();
+  const phn = patient?.phn;
+
   const [formData, setFormData] = useState<InvestigationData>({
     patientId: "",
     date: "",
@@ -40,15 +49,133 @@ const HDInvestigation = () => {
     notes: "",
   });
 
+  const [isMonthlyReviewMode, setIsMonthlyReviewMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [recordedInvestigations, setRecordedInvestigations] = useState<any[]>([]);
+
+  // Load recorded investigations if in monthly review mode
+  useEffect(() => {
+    if (monthlyReviewId && phn) {
+      setIsMonthlyReviewMode(true);
+      loadInvestigations();
+    }
+  }, [monthlyReviewId, phn]);
+
+  const loadInvestigations = async () => {
+    if (!monthlyReviewId) return;
+    setIsLoading(true);
+    try {
+      const investigations = await hdMonthlyReviewInvestigationApi.getInvestigationsByMonthlyReview(
+        parseInt(monthlyReviewId)
+      );
+      setRecordedInvestigations(investigations || []);
+      console.log("Loaded investigations:", investigations);
+    } catch (error) {
+      console.error("Error loading investigations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load investigations",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const patientParam = params.get('patient');
+    if (patientParam) {
+      setFormData((prev) => ({ ...prev, patientId: patientParam }));
+    } else if (phn && !isMonthlyReviewMode) {
+      setFormData((prev) => ({ ...prev, patientId: phn }));
+    }
+  }, [location.search, phn, isMonthlyReviewMode]);
+
+  const loadInvestigationData = (investigation: any) => {
+    setFormData({
+      patientId: investigation.patientId || phn || "",
+      date: investigation.investigationDate ? investigation.investigationDate.split('T')[0] : "",
+      creatinine: investigation.creatinine?.toString() || "",
+      eGFR: investigation.eGFR?.toString() || "",
+      seNa: investigation.sodium?.toString() || "",
+      seK: investigation.potassium?.toString() || "",
+      sCa: investigation.calcium?.toString() || "",
+      sPO4: investigation.phosphate?.toString() || "",
+      seHb: investigation.hemoglobin?.toString() || "",
+      sAlbumin: investigation.albumin?.toString() || "",
+      ktV: investigation.ktV?.toString() || "",
+      notes: investigation.clinicalNotes || "",
+    });
+  };
+
   const handleChange = (field: keyof InvestigationData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("HD Investigation:", formData);
-    // TODO: Implement API call
-    navigate("/investigation");
+    
+    // Map frontend field names to backend DTO field names
+    const dto = {
+      patientId: formData.patientId,
+      investigationDate: formData.date,
+      monthlyReviewId: monthlyReviewId ? parseInt(monthlyReviewId) : null,
+      creatinine: formData.creatinine ? parseFloat(formData.creatinine) : null,
+      sodium: formData.seNa ? parseFloat(formData.seNa) : null,
+      potassium: formData.seK ? parseFloat(formData.seK) : null,
+      calcium: formData.sCa ? parseFloat(formData.sCa) : null,
+      phosphate: formData.sPO4 ? parseFloat(formData.sPO4) : null,
+      hemoglobin: formData.seHb ? parseFloat(formData.seHb) : null,
+      albumin: formData.sAlbumin ? parseFloat(formData.sAlbumin) : null,
+      ktV: formData.ktV ? parseFloat(formData.ktV) : null,
+      clinicalNotes: formData.notes,
+    };
+
+    console.log("Submitting investigation data:", dto);
+    
+    // Submit based on mode
+    if (isMonthlyReviewMode && monthlyReviewId) {
+      hdMonthlyReviewInvestigationApi.createInvestigationForMonthlyReview(parseInt(monthlyReviewId), dto)
+        .then(() => {
+          toast({
+            title: "Success!",
+            description: `HD investigation for patient ${formData.patientId} submitted successfully.`,
+            className: "bg-green-50 border-green-200",
+          });
+          setTimeout(() => {
+            loadInvestigations(); // Reload to show the new investigation
+          }, 1500);
+        })
+        .catch((error) => {
+          console.error("Error submitting investigation:", error);
+          toast({
+            title: "Error",
+            description: "Failed to submit investigation. Please try again.",
+            variant: "destructive",
+          });
+        });
+    } else {
+      hdMonthlyReviewInvestigationApi.createInvestigationForMonthlyReview(parseInt(monthlyReviewId || "0"), dto)
+        .then(() => {
+          toast({
+            title: "Success!",
+            description: `HD investigation for patient ${formData.patientId} submitted successfully.`,
+            className: "bg-green-50 border-green-200",
+          });
+          setTimeout(() => {
+            navigate("/investigation");
+          }, 1500);
+        })
+        .catch((error) => {
+          console.error("Error submitting investigation:", error);
+          toast({
+            title: "Error",
+            description: "Failed to submit investigation. Please try again.",
+            variant: "destructive",
+          });
+        });
+    }
   };
 
   return (
@@ -67,6 +194,55 @@ const HDInvestigation = () => {
           <h1 className="text-3xl font-bold">Hemodialysis Investigation</h1>
         </div>
       </div>
+
+      {isMonthlyReviewMode && recordedInvestigations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recorded Investigations</CardTitle>
+            <CardDescription>
+              Click on an investigation to view or edit its details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader className="h-4 w-4 animate-spin" />
+                <span>Loading investigations...</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recordedInvestigations.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition"
+                    onClick={() => loadInvestigationData(inv)}
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {inv.investigationDate ? new Date(inv.investigationDate).toLocaleDateString() : "No date"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Created: {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : "N/A"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        loadInvestigationData(inv);
+                      }}
+                    >
+                      Load
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

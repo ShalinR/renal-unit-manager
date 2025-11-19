@@ -8,12 +8,14 @@ import com.peradeniya.renal.model.KTSurgery;
 import com.peradeniya.renal.repository.KTSurgeryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class KTSurgeryService {
 
     @Autowired
@@ -35,26 +37,31 @@ public class KTSurgeryService {
     }
 
     public Optional<KTSurgeryDTO> getKTSurgeryByPatientPhn(String patientPhn) {
-        System.out.println("🔍 [KTSurgeryService] Searching for KT Surgery with PHN: [" + patientPhn + "]");
-        System.out.println("   PHN length: " + (patientPhn != null ? patientPhn.length() : "NULL"));
-        System.out.println("   PHN type: " + (patientPhn != null ? patientPhn.getClass().getName() : "NULL"));
-        
-        // Also try fetching ALL records to see what's in the database
-        List<KTSurgery> allRecords = ktSurgeryRepository.findAllByPatientPhn(patientPhn);
-        System.out.println("   Found " + allRecords.size() + " records with this PHN");
-        
-        Optional<KTSurgery> result = ktSurgeryRepository.findByPatientPhn(patientPhn);
-        if (result.isPresent()) {
-            System.out.println("✅ [KTSurgeryService] Found: ID=" + result.get().getId() + ", Stored PHN=[" + result.get().getPatientPhn() + "]");
-        } else {
-            System.out.println("⚠️ [KTSurgeryService] Not found in database");
-            System.out.println("   Attempting to list all KT Surgeries in database:");
-            List<KTSurgery> allSurgeries = ktSurgeryRepository.findAll();
-            for (KTSurgery surgery : allSurgeries) {
-                System.out.println("     - ID: " + surgery.getId() + ", PHN: [" + surgery.getPatientPhn() + "]");
+        try {
+            System.out.println("🔍 [KTSurgeryService] Searching for KT Surgery with PHN: [" + patientPhn + "]");
+            System.out.println("   PHN length: " + (patientPhn != null ? patientPhn.length() : "NULL"));
+            System.out.println("   PHN type: " + (patientPhn != null ? patientPhn.getClass().getName() : "NULL"));
+            
+            // Use findAllByPatientPhn to handle multiple records and get the most recent one
+            List<KTSurgery> records = ktSurgeryRepository.findAllByPatientPhn(patientPhn);
+            System.out.println("   Found " + records.size() + " record(s) with this PHN");
+            
+            if (records.isEmpty()) {
+                System.out.println("⚠️ [KTSurgeryService] Not found in database for PHN: [" + patientPhn + "]");
+                return Optional.empty();
             }
+            
+            // Return the most recent record (first one due to ordering)
+            KTSurgery result = records.get(0);
+            System.out.println("✅ [KTSurgeryService] Found: ID=" + result.getId() + ", Stored PHN=[" + result.getPatientPhn() + "]");
+            KTSurgeryDTO dto = convertToDTO(result);
+            System.out.println("✅ [KTSurgeryService] Successfully converted to DTO");
+            return Optional.of(dto);
+        } catch (Exception e) {
+            System.out.println("❌ [KTSurgeryService] Error in getKTSurgeryByPatientPhn: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error retrieving KT Surgery: " + e.getMessage(), e);
         }
-        return result.map(this::convertToDTO);
     }
 
     public List<KTSurgeryDTO> getAllKTSurgeriesByPatientPhn(String patientPhn) {
@@ -208,129 +215,157 @@ public class KTSurgeryService {
     }
 
     private KTSurgeryDTO convertToDTO(KTSurgery entity) {
-        KTSurgeryDTO dto = new KTSurgeryDTO();
+        try {
+            System.out.println("🔄 [KTSurgeryService] Starting convertToDTO for entity ID: " + entity.getId());
+            KTSurgeryDTO dto = new KTSurgeryDTO();
 
-        // Basic patient info
-        dto.setId(entity.getId());
-        dto.setPatientPhn(entity.getPatientPhn());
-        dto.setName(entity.getName());
-        dto.setDob(entity.getDob());
-        dto.setAge(entity.getAge());
-        dto.setGender(entity.getGender());
-        dto.setAddress(entity.getAddress());
-        dto.setContact(entity.getContact());
-        // Anthropometrics
-        dto.setHeight(entity.getHeight());
-        dto.setWeight(entity.getWeight());
-        dto.setBmi(entity.getBmi());
+            // Basic patient info
+            System.out.println("  Converting basic patient info...");
+            dto.setId(entity.getId());
+            dto.setPatientPhn(entity.getPatientPhn());
+            dto.setName(entity.getName());
+            dto.setDob(entity.getDob());
+            dto.setAge(entity.getAge());
+            dto.setGender(entity.getGender());
+            dto.setAddress(entity.getAddress());
+            dto.setContact(entity.getContact());
+            
+            // Anthropometrics
+            System.out.println("  Converting anthropometrics...");
+            dto.setHeight(entity.getHeight());
+            dto.setWeight(entity.getWeight());
+            dto.setBmi(entity.getBmi());
 
-        // Medical History
-        dto.setDiabetes(entity.getDiabetes());
-        dto.setHypertension(entity.getHypertension());
-        dto.setIhd(entity.getIhd());
-        dto.setDyslipidaemia(entity.getDyslipidaemia());
-        dto.setOther(entity.getOther());
-        dto.setOtherSpecify(entity.getOtherSpecify());
-        dto.setPrimaryDiagnosis(entity.getPrimaryDiagnosis());
-        dto.setModeOfRRT(entity.getModeOfRRT());
-        dto.setDurationRRT(entity.getDurationRRT());
+            // Medical History
+            System.out.println("  Converting medical history...");
+            dto.setDiabetes(entity.getDiabetes());
+            dto.setHypertension(entity.getHypertension());
+            dto.setIhd(entity.getIhd());
+            dto.setDyslipidaemia(entity.getDyslipidaemia());
+            dto.setOther(entity.getOther());
+            dto.setOtherSpecify(entity.getOtherSpecify());
+            dto.setPrimaryDiagnosis(entity.getPrimaryDiagnosis());
+            dto.setModeOfRRT(entity.getModeOfRRT());
+            dto.setDurationRRT(entity.getDurationRRT());
 
-        // Transplantation Details
-        dto.setKtDate(entity.getKtDate());
-        dto.setNumberOfKT(entity.getNumberOfKT());
-        dto.setKtUnit(entity.getKtUnit());
-        dto.setWardNumber(entity.getWardNumber());
-        dto.setKtSurgeon(entity.getKtSurgeon());
-        dto.setKtType(entity.getKtType());
-        dto.setDonorRelationship(entity.getDonorRelationship());
-        dto.setPeritonealPosition(entity.getPeritonealPosition());
-        dto.setSideOfKT(entity.getSideOfKT());
+            // Transplantation Details
+            System.out.println("  Converting transplantation details...");
+            dto.setKtDate(entity.getKtDate());
+            dto.setNumberOfKT(entity.getNumberOfKT());
+            dto.setKtUnit(entity.getKtUnit());
+            dto.setWardNumber(entity.getWardNumber());
+            dto.setKtSurgeon(entity.getKtSurgeon());
+            dto.setKtType(entity.getKtType());
+            dto.setDonorRelationship(entity.getDonorRelationship());
+            dto.setPeritonealPosition(entity.getPeritonealPosition());
+            dto.setSideOfKT(entity.getSideOfKT());
 
-        // Immunosuppression
-        dto.setPreKT(entity.getPreKT());
-        dto.setInductionTherapy(entity.getInductionTherapy());
-        dto.setMaintenance(entity.getMaintenance());
-        dto.setMaintenanceOther(entity.getMaintenanceOther());
-        dto.setMaintenancePred(entity.getMaintenancePred());
-        dto.setMaintenanceMMF(entity.getMaintenanceMMF());
-        dto.setMaintenanceTac(entity.getMaintenanceTac());
-        dto.setMaintenanceEverolimus(entity.getMaintenanceEverolimus());
-        dto.setMaintenanceOtherText(entity.getMaintenanceOtherText());
+            // Immunosuppression
+            System.out.println("  Converting immunosuppression...");
+            dto.setPreKT(entity.getPreKT());
+            dto.setInductionTherapy(entity.getInductionTherapy());
+            dto.setMaintenance(entity.getMaintenance());
+            dto.setMaintenanceOther(entity.getMaintenanceOther());
+            dto.setMaintenancePred(entity.getMaintenancePred());
+            dto.setMaintenanceMMF(entity.getMaintenanceMMF());
+            dto.setMaintenanceTac(entity.getMaintenanceTac());
+            dto.setMaintenanceEverolimus(entity.getMaintenanceEverolimus());
+            dto.setMaintenanceOtherText(entity.getMaintenanceOtherText());
 
-        // Immunological Details
-        dto.setImmunologicalDetails(entity.getImmunologicalDetails());
+            // Immunological Details
+            System.out.println("  Converting immunological details...");
+            dto.setImmunologicalDetails(entity.getImmunologicalDetails());
 
-        // Infection Screen
-        dto.setCmvDonor(entity.getCmvDonor());
-        dto.setCmvRecipient(entity.getCmvRecipient());
-        dto.setEbvDonor(entity.getEbvDonor());
-        dto.setEbvRecipient(entity.getEbvRecipient());
-        dto.setCmvRiskCategory(entity.getCmvRiskCategory());
-        dto.setEbvRiskCategory(entity.getEbvRiskCategory());
-        dto.setTbMantoux(entity.getTbMantoux());
-        dto.setHivAb(entity.getHivAb());
-        dto.setHepBsAg(entity.getHepBsAg());
-        dto.setHepCAb(entity.getHepCAb());
-        dto.setInfectionRiskCategory(entity.getInfectionRiskCategory());
+            // Infection Screen
+            System.out.println("  Converting infection screen...");
+            dto.setCmvDonor(entity.getCmvDonor());
+            dto.setCmvRecipient(entity.getCmvRecipient());
+            dto.setEbvDonor(entity.getEbvDonor());
+            dto.setEbvRecipient(entity.getEbvRecipient());
+            dto.setCmvRiskCategory(entity.getCmvRiskCategory());
+            dto.setEbvRiskCategory(entity.getEbvRiskCategory());
+            dto.setTbMantoux(entity.getTbMantoux());
+            dto.setHivAb(entity.getHivAb());
+            dto.setHepBsAg(entity.getHepBsAg());
+            dto.setHepCAb(entity.getHepCAb());
+            dto.setInfectionRiskCategory(entity.getInfectionRiskCategory());
 
-        // Prophylaxis
-        dto.setCotrimoxazoleYes(entity.getCotrimoxazoleYes());
-        dto.setCotriDuration(entity.getCotriDuration());
-        dto.setCotriStopped(entity.getCotriStopped());
-        dto.setValganciclovirYes(entity.getValganciclovirYes());
-        dto.setValganDuration(entity.getValganDuration());
-        dto.setValganStopped(entity.getValganStopped());
+            // Prophylaxis
+            System.out.println("  Converting prophylaxis...");
+            dto.setCotrimoxazoleYes(entity.getCotrimoxazoleYes());
+            dto.setCotriDuration(entity.getCotriDuration());
+            dto.setCotriStopped(entity.getCotriStopped());
+            dto.setValganciclovirYes(entity.getValganciclovirYes());
+            dto.setValganDuration(entity.getValganDuration());
+            dto.setValganStopped(entity.getValganStopped());
 
-        // Vaccination
-        dto.setVaccinationCOVID(entity.getVaccinationCOVID());
-        dto.setVaccinationInfluenza(entity.getVaccinationInfluenza());
-        dto.setVaccinationPneumococcal(entity.getVaccinationPneumococcal());
-        dto.setVaccinationVaricella(entity.getVaccinationVaricella());
+            // Vaccination
+            System.out.println("  Converting vaccination...");
+            dto.setVaccinationCOVID(entity.getVaccinationCOVID());
+            dto.setVaccinationInfluenza(entity.getVaccinationInfluenza());
+            dto.setVaccinationPneumococcal(entity.getVaccinationPneumococcal());
+            dto.setVaccinationVaricella(entity.getVaccinationVaricella());
 
-        // Pre-operative
-        dto.setPreOpStatus(entity.getPreOpStatus());
-        dto.setPreOpPreparation(entity.getPreOpPreparation());
-        dto.setSurgicalNotes(entity.getSurgicalNotes());
+            // Pre-operative
+            System.out.println("  Converting pre-operative...");
+            dto.setPreOpStatus(entity.getPreOpStatus());
+            dto.setPreOpPreparation(entity.getPreOpPreparation());
+            dto.setSurgicalNotes(entity.getSurgicalNotes());
 
-        // Immediate Post-Transplant
-        dto.setPreKTCreatinine(entity.getPreKTCreatinine());
-        dto.setPostKTCreatinine(entity.getPostKTCreatinine());
-        dto.setDelayedGraftYes(entity.getDelayedGraftYes());
-        dto.setPostKTDialysisYes(entity.getPostKTDialysisYes());
-        dto.setPostKTPDYes(entity.getPostKTPDYes());
-        dto.setAcuteRejectionYes(entity.getAcuteRejectionYes());
-        dto.setAcuteRejectionDetails(entity.getAcuteRejectionDetails());
-        dto.setOtherComplications(entity.getOtherComplications());
+            // Immediate Post-Transplant
+            System.out.println("  Converting post-transplant...");
+            dto.setPreKTCreatinine(entity.getPreKTCreatinine());
+            dto.setPostKTCreatinine(entity.getPostKTCreatinine());
+            dto.setDelayedGraftYes(entity.getDelayedGraftYes());
+            dto.setPostKTDialysisYes(entity.getPostKTDialysisYes());
+            dto.setPostKTPDYes(entity.getPostKTPDYes());
+            dto.setAcuteRejectionYes(entity.getAcuteRejectionYes());
+            dto.setAcuteRejectionDetails(entity.getAcuteRejectionDetails());
+            dto.setOtherComplications(entity.getOtherComplications());
 
-        // Surgery Complications
-        dto.setPostKTComp1(entity.getPostKTComp1());
-        dto.setPostKTComp2(entity.getPostKTComp2());
-        dto.setPostKTComp3(entity.getPostKTComp3());
-        dto.setPostKTComp4(entity.getPostKTComp4());
-        dto.setPostKTComp5(entity.getPostKTComp5());
-        dto.setPostKTComp6(entity.getPostKTComp6());
+            // Surgery Complications
+            System.out.println("  Converting surgery complications...");
+            dto.setPostKTComp1(entity.getPostKTComp1());
+            dto.setPostKTComp2(entity.getPostKTComp2());
+            dto.setPostKTComp3(entity.getPostKTComp3());
+            dto.setPostKTComp4(entity.getPostKTComp4());
+            dto.setPostKTComp5(entity.getPostKTComp5());
+            dto.setPostKTComp6(entity.getPostKTComp6());
 
-        // Medications (deserialize from JSON)
-        if (entity.getMedications() != null && !entity.getMedications().isEmpty()) {
-            try {
-                List<MedicationDTO> medications = objectMapper.readValue(
-                        entity.getMedications(),
-                        new TypeReference<List<MedicationDTO>>() {}
-                );
-                dto.setMedications(medications);
-            } catch (Exception e) {
+            // Medications (deserialize from JSON)
+            System.out.println("  Converting medications...");
+            System.out.println("    Medications JSON length: " + (entity.getMedications() != null ? entity.getMedications().length() : "NULL"));
+            if (entity.getMedications() != null && !entity.getMedications().isEmpty()) {
+                try {
+                    System.out.println("    Attempting to deserialize medications JSON...");
+                    List<MedicationDTO> medications = objectMapper.readValue(
+                            entity.getMedications(),
+                            new TypeReference<List<MedicationDTO>>() {}
+                    );
+                    System.out.println("    ✅ Successfully deserialized " + medications.size() + " medications");
+                    dto.setMedications(medications);
+                } catch (Exception e) {
+                    System.out.println("    ⚠️ Failed to deserialize medications, setting empty list: " + e.getMessage());
+                    dto.setMedications(List.of());
+                }
+            } else {
+                System.out.println("    No medications to deserialize");
                 dto.setMedications(List.of());
             }
-        } else {
-            dto.setMedications(List.of());
+
+            // Final
+            System.out.println("  Converting final fields...");
+            dto.setRecommendations(entity.getRecommendations());
+            dto.setFilledBy(entity.getFilledBy());
+            dto.setCreatedAt(entity.getCreatedAt());
+            dto.setUpdatedAt(entity.getUpdatedAt());
+
+            System.out.println("✅ [KTSurgeryService] Successfully converted entity to DTO");
+            return dto;
+        } catch (Exception e) {
+            System.out.println("❌ [KTSurgeryService] Error in convertToDTO: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error converting KT Surgery to DTO: " + e.getMessage(), e);
         }
-
-        // Final
-        dto.setRecommendations(entity.getRecommendations());
-        dto.setFilledBy(entity.getFilledBy());
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
-
-        return dto;
     }
 }

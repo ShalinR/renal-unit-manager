@@ -39,7 +39,7 @@ public class HemodialysisRecordService {
      * Gets all records for a patient, ordered by session date (newest first)
      */
     public List<HemodialysisRecordDto> getRecordsByPatientId(String patientId) {
-        List<HemodialysisRecord> records = repository.findByPatientIdOrderBySessionDateDesc(patientId);
+        List<HemodialysisRecord> records = repository.findByPatientIdOrderByHemoDialysisSessionDateDesc(patientId);
         return records.stream()
                 .map(this::mapEntityToDto)
                 .collect(Collectors.toList());
@@ -79,7 +79,7 @@ public class HemodialysisRecordService {
         HemodialysisRecordDto dto = new HemodialysisRecordDto();
         dto.setId(entity.getId());
         dto.setPatientId(entity.getPatientId());
-        dto.setSessionDate(entity.getSessionDate());
+        dto.setHemoDialysisSessionDate(entity.getHemoDialysisSessionDate());
         dto.setOtherNotes(entity.getOtherNotes());
         dto.setFilledBy(entity.getFilledBy());
         
@@ -132,7 +132,7 @@ public class HemodialysisRecordService {
 
     private void mapDtoToEntity(HemodialysisRecordDto dto, HemodialysisRecord entity, String patientId) {
         entity.setPatientId(patientId);
-        entity.setSessionDate(dto.getSessionDate());
+        entity.setHemoDialysisSessionDate(dto.getHemoDialysisSessionDate());
         entity.setOtherNotes(dto.getOtherNotes());
         entity.setFilledBy(dto.getFilledBy());
 

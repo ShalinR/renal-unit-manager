@@ -8,8 +8,8 @@ import java.util.List;
 
 @Repository
 public interface HemodialysisRecordRepository extends JpaRepository<HemodialysisRecord, Long> {
-    List<HemodialysisRecord> findByPatientIdOrderBySessionDateDesc(String patientId);
+    List<HemodialysisRecord> findByPatientIdOrderByHemoDialysisSessionDateDesc(String patientId);
     
-    List<HemodialysisRecord> findByPatientIdAndSessionDate(String patientId, String sessionDate);
+    List<HemodialysisRecord> findByPatientIdAndHemoDialysisSessionDate(String patientId, String hemoDialysisSessionDate);
 }
 

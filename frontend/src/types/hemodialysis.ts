@@ -49,6 +49,7 @@ export interface HemodialysisRecord {
   prescription: HDPrescription;
   vascularAccess: VascularAccess;
   session: DialysisSession;
+  hourlySessions?: DialysisSession[];
   otherNotes?: string;
   createdBy?: string;
   createdAt?: string;

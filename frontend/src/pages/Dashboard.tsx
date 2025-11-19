@@ -54,7 +54,7 @@ const Dashboard = () => {
       title: "Dialysis Unit Management",
       description: "Hemodialysis scheduling and session management",
       icon: Activity,
-      route: "/dialysis",
+      route: "/haemodialysis",
       color: "text-secondary",
       bgColor: "bg-secondary/10"
     },

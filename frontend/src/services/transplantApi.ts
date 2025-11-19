@@ -78,10 +78,16 @@ export const transplantApi = {
    * Create a new KT surgery record
    */
   async createKTSurgery(patientPhn: string, ktData: KTFormData): Promise<KTFormData> {
-    return await handleApiRequest<KTFormData>(`${API_BASE_URL}/kt-surgery/${patientPhn}`, {
+    console.log(`💾 Creating KT Surgery for PHN: ${patientPhn}`);
+    console.log(`📍 API URL: ${API_BASE_URL}/kt-surgery/${patientPhn}`);
+    console.log(`📦 Payload being sent:`, ktData);
+    const result = await handleApiRequest<KTFormData>(`${API_BASE_URL}/kt-surgery/${patientPhn}`, {
       method: 'POST',
       body: JSON.stringify(ktData),
     });
+    console.log(`✅ Successfully created KT Surgery:`, result);
+    console.log(`📊 Returned fields: ${Object.keys(result || {}).join(', ')}`);
+    return result;
   },
 
   /**
@@ -93,6 +99,15 @@ export const transplantApi = {
       console.log(`📍 API URL: ${API_BASE_URL}/kt-surgery/${patientPhn}`);
       const result = await handleApiRequest<KTFormData>(`${API_BASE_URL}/kt-surgery/${patientPhn}`);
       console.log(`✅ Successfully fetched KT Surgery data:`, result);
+      console.log(`📊 Retrieved fields: ${Object.keys(result || {}).join(', ')}`);
+      console.log(`🔢 Number of medications: ${(result as any)?.medications?.length || 0}`);
+      console.log(`💾 Result is null/undefined? ${result === null || result === undefined}`);
+      console.log(`💾 Result type: ${typeof result}`);
+      if (!result) {
+        console.log("⚠️ Result is falsy!");
+        return null;
+      }
+      console.log("✅ Returning result from getKTSurgeryByPatientPhn");
       return result;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

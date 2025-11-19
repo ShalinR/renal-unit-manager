@@ -40,6 +40,12 @@ export const followupApi = {
   async list(patientPhn: string) {
     return handle(`${API_BASE}/followup/${patientPhn}`);
   },
+  async get(id: number) {
+    return handle(`${API_BASE}/followup/id/${id}`);
+  },
+  async update(id: number, data: any) {
+    return handle(`${API_BASE}/followup/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  },
   async remove(id: number) {
     return handle(`${API_BASE}/followup/${id}`, { method: 'DELETE' });
   }

@@ -20,6 +20,7 @@ const KTInvestigation = lazy(() => import("./pages/KTInvestigation"));
 const HDInvestigation = lazy(() => import("./pages/HDInvestigation"));
 const Medications = lazy(() => import("./pages/Medications"));
 const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { PatientProvider } from "./context/PatientContext";
@@ -41,6 +42,8 @@ const App = () => (
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/" element={<Navigate to="/kidney-transplant" replace />} />
+                  {/* Backward compatibility: redirect old dialysis route */}
+                  <Route path="/dialysis" element={<Navigate to="/haemodialysis" replace />} />
                   <Route 
                     path="/register-patient" 
                     element={
@@ -114,6 +117,14 @@ const App = () => (
                     } 
                   />
                   <Route 
+                    path="/investigation/monthly-review/:monthlyReviewId" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><HDInvestigation /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
                     path="/medications" 
                     element={
                       <ProtectedRoute>
@@ -130,6 +141,7 @@ const App = () => (
                     } 
                   />
                   <Route path="*" element={<NotFound />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Routes>
               </Suspense>
             </BrowserRouter>

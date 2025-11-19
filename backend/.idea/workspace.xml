@@ -4,15 +4,69 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="">
-<<<<<<< HEAD
-      <change beforePath="$PROJECT_DIR$/renal/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/resources/application.properties" afterDir="false" />
-=======
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+    <list default="true" id="cdf81b1d-e1c9-47ae-a5a9-74cef8a1d4d4" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../BACKEND_NOTES.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../COMPLETION_CHECKLIST.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../HEMODIALYSIS_CHANGES_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../HEMODIALYSIS_RESTRUCTURE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../STYLING_MATCH_DETAILS.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/HemodialysisInvestigationController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/HemodialysisMonthlyReviewController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisInvestigationDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisMonthlyReviewDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisInvestigation.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisMonthlyReview.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisInvestigationRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisMonthlyReviewRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/service/HemodialysisInvestigationService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/HemodialysisMonthlyReviewService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../create_hemodialysis_table.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDInvestigation.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDMonthlyReview.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDScheduleAppointment.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDSessionForm.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDSessionList.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDSummary.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/pages/ForgotPassword.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/services/hdInvestigationApi.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewApi.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewInvestigationApi.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/services/monthlyAssessmentApi.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/KidneyTransplant.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/KidneyTransplant.tsx" afterDir="false" />
->>>>>>> origin
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/KTSurgeryController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/KTSurgeryController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisRecordDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisRecordDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisRecord.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisRecord.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisRecordRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisRecordRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/HemodialysisRecordService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/HemodialysisRecordService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/DialysisCalendar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormDateInput.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormInput.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormSelect.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormTextArea.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/HemodialysisDataPreview.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/PatientSummary.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/ScheduleAppointment.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/SectionCard.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/WeeklyTimetable.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/ConfirmationStep.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/DialysisSessionStep.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/HDPrescriptionStep.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/OtherNotesStep.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/VascularAccessStep.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/ui/checkbox.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/ui/checkbox.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/Dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/HDInvestigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/HDInvestigation.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/HaemoDialysis.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/HaemoDialysis.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/Login.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/followupApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/followupApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/transplantApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/transplantApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/types/hemodialysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/types/hemodialysis.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/types/transplant.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/types/transplant.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,7 +76,6 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Interface" />
         <option value="Class" />
       </list>
     </option>
@@ -31,18 +84,19 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="ProjectColorInfo">{
-  &quot;customColor&quot;: &quot;&quot;,
-  &quot;associatedIndex&quot;: 1
+  &quot;associatedIndex&quot;: 2
 }</component>
-  <component name="ProjectId" id="34VxY3zqg9EBIyTXzwYij9m3dVp" />
+  <component name="ProjectId" id="34HD1V1wtjFP16NoNAy7vEnEWII" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
-    &quot;Application.RenalApplication.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.RenalApplicationTests.executor&quot;: &quot;Debug&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
     &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
     &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
@@ -51,20 +105,24 @@
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;Spring Boot.RenalApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;peritoneal&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;transplant&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/renal-unit-manager/backend&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/WW/Desktop/Final Project/renal-unit-manager&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;C:/Users/WW/Desktop/Final Project/renal-unit-manager/backend/renal/config/src/Main.java&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.annotationProcessors&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.1.3\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-<<<<<<< HEAD
-=======
   <component name="RunManager">
     <configuration name="RenalApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
@@ -83,33 +141,44 @@
       </set>
     </attachedChunks>
   </component>
->>>>>>> origin
-  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="4ae3a23a-87ac-452a-843b-2a4ae9aa188a" name="Changes" comment="" />
-      <created>1761312587172</created>
+      <changelist id="cdf81b1d-e1c9-47ae-a5a9-74cef8a1d4d4" name="Changes" comment="" />
+      <created>1760861388282</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1761312587172</updated>
-      <workItem from="1761312589329" duration="5658000" />
-<<<<<<< HEAD
-=======
-      <workItem from="1761401691477" duration="4346000" />
-      <workItem from="1761563799865" duration="4741000" />
-      <workItem from="1762015478914" duration="2574000" />
-      <workItem from="1762424749843" duration="824000" />
-      <workItem from="1762768152903" duration="961000" />
-      <workItem from="1762931038813" duration="2062000" />
-      <workItem from="1763202907388" duration="14141000" />
-      <workItem from="1763232419904" duration="1499000" />
-      <workItem from="1763234982307" duration="571000" />
-      <workItem from="1763300079364" duration="912000" />
->>>>>>> origin
+      <updated>1760861388282</updated>
+      <workItem from="1760861389482" duration="10928000" />
+      <workItem from="1760883928341" duration="5052000" />
+      <workItem from="1760933269596" duration="1272000" />
+      <workItem from="1760960235114" duration="20110000" />
+      <workItem from="1761288078722" duration="5808000" />
+      <workItem from="1761310448839" duration="42000" />
+      <workItem from="1761310643546" duration="214000" />
+      <workItem from="1761310931557" duration="56000" />
+      <workItem from="1761310996784" duration="14000" />
+      <workItem from="1763486745964" duration="3588000" />
+      <workItem from="1763528165973" duration="924000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/frontend/src/components/DonorAssessment.tsx</url>
+          <line>46</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/backend/renal/config/src/Main.java</url>
+          <line>11</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

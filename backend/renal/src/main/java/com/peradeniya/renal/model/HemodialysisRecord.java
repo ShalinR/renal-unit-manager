@@ -15,8 +15,8 @@ public class HemodialysisRecord {
     private String patientId;
 
     // Session date for easy querying
-    @Column(nullable = false)
-    private String sessionDate;
+    @Column(name = "hemo_dialysis_session_date", nullable = false)
+    private String hemoDialysisSessionDate;
 
     // Store full prescription as JSON
     @Lob
@@ -75,12 +75,12 @@ public class HemodialysisRecord {
         this.patientId = patientId;
     }
 
-    public String getSessionDate() {
-        return sessionDate;
+    public String getHemoDialysisSessionDate() {
+        return hemoDialysisSessionDate;
     }
 
-    public void setSessionDate(String sessionDate) {
-        this.sessionDate = sessionDate;
+    public void setHemoDialysisSessionDate(String hemoDialysisSessionDate) {
+        this.hemoDialysisSessionDate = hemoDialysisSessionDate;
     }
 
     public String getPrescriptionJson() {

@@ -5,7 +5,7 @@ import java.util.Map;
 public class HemodialysisRecordDto {
     private Long id;
     private String patientId;
-    private String sessionDate;
+    private String hemoDialysisSessionDate;
     
     // Nested objects - these will be stored as JSON in the entity
     private Map<String, Object> prescription;
@@ -34,12 +34,12 @@ public class HemodialysisRecordDto {
         this.patientId = patientId;
     }
 
-    public String getSessionDate() {
-        return sessionDate;
+    public String getHemoDialysisSessionDate() {
+        return hemoDialysisSessionDate;
     }
 
-    public void setSessionDate(String sessionDate) {
-        this.sessionDate = sessionDate;
+    public void setHemoDialysisSessionDate(String hemoDialysisSessionDate) {
+        this.hemoDialysisSessionDate = hemoDialysisSessionDate;
     }
 
     public Map<String, Object> getPrescription() {

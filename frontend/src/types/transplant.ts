@@ -38,7 +38,7 @@ export interface KTFormData  {
   
   // Immunological Details
   preKT: string;
-  inductionTherapy: string;
+  inductionTherapy: string[];
   maintenance: string;
   maintenanceOther: string;
   maintenancePred?: boolean;
@@ -111,8 +111,11 @@ export interface ImmunologicalDetails {
   bloodGroupRecipient: string;
   crossMatchTcell: string;
   crossMatchBcell: string;
-  hlaTypingDonor: HLA;
-  hlaTypingRecipient: HLA;
+  hlaTyping?: {
+    donor: HLA;
+    recipient: HLA;
+    conclusion?: HLA;
+  };
   praPre: string;
   praPost: string;
   dsa: string;

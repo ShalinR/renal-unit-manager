@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +45,8 @@ import {
 import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 import UserSettings from "./UserSettings";
 
+import { feedbackApi } from "@/services/feedbackApi";
+
 import { useTheme } from "@/hooks/useTheme";
 import GlobalSearch from "./GlobalSearch";
 import { useAuth } from "@/context/AuthContext";
@@ -86,6 +88,33 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedbackCount, setFeedbackCount] = useState<number>(0);
+
+  useEffect(() => {
+    let mounted = true;
+    let timer: number | null = null;
+
+    const fetchPending = async () => {
+      try {
+        if (user?.role !== "ADMIN") return;
+        const res = await feedbackApi.getByStatus("PENDING");
+        if (!mounted) return;
+        if (Array.isArray(res)) setFeedbackCount(res.length);
+        else setFeedbackCount(0);
+      } catch (e) {
+        // ignore errors for now
+      } finally {
+        if (mounted) timer = window.setTimeout(fetchPending, 30000) as unknown as number;
+      }
+    };
+
+    fetchPending();
+
+    return () => {
+      mounted = false;
+      if (timer) window.clearTimeout(timer as unknown as number);
+    };
+  }, [user]);
 
   return (
     <SidebarProvider>
@@ -203,16 +232,22 @@ const Layout = ({ children }: LayoutProps) => {
                     <span className="sr-only">Toggle theme</span>
                   </Button>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 relative dark:text-slate-400 dark:hover:bg-slate-800"
-                  >
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
-                      3
-                    </span>
-                  </Button>
+                  {user?.role === "ADMIN" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 relative dark:text-slate-400 dark:hover:bg-slate-800"
+                      onClick={() => navigate('/admin/feedback')}
+                      aria-label="Open feedback management"
+                    >
+                      <Bell className="h-5 w-5" />
+                      {feedbackCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] rounded-full bg-red-500 text-xs text-white flex items-center justify-center px-1">
+                          {feedbackCount}
+                        </span>
+                      )}
+                    </Button>
+                  )}
 
                   {/* Calendar popover - shows today's date and allows picking another date */}
                   <DropdownMenu>

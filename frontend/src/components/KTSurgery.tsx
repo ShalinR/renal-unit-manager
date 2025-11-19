@@ -13,7 +13,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
-import type { KTFormData, ImmunologicalDetails } from "../types/transplant";
+import type { KTFormData, ImmunologicalDetails, HLA } from "../types/transplant";
 import type { ActiveView } from "../pages/KidneyTransplant";
 import { usePatientContext } from "../context/PatientContext";
 
@@ -52,7 +52,7 @@ const initialForm: KTFormData = {
   peritonealPosition: "",
   sideOfKT: "",
   preKT: "",
-  inductionTherapy: "",
+  inductionTherapy: [],
   maintenance: "",
   maintenanceOther: "",
   maintenancePred: false,
@@ -65,8 +65,11 @@ const initialForm: KTFormData = {
     bloodGroupRecipient: "",
     crossMatchTcell: "",
     crossMatchBcell: "",
-    hlaTypingDonor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-    hlaTypingRecipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+    hlaTyping: {
+      donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+      recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+      conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+    },
     praPre: "",
     praPost: "",
     dsa: "",
@@ -141,14 +144,13 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { patient } = usePatientContext();
 
-  const emptyHLA: ImmunologicalDetails["hlaTypingDonor"] = { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" };
+  const emptyHLA: HLA = { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" };
   const emptyImmuno: ImmunologicalDetails = {
     bloodGroupDonor: "",
     bloodGroupRecipient: "",
     crossMatchTcell: "",
     crossMatchBcell: "",
-    hlaTypingDonor: { ...emptyHLA },
-    hlaTypingRecipient: { ...emptyHLA },
+    hlaTyping: { donor: { ...emptyHLA }, recipient: { ...emptyHLA }, conclusion: { ...emptyHLA } },
     praPre: "",
     praPost: "",
     dsa: "",
@@ -166,19 +168,25 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
     }));
   };
 
-  const handleHlaChange = (side: 'donor' | 'recipient', key: keyof import('../types/transplant').HLA, value: string) => {
+  const handleHlaChange = (side: 'donor' | 'recipient' | 'conclusion', key: keyof import('../types/transplant').HLA, value: string) => {
     setForm(prev => {
       const prevImmuno = prev.immunologicalDetails || emptyImmuno;
-      const donor = { ...prevImmuno.hlaTypingDonor };
-      const recipient = { ...prevImmuno.hlaTypingRecipient };
+      const prevTyping = prevImmuno.hlaTyping || { donor: { ...emptyHLA }, recipient: { ...emptyHLA }, conclusion: { ...emptyHLA } };
+      const donor = { ...prevTyping.donor };
+      const recipient = { ...prevTyping.recipient };
+      const conclusion = { ...prevTyping.conclusion };
       if (side === 'donor') donor[key] = value;
-      else recipient[key] = value;
+      else if (side === 'recipient') recipient[key] = value;
+      else conclusion[key] = value;
       return {
         ...prev,
         immunologicalDetails: {
           ...prevImmuno,
-          hlaTypingDonor: donor,
-          hlaTypingRecipient: recipient,
+          hlaTyping: {
+            donor,
+            recipient,
+            conclusion,
+          }
         }
       };
     });
@@ -218,10 +226,31 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
         console.log(`📋 KTSurgery.tsx: Loading saved data for patient PHN: ${patient.phn}`);
         try {
           const savedData = await transplantApi.getKTSurgeryByPatientPhn(patient.phn);
+          console.log(`📋 KTSurgery.tsx: Received savedData from API:`, savedData);
+          console.log(`📋 KTSurgery.tsx: savedData is null? ${savedData === null}`);
+          console.log(`📋 KTSurgery.tsx: savedData is undefined? ${savedData === undefined}`);
+          console.log(`📋 KTSurgery.tsx: typeof savedData: ${typeof savedData}`);
+          
           if (savedData) {
             console.log("✅ KTSurgery.tsx: Successfully loaded saved data:", savedData);
-            setForm(savedData);
-            setSavedRecord(savedData);
+            const normalized = {
+              ...initialForm, // Start with initial form
+              ...savedData,   // Override with saved data
+              inductionTherapy: Array.isArray((savedData as any).inductionTherapy)
+                ? (savedData as any).inductionTherapy
+                : (savedData && (savedData as any).inductionTherapy ? String((savedData as any).inductionTherapy).split(/\s*,\s*/) : []),
+              // Ensure patient info is preserved
+              patientPhn: patient.phn,
+              name: savedData.name || patient.name || "",
+              age: (savedData.age || patient.age?.toString() || "").toString(),
+              gender: savedData.gender || patient.gender || "",
+              dob: savedData.dob || patient.dateOfBirth || "",
+              address: savedData.address || patient.address || "",
+              contact: savedData.contact || patient.contact || "",
+            } as KTFormData;
+            console.log("📌 Normalized data after merge:", normalized);
+            setForm(normalized);
+            setSavedRecord(normalized);
             setStep(0); // Reset to first step
           } else {
             console.log(`ℹ️ KTSurgery.tsx: No saved data found for PHN ${patient.phn}. Form will use patient auto-population only.`);
@@ -257,6 +286,19 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
       }
 
       return next;
+    });
+  };
+
+  const toggleInduction = (name: string, checked: boolean) => {
+    setForm(prev => {
+      const current = Array.isArray(prev.inductionTherapy) ? [...prev.inductionTherapy] : [];
+      if (checked) {
+        if (!current.includes(name)) current.push(name);
+      } else {
+        const idx = current.indexOf(name);
+        if (idx >= 0) current.splice(idx, 1);
+      }
+      return { ...prev, inductionTherapy: current } as KTFormData;
     });
   };
 
@@ -450,12 +492,25 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
       }
 
       console.log(`💾 Submitting KT Surgery form for patient PHN: ${patient.phn}`);
-      console.log(`📝 Form data:`, form);
+      console.log(`📝 Full Form data before API call:`, form);
+      console.log(`📋 Patient context:`, patient);
+
+      // Prepare payload for API. Backend historically accepted a comma-separated string for inductionTherapy;
+      // convert array to comma-separated string to preserve backward compatibility.
+      const payloadForApi = {
+        ...form,
+        patientPhn: patient.phn, // EXPLICITLY set patientPhn to ensure it's sent
+        inductionTherapy: Array.isArray(form.inductionTherapy) ? form.inductionTherapy.join(', ') : (form.inductionTherapy as any || ''),
+      } as unknown as KTFormData;
+
+      console.log(`🔍 Payload being sent to API:`, payloadForApi);
+      console.log(`📍 API Endpoint: POST /api/transplant/kt-surgery/${patient.phn}`);
 
       // Use the API service instead of direct fetch
-      const saved = await transplantApi.createKTSurgery(patient.phn, form);
+      const saved = await transplantApi.createKTSurgery(patient.phn, payloadForApi);
       
       console.log(`✅ KT Surgery saved successfully:`, saved);
+      console.log(`📊 Saved data fields:`, Object.keys(saved).join(', '));
 
       // Update patient context (ktSurgery summary fields)
       setPatientData(prev => ({
@@ -1000,19 +1055,51 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="space-y-3">
                     <Label className="text-sm font-semibold text-gray-700">CMV Status</Label>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Donor</span>
-                        <div className="flex items-center gap-3">
-                          <Button variant="outline" size="sm" onClick={() => handleChange("cmvDonor", "+ve") } className={form.cmvDonor === "+ve" ? "bg-blue-600 text-white" : ""}>+ve</Button>
-                          <Button variant="outline" size="sm" onClick={() => handleChange("cmvDonor", "-ve") } className={form.cmvDonor === "-ve" ? "bg-blue-600 text-white" : ""}>-ve</Button>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <span className="text-sm font-medium text-gray-700">Donor</span>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="cmvDonorPositive" 
+                              checked={form.cmvDonor === "+ve"}
+                              onCheckedChange={(checked) => handleChange("cmvDonor", checked ? "+ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="cmvDonorPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="cmvDonorNegative" 
+                              checked={form.cmvDonor === "-ve"}
+                              onCheckedChange={(checked) => handleChange("cmvDonor", checked ? "-ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="cmvDonorNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Recipient</span>
-                        <div className="flex items-center gap-3">
-                          <Button variant="outline" size="sm" onClick={() => handleChange("cmvRecipient", "+ve") } className={form.cmvRecipient === "+ve" ? "bg-blue-600 text-white" : ""}>+ve</Button>
-                          <Button variant="outline" size="sm" onClick={() => handleChange("cmvRecipient", "-ve") } className={form.cmvRecipient === "-ve" ? "bg-blue-600 text-white" : ""}>-ve</Button>
+                      <div className="space-y-2">
+                        <span className="text-sm font-medium text-gray-700">Recipient</span>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="cmvRecipientPositive" 
+                              checked={form.cmvRecipient === "+ve"}
+                              onCheckedChange={(checked) => handleChange("cmvRecipient", checked ? "+ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="cmvRecipientPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="cmvRecipientNegative" 
+                              checked={form.cmvRecipient === "-ve"}
+                              onCheckedChange={(checked) => handleChange("cmvRecipient", checked ? "-ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="cmvRecipientNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -1029,19 +1116,51 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
                   <div className="space-y-3">
                     <Label className="text-sm font-semibold text-gray-700">EBV Status</Label>
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Donor</span>
-                        <div className="flex items-center gap-3">
-                          <Button variant="outline" size="sm" onClick={() => handleChange("ebvDonor", "+ve") } className={form.ebvDonor === "+ve" ? "bg-blue-600 text-white" : ""}>+ve</Button>
-                          <Button variant="outline" size="sm" onClick={() => handleChange("ebvDonor", "-ve") } className={form.ebvDonor === "-ve" ? "bg-blue-600 text-white" : ""}>-ve</Button>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <span className="text-sm font-medium text-gray-700">Donor</span>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="ebvDonorPositive" 
+                              checked={form.ebvDonor === "+ve"}
+                              onCheckedChange={(checked) => handleChange("ebvDonor", checked ? "+ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="ebvDonorPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="ebvDonorNegative" 
+                              checked={form.ebvDonor === "-ve"}
+                              onCheckedChange={(checked) => handleChange("ebvDonor", checked ? "-ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="ebvDonorNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Recipient</span>
-                        <div className="flex items-center gap-3">
-                          <Button variant="outline" size="sm" onClick={() => handleChange("ebvRecipient", "+ve") } className={form.ebvRecipient === "+ve" ? "bg-blue-600 text-white" : ""}>+ve</Button>
-                          <Button variant="outline" size="sm" onClick={() => handleChange("ebvRecipient", "-ve") } className={form.ebvRecipient === "-ve" ? "bg-blue-600 text-white" : ""}>-ve</Button>
+                      <div className="space-y-2">
+                        <span className="text-sm font-medium text-gray-700">Recipient</span>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="ebvRecipientPositive" 
+                              checked={form.ebvRecipient === "+ve"}
+                              onCheckedChange={(checked) => handleChange("ebvRecipient", checked ? "+ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="ebvRecipientPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="ebvRecipientNegative" 
+                              checked={form.ebvRecipient === "-ve"}
+                              onCheckedChange={(checked) => handleChange("ebvRecipient", checked ? "-ve" : "")}
+                              className="border-2 border-blue-300 dark:border-blue-700"
+                            />
+                            <Label htmlFor="ebvRecipientNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -1151,33 +1270,47 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr className="bg-blue-50">
-                                    <td className="border border-gray-200 p-4 font-semibold text-blue-900">Donor</td>
-                                    {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
-                                      <td key={key} className="border border-gray-200 p-2">
-                                        <Input
-                                          value={form.immunologicalDetails?.hlaTypingDonor?.[key] || ""}
-                                          onChange={(e) => handleHlaChange('donor', key, e.target.value)}
-                                          placeholder={String(key).replace('hla','')}
-                                          className="h-10 border-gray-300 focus:border-blue-500 text-center"
-                                        />
-                                      </td>
-                                    ))}
-                                  </tr>
+                                    <tr className="bg-blue-50">
+                                      <td className="border border-gray-200 p-4 font-semibold text-blue-900">Donor</td>
+                                      {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
+                                        <td key={key} className="border border-gray-200 p-2">
+                                          <Input
+                                            value={form.immunologicalDetails?.hlaTyping?.donor?.[key] || ""}
+                                            onChange={(e) => handleHlaChange('donor', key, e.target.value)}
+                                            placeholder={String(key).replace('hla','')}
+                                            className="h-10 border-gray-300 focus:border-blue-500 text-center"
+                                          />
+                                        </td>
+                                      ))}
+                                    </tr>
 
-                                  <tr className="bg-white">
-                                    <td className="border border-gray-200 p-4 font-semibold text-gray-900">Recipient</td>
-                                    {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
-                                      <td key={key} className="border border-gray-200 p-2">
-                                        <Input
-                                          value={form.immunologicalDetails?.hlaTypingRecipient?.[key] || ""}
-                                          onChange={(e) => handleHlaChange('recipient', key, e.target.value)}
-                                          placeholder={String(key).replace('hla','')}
-                                          className="h-10 border-gray-300 focus:border-blue-500 text-center"
-                                        />
-                                      </td>
-                                    ))}
-                                  </tr>
+                                    <tr className="bg-white">
+                                      <td className="border border-gray-200 p-4 font-semibold text-gray-900">Recipient</td>
+                                      {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
+                                        <td key={key} className="border border-gray-200 p-2">
+                                          <Input
+                                            value={form.immunologicalDetails?.hlaTyping?.recipient?.[key] || ""}
+                                            onChange={(e) => handleHlaChange('recipient', key, e.target.value)}
+                                            placeholder={String(key).replace('hla','')}
+                                            className="h-10 border-gray-300 focus:border-blue-500 text-center"
+                                          />
+                                        </td>
+                                      ))}
+                                    </tr>
+
+                                    <tr className="bg-blue-50">
+                                      <td className="border border-gray-200 p-4 font-semibold text-blue-900">Conclusion</td>
+                                      {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
+                                        <td key={key} className="border border-gray-200 p-2">
+                                          <Input
+                                            value={form.immunologicalDetails?.hlaTyping?.conclusion?.[key] || ""}
+                                            onChange={(e) => handleHlaChange('conclusion', key, e.target.value)}
+                                            placeholder={String(key).replace('hla','')}
+                                            className="h-10 border-gray-300 focus:border-blue-500 text-center"
+                                          />
+                                        </td>
+                                      ))}
+                                    </tr>
                                 </tbody>
                               </table>
                             </div>
@@ -1223,8 +1356,31 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                               <Input id="dsa" value={form.immunologicalDetails?.dsa || ""} onChange={e => handleImmunoField('dsa', e.target.value)} placeholder="DSA details" className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg" />
                             </div>
                             <div className="space-y-3">
-                              <Label htmlFor="immunologicalRisk" className="text-sm font-semibold text-gray-700">Immunological Risk</Label>
-                              <Input id="immunologicalRisk" value={form.immunologicalDetails?.immunologicalRisk || ""} onChange={e => handleImmunoField('immunologicalRisk', e.target.value)} placeholder="Immunological risk assessment" className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg" />
+                                <Label htmlFor="immunologicalRisk" className="text-sm font-semibold text-gray-700">Immunological Risk</Label>
+                                <RadioGroup
+                                  value={form.immunologicalDetails?.immunologicalRisk || ""}
+                                  onValueChange={(value) => handleImmunoField('immunologicalRisk', value)}
+                                  className="flex gap-6"
+                                >
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="low" id="kt-low" />
+                                    <Label htmlFor="kt-low" className="text-sm text-gray-700 cursor-pointer">
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Low</span>
+                                    </Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="average" id="kt-average" />
+                                    <Label htmlFor="kt-average" className="text-sm text-gray-700 cursor-pointer">
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Average</span>
+                                    </Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="high" id="kt-high" />
+                                    <Label htmlFor="kt-high" className="text-sm text-gray-700 cursor-pointer">
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">High</span>
+                                    </Label>
+                                  </div>
+                                </RadioGroup>
                             </div>
                           </div>
                         </CardContent>
@@ -1259,15 +1415,15 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     <Label className="text-sm font-semibold text-gray-700">Induction Therapy</Label>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-3">
-                        <input type="radio" id="indBasilix" name="induction" value="Basiliximab" checked={form.inductionTherapy === "Basiliximab"} onChange={e => handleChange("inductionTherapy", e.target.value)} />
-                        <Label htmlFor="indBasil" className="text-gray-700">Basiliximab</Label>
+                        <input type="checkbox" id="indBasilix" className="accent-blue-600 border-2 border-blue-300" checked={Array.isArray(form.inductionTherapy) ? form.inductionTherapy.includes('Basiliximab') : false} onChange={e => toggleInduction('Basiliximab', e.target.checked)} />
+                        <Label htmlFor="indBasilix" className="text-gray-700">Basiliximab</Label>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <input type="radio" id="indATG" name="induction" value="ATG" checked={form.inductionTherapy === "ATG"} onChange={e => handleChange("inductionTherapy", e.target.value)} />
+                        <input type="checkbox" id="indATG" className="accent-blue-600 border-2 border-blue-300" checked={Array.isArray(form.inductionTherapy) ? form.inductionTherapy.includes('ATG') : false} onChange={e => toggleInduction('ATG', e.target.checked)} />
                         <Label htmlFor="indATG" className="text-gray-700">ATG</Label>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <input type="radio" id="indMethyl" name="induction" value="Methylprednisolone" checked={form.inductionTherapy === "Methylprednisolone"} onChange={e => handleChange("inductionTherapy", e.target.value)} />
+                        <input type="checkbox" id="indMethyl" className="accent-blue-600 border-2 border-blue-300" checked={Array.isArray(form.inductionTherapy) ? form.inductionTherapy.includes('Methylprednisolone') : false} onChange={e => toggleInduction('Methylprednisolone', e.target.checked)} />
                         <Label htmlFor="indMethyl" className="text-gray-700">Methylprednisolone</Label>
                       </div>
                     </div>
@@ -1276,21 +1432,21 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
                 <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                   <Label className="text-sm font-semibold text-gray-700">Maintenance</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                     <div className="flex items-center space-x-3">
-                      <input id="maintPred" type="checkbox" checked={!!form.maintenancePred} onChange={e => setForm(prev => ({...prev, maintenancePred: e.target.checked}))} />
+                      <input id="maintPred" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenancePred} onChange={e => setForm(prev => ({...prev, maintenancePred: e.target.checked}))} />
                       <Label htmlFor="maintPred" className="text-gray-700">Pred</Label>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <input id="maintMMF" type="checkbox" checked={!!form.maintenanceMMF} onChange={e => setForm(prev => ({...prev, maintenanceMMF: e.target.checked}))} />
+                      <input id="maintMMF" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenanceMMF} onChange={e => setForm(prev => ({...prev, maintenanceMMF: e.target.checked}))} />
                       <Label htmlFor="maintMMF" className="text-gray-700">MMF</Label>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <input id="maintTac" type="checkbox" checked={!!form.maintenanceTac} onChange={e => setForm(prev => ({...prev, maintenanceTac: e.target.checked}))} />
+                      <input id="maintTac" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenanceTac} onChange={e => setForm(prev => ({...prev, maintenanceTac: e.target.checked}))} />
                       <Label htmlFor="maintTac" className="text-gray-700">Tac</Label>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <input id="maintEve" type="checkbox" checked={!!form.maintenanceEverolimus} onChange={e => setForm(prev => ({...prev, maintenanceEverolimus: e.target.checked}))} />
+                      <input id="maintEve" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenanceEverolimus} onChange={e => setForm(prev => ({...prev, maintenanceEverolimus: e.target.checked}))} />
                       <Label htmlFor="maintEve" className="text-gray-700">Everolimus</Label>
                     </div>
                   </div>
@@ -1346,21 +1502,21 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-gray-700">Vaccination</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="flex items-center space-x-3">
-                      <input id="vCOVID" type="checkbox" checked={!!form.vaccinationCOVID} onChange={e => setForm(prev => ({...prev, vaccinationCOVID: e.target.checked}))} />
+                      <input id="vCOVID" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationCOVID} onChange={e => setForm(prev => ({...prev, vaccinationCOVID: e.target.checked}))} />
                       <Label htmlFor="vCOVID" className="text-gray-700">COVID</Label>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <input id="vInfluenza" type="checkbox" checked={!!form.vaccinationInfluenza} onChange={e => setForm(prev => ({...prev, vaccinationInfluenza: e.target.checked}))} />
+                      <input id="vInfluenza" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationInfluenza} onChange={e => setForm(prev => ({...prev, vaccinationInfluenza: e.target.checked}))} />
                       <Label htmlFor="vInfluenza" className="text-gray-700">Influenza</Label>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <input id="vPneumo" type="checkbox" checked={!!form.vaccinationPneumococcal} onChange={e => setForm(prev => ({...prev, vaccinationPneumococcal: e.target.checked}))} />
+                      <input id="vPneumo" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationPneumococcal} onChange={e => setForm(prev => ({...prev, vaccinationPneumococcal: e.target.checked}))} />
                       <Label htmlFor="vPneumo" className="text-gray-700">Pneumococcal</Label>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <input id="vVaricella" type="checkbox" checked={!!form.vaccinationVaricella} onChange={e => setForm(prev => ({...prev, vaccinationVaricella: e.target.checked}))} />
+                      <input id="vVaricella" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationVaricella} onChange={e => setForm(prev => ({...prev, vaccinationVaricella: e.target.checked}))} />
                       <Label htmlFor="vVaricella" className="text-gray-700">Varicella</Label>
                     </div>
                   </div>
