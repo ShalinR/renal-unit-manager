@@ -340,7 +340,6 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
                 Monthly Assessment Records
               </CardTitle>
               <Button type="button" onClick={addAssessment}>
@@ -352,7 +351,6 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
           <CardContent>
             {assessments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No monthly assessments recorded yet.</p>
                 <p className="text-sm">Click "Add New Assessment" to start tracking monthly progress.</p>
               </div>

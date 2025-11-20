@@ -135,8 +135,7 @@ const FORM_STEPS = [
   { label: "Immediate Post KT", icon: FileText },
   { label: "Surgery Complications", icon: FileText },
   { label: "Medication", icon: Pill },
-  { label: "Confirmation", icon: UserCheck },
-  { label: "Recommendations", icon: FileText }
+  { label: "Confirmation", icon: UserCheck }
 ];
 
 const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
@@ -145,6 +144,8 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const [step, setStep] = useState(0);
   const [viewDetails, setViewDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ktConfirmAccurate, setKtConfirmAccurate] = useState(false);
+  const [ktConsentProcessing, setKtConsentProcessing] = useState(false);
   const { patient } = usePatientContext();
 
   const emptyHLA: HLA = { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" };
@@ -570,6 +571,14 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
     // Only actually submit when on the last step
     if (step < FORM_STEPS.length - 1) {
       nextStep();
+      return;
+    }
+
+    // Require both confirmation checkboxes before submitting
+    if (!ktConfirmAccurate || !ktConsentProcessing) {
+      const confirmationIndex = FORM_STEPS.findIndex((s) => s.label === "Confirmation");
+      if (confirmationIndex >= 0) setStep(confirmationIndex);
+      alert("Please tick both consent and confirmation checkboxes before submitting the form.");
       return;
     }
 
@@ -2042,50 +2051,39 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                   />
                 </div>
                 
-                <div className="flex items-start space-x-3 p-4 bg-white rounded-lg border border-blue-200">
-                  <Checkbox id="ktFinalCheck" className="border-2 border-blue-300 mt-1" required />
+                <div className="bg-white p-4 rounded-lg border border-blue-200 space-y-3">
+                  <h4 className="font-semibold text-gray-800 mb-2">Consent and Confirmation</h4>
                   <div className="space-y-2">
-                    <Label htmlFor="ktFinalCheck" className="text-gray-700 font-medium leading-relaxed">
-                      I confirm that all information provided in this surgery assessment is accurate and complete to the best of my knowledge.
-                    </Label>
-                    <p className="text-sm text-gray-600">
-                      By checking this box, I acknowledge that this assessment will be used for medical decision-making and transplant evaluation.
-                    </p>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        id="kt-confirm-accurate"
+                        checked={ktConfirmAccurate}
+                        onCheckedChange={(checked: boolean) => setKtConfirmAccurate(!!checked)}
+                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <span className="text-sm text-slate-700 leading-relaxed">
+                        I confirm that all information provided in this surgery assessment is accurate and complete to the best of my knowledge.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        id="kt-consent-processing"
+                        checked={ktConsentProcessing}
+                        onCheckedChange={(checked: boolean) => setKtConsentProcessing(!!checked)}
+                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <span className="text-sm text-slate-700 leading-relaxed">
+                        I consent to the processing of this information for clinical care, transplant evaluation and quality improvement purposes.
+                      </span>
+                    </label>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 13: Recommendations */}
-          {step === 13 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <FileText className="w-6 h-6" />
-                  Management Recommendations
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Enter recommendations for ongoing management
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-3">
-                  <Label htmlFor="recommendations" className="text-sm font-semibold text-gray-700">
-                    Recommendations
-                  </Label>
-                  <Textarea
-                    id="recommendations"
-                    value={form.recommendations}
-                    onChange={e => handleChange("recommendations", e.target.value)}
-                    placeholder="Enter recommendations for ongoing management..."
-                    rows={6}
-                    className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Recommendations removed per request */}
 
           {/* Navigation Buttons */}
           <div className="flex justify-between items-center pt-8 pb-4">

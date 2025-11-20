@@ -444,6 +444,18 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
 
     // Submission no longer blocked by form validation or staff sign-off (early development)
 
+    // Require both confirmation checkboxes before submitting
+    if (!confirmAccurate || !consentProcessing) {
+      toast({
+        title: 'Confirmation required',
+        description: 'Please tick both consent and confirmation checkboxes before submitting the form.',
+        variant: 'destructive',
+      });
+      const confIdx = FORM_STEPS.findIndex(s => s.label === 'Confirmation');
+      if (confIdx >= 0) setStep(confIdx);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Prepare payload - map form fields to backend DTO field names
