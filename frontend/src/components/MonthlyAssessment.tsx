@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,9 +9,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Calendar, TrendingUp, Eye, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Calendar, TrendingUp, Eye, Trash2, RefreshCw, FileSearch } from "lucide-react";
 import { usePatientContext } from "@/context/PatientContext";
 import { useToast } from "@/hooks/use-toast";
+import { monthlyAssessmentApi } from "@/services/monthlyAssessmentApi";
 
 interface MonthlyAssessmentProps {
   onComplete: () => void;
@@ -60,6 +62,7 @@ interface SavedAssessment {
 }
 
 const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
+  const navigate = useNavigate();
   const [assessments, setAssessments] = useState<AssessmentData[]>([]);
   const [savedAssessments, setSavedAssessments] = useState<SavedAssessment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,16 +81,15 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
 
     setLoading(true);
     try {
-      const API_URL = `http://localhost:8081/api/monthly-assessment/${phn}`;
-      const response = await fetch(API_URL);
-      if (response.ok) {
-        const data = await response.json();
-        setSavedAssessments(data);
-      } else {
-        console.error("Failed to fetch assessments");
-      }
+      const data = await monthlyAssessmentApi.list(phn);
+      setSavedAssessments(data);
     } catch (error) {
       console.error("Error fetching assessments:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch monthly assessments. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -229,8 +231,6 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
 
     setSaving(true);
     
-    const API_URL = `http://localhost:8081/api/monthly-assessment/${phn}`;
-    
     try {
       // Save each assessment to the backend
       const savePromises = assessments.map(async (assessment) => {
@@ -253,19 +253,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
           catheterComponentsInOrder: assessment.catheterComponentsInOrder,
         };
 
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(assessmentDto),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to save assessment: ${response.statusText}`);
-        }
-
-        return response.json();
+        return monthlyAssessmentApi.create(phn, assessmentDto);
       });
 
       await Promise.all(savePromises);
@@ -273,10 +261,17 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
       // Clear the form and refresh the saved assessments list
       setAssessments([]);
       await fetchAssessments();
-      alert("Monthly assessments saved successfully!");
+      toast({
+        title: "Success",
+        description: "Monthly assessments saved successfully!",
+      });
     } catch (error) {
       console.error("Error saving assessments:", error);
-      alert("Failed to save assessments. Please try again.");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save assessments. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -298,20 +293,19 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
     }
 
     try {
-      const API_URL = `http://localhost:8081/api/monthly-assessment/${phn}`;
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
+      await monthlyAssessmentApi.remove(phn, id);
+      await fetchAssessments();
+      toast({
+        title: "Success",
+        description: "Assessment deleted successfully!",
       });
-
-      if (response.ok) {
-        await fetchAssessments();
-        alert("Assessment deleted successfully!");
-      } else {
-        throw new Error("Failed to delete assessment");
-      }
     } catch (error) {
       console.error("Error deleting assessment:", error);
-      alert("Failed to delete assessment. Please try again.");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete assessment. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -323,6 +317,16 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
         </div>
         <h1 className="text-3xl font-bold text-foreground">Monthly Assessment</h1>
         <p className="text-muted-foreground">Regular monthly evaluation of patient progress and condition</p>
+        <div className="flex justify-center mt-4">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/investigation/pd")}
+            className="flex items-center gap-2"
+          >
+            <FileSearch className="w-4 h-4" />
+            View PD Investigation
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="enter" className="w-full">

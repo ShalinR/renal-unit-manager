@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePatientContext } from "@/context/PatientContext";
+import { capdSummaryApi } from "@/services/capdSummaryApi";
 import PETTest from "./PETTest";
 import AdequacyTest from "./AdequacyTest";
 // Remove the InfectionTracking import if it's not used here, or keep if needed
@@ -98,26 +99,22 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
       }
 
       try {
-        const API_URL = `http://localhost:8081/api/capd-summary/${phn}`;
-        const response = await fetch(API_URL);
-        if (response.ok) {
-          const data = await response.json();
-          if (data) {
-            setFormData({
-              counsellingDate: data.counsellingDate || "",
-              catheterInsertionDate: data.catheterInsertionDate || "",
-              insertionDoneBy: data.insertionDoneBy || "",
-              insertionPlace: data.insertionPlace || "",
-              technique: data.technique || "",
-              designation: data.designation || "",
-              firstFlushing: data.firstFlushing || "",
-              secondFlushing: data.secondFlushing || "",
-              thirdFlushing: data.thirdFlushing || "",
-              initiationDate: data.initiationDate || "",
-              petResults: data.petResults || emptyCAPDData.petResults,
-              adequacyResults: data.adequacyResults || emptyCAPDData.adequacyResults,
-            });
-          }
+        const data = await capdSummaryApi.getByPatientId(phn);
+        if (data) {
+          setFormData({
+            counsellingDate: data.counsellingDate || "",
+            catheterInsertionDate: data.catheterInsertionDate || "",
+            insertionDoneBy: data.insertionDoneBy || "",
+            insertionPlace: data.insertionPlace || "",
+            technique: data.technique || "",
+            designation: data.designation || "",
+            firstFlushing: data.firstFlushing || "",
+            secondFlushing: data.secondFlushing || "",
+            thirdFlushing: data.thirdFlushing || "",
+            initiationDate: data.initiationDate || "",
+            petResults: data.petResults || emptyCAPDData.petResults,
+            adequacyResults: data.adequacyResults || emptyCAPDData.adequacyResults,
+          });
         }
       } catch (error) {
         console.error("Error loading CAPD summary data:", error);
@@ -203,8 +200,6 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
 
     setSaveStatus("saving");
 
-    const API_URL = `http://localhost:8081/api/capd-summary/${phn}`;
-
     try {
       // Save all form data including basic information, PET results, and adequacy results
       const dataToSave = {
@@ -222,30 +217,24 @@ const CAPDSummary = ({ onSubmit }: CAPDSummaryProps) => {
         adequacyResults: formData.adequacyResults,
       };
 
-      const response = await fetch(API_URL, {
-        // POST request
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToSave), // Send all form data
+      const savedData = await capdSummaryApi.save(phn, dataToSave);
+      console.log("CAPD Summary Data Saved:", savedData);
+      setSaveStatus("saved");
+      // Reset form to empty after saving
+      setFormData(emptyCAPDData);
+      toast({
+        title: "Success",
+        description: "CAPD summary saved successfully.",
       });
-
-      if (response.ok) {
-        const savedData = await response.json();
-        console.log("CAPD Summary Data Saved:", savedData);
-        setSaveStatus("saved");
-        // Reset form to empty after saving
-        setFormData(emptyCAPDData);
-        // Don't call onSubmit() - keep the form open so user can access both tabs
-      } else {
-        const errorText = await response.text();
-        console.error("Failed to save summary data:", errorText);
-        setSaveStatus("error");
-      }
+      // Don't call onSubmit() - keep the form open so user can access both tabs
     } catch (error) {
       console.error("Error saving data:", error);
       setSaveStatus("error");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save CAPD summary. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

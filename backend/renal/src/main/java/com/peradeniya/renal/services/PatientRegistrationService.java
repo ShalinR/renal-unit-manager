@@ -1,7 +1,7 @@
 package com.peradeniya.renal.services;
 
 import com.peradeniya.renal.dto.PatientRegistrationDto;
-import com.peradeniya.renal.model.PatientRegistrationEntity;
+import com.peradeniya.renal.model.PeriPatientRegistrationEntity;
 import com.peradeniya.renal.repository.PatientRegistrationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,14 +30,14 @@ public class PatientRegistrationService {
      */
     public PatientRegistrationDto savePatientRegistration(String patientId, PatientRegistrationDto dto) {
         // Find existing record or create a new one
-        PatientRegistrationEntity entity = repository.findByPatientId(patientId)
-                .orElse(new PatientRegistrationEntity());
+        PeriPatientRegistrationEntity entity = repository.findByPatientId(patientId)
+                .orElse(new PeriPatientRegistrationEntity());
 
         // Map DTO data to the entity
         mapDtoToEntity(dto, entity, patientId);
 
         // Save to database
-        PatientRegistrationEntity savedEntity = repository.save(entity);
+        PeriPatientRegistrationEntity savedEntity = repository.save(entity);
 
         // Map the saved entity back to a DTO to return
         return mapEntityToDto(savedEntity);
@@ -48,7 +48,7 @@ public class PatientRegistrationService {
     /**
      * Maps an Entity from the DB to a DTO for the API.
      */
-    private PatientRegistrationDto mapEntityToDto(PatientRegistrationEntity entity) {
+    private PatientRegistrationDto mapEntityToDto(PeriPatientRegistrationEntity entity) {
         PatientRegistrationDto dto = new PatientRegistrationDto();
         dto.setCounsellingDate(entity.getCounsellingDate());
         dto.setInitiationDate(entity.getInitiationDate());
@@ -66,7 +66,7 @@ public class PatientRegistrationService {
     /**
      * Maps a DTO from the API to an Entity for the DB.
      */
-    private void mapDtoToEntity(PatientRegistrationDto dto, PatientRegistrationEntity entity, String patientId) {
+    private void mapDtoToEntity(PatientRegistrationDto dto, PeriPatientRegistrationEntity entity, String patientId) {
         entity.setPatientId(patientId);
         entity.setCounsellingDate(dto.getCounsellingDate());
         entity.setInitiationDate(dto.getInitiationDate());

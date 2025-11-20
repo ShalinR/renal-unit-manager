@@ -3,7 +3,7 @@ package com.peradeniya.renal.dto;
 import java.util.List;
 import java.util.Map;
 
-public class PDInvestigationSummaryDto {
+public class HDInvestigationSummaryDto {
     private Long id;
     private String patientId;
     private String patientName;

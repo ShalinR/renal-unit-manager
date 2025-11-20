@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { formatDateToDDMMYYYY } from './dateUtils';
 
 /**
  * Export data to CSV format
@@ -114,23 +115,32 @@ export function flattenPDInvestigationData(summary: any, parameters: any[]) {
 }
 
 /**
- * Convert HD Investigation data to export format
+ * Convert HD Investigation summary to flat array for export (similar to PD investigation)
  */
-export function flattenHDInvestigationData(data: any) {
-  return [{
-    'Patient ID': data.patientId || '',
-    'Date': data.date || '',
-    'Creatinine (mg/dL)': data.creatinine || '',
-    'eGFR (mL/min/1.73m²)': data.eGFR || '',
-    'Serum Na (mEq/L)': data.seNa || '',
-    'Serum K (mEq/L)': data.seK || '',
-    'Serum Ca (mg/dL)': data.sCa || '',
-    'Serum PO4 (mg/dL)': data.sPO4 || '',
-    'Hemoglobin (g/dL)': data.seHb || '',
-    'Kt/V': data.ktV || '',
-    'Albumin (g/dL)': data.sAlbumin || '',
-    'Notes': data.notes || '',
-  }];
+export function flattenHDInvestigationData(summary: any, parameters: any[]) {
+  const rows: any[] = [];
+  
+  if (!summary || !summary.dates || summary.dates.length === 0) {
+    return rows;
+  }
+
+  // Create a row for each parameter
+  parameters.forEach(param => {
+    const row: any = {
+      'Investigation': param.name,
+      'Unit': param.unit || '-',
+    };
+
+    // Add a column for each date
+    summary.dates.forEach((date: string) => {
+      const value = summary.values?.[param.id]?.[date] || '-';
+      row[formatDateToDDMMYYYY(date)] = value;
+    });
+
+    rows.push(row);
+  });
+
+  return rows;
 }
 
 /**

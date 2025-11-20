@@ -5,6 +5,7 @@ import { FileText, Download, ArrowLeft, AlertCircle, Stethoscope, RefreshCw } fr
 import { useEffect, useState, useCallback } from "react";
 import { usePatientContext } from "@/context/PatientContext";
 import { exportInvestigationData, flattenPeritonealData } from '@/lib/exportUtils';
+import { capdSummaryApi } from "@/services/capdSummaryApi";
 
 interface CAPDData {
   counsellingDate: string;
@@ -44,7 +45,6 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
   
   // Use PHN from patient context
   const phn = patient?.phn;
-  const CAPD_API_URL = phn ? `http://localhost:8081/api/capd-summary/${phn}` : null;
   const REGISTRATION_API_URL = phn ? `http://localhost:8081/api/patient-registration/${phn}` : null;
   const INFECTION_API_URL = phn ? `http://localhost:8081/api/infection-tracking/${phn}` : null;
 
@@ -63,14 +63,14 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
       setIsLoading(true);
       try {
         // Fetch patient registration, CAPD summary, and infection tracking
-        const [registrationResponse, capdResponse, infectionResponse] = await Promise.all([
+        const [registrationResponse, capdData, infectionResponse] = await Promise.all([
           REGISTRATION_API_URL ? fetch(REGISTRATION_API_URL) : Promise.resolve({ ok: false } as Response),
-          CAPD_API_URL ? fetch(CAPD_API_URL) : Promise.resolve({ ok: false } as Response),
+          phn ? capdSummaryApi.getByPatientId(phn).catch(() => null) : Promise.resolve(null),
           INFECTION_API_URL ? fetch(INFECTION_API_URL) : Promise.resolve({ ok: false } as Response),
         ]);
 
         const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
-        const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
+        const capdSummaryData = capdData;
         const infectionData = infectionResponse.ok ? await infectionResponse.json() : null;
 
         // Combine all datasets - basic info from registration, test results from CAPD summary, infections from infection tracking
