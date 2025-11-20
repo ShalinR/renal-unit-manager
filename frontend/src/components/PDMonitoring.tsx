@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,8 @@ const PDMonitoring = ({ onSubmit }: PDMonitoringProps) => {
     exitSiteCondition: []
   });
 
+  // No localStorage persistence for PDMonitoring (drafts removed)
+
   const [isDiabetic, setIsDiabetic] = useState(false);
 
   const exitSiteOptions = [
@@ -104,6 +106,8 @@ const PDMonitoring = ({ onSubmit }: PDMonitoringProps) => {
         : prev.exitSiteCondition.filter(id => id !== conditionId)
     }));
   };
+
+  // Save draft removed; drafts are not stored locally for PDMonitoring
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

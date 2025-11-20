@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -49,6 +50,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 username = jwtTokenService.getUsernameFromToken(jwtToken);
             } catch (Exception e) {
                 logger.debug("Unable to get JWT Token: " + e.getMessage());
+            }
+        } else {
+            // Check cookie named AUTH-TOKEN for JWT (cookie may contain raw token or "Bearer <token>")
+            if (request.getCookies() != null) {
+                for (Cookie c : request.getCookies()) {
+                    if ("AUTH-TOKEN".equals(c.getName())) {
+                        String cookieVal = c.getValue();
+                        if (cookieVal != null && !cookieVal.isEmpty()) {
+                            jwtToken = cookieVal.startsWith("Bearer ") ? cookieVal.substring(7) : cookieVal;
+                            try {
+                                username = jwtTokenService.getUsernameFromToken(jwtToken);
+                            } catch (Exception e) {
+                                logger.debug("Unable to get JWT Token from cookie: " + e.getMessage());
+                            }
+                        }
+                        break;
+                    }
+                }
             }
         }
 

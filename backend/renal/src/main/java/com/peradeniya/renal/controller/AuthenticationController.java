@@ -2,6 +2,8 @@ package com.peradeniya.renal.controller;
 
 import com.peradeniya.renal.dto.LoginRequest;
 import com.peradeniya.renal.dto.LoginResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import com.peradeniya.renal.service.AuthenticationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,17 @@ public class AuthenticationController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             LoginResponse response = authenticationService.authenticate(loginRequest);
-            return ResponseEntity.ok(response);
+            // Set HttpOnly cookie with JWT so browser can use cookie-based session
+            ResponseCookie cookie = ResponseCookie.from("AUTH-TOKEN", response.getToken())
+                    .httpOnly(true)
+                    .path("/")
+                    .maxAge(7 * 24 * 60 * 60) // 7 days
+                    .sameSite("Lax")
+                    .build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(response);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(
                 new ErrorResponse("Authentication failed: " + e.getMessage())

@@ -151,7 +151,6 @@ const HDMonthlyReview: React.FC<HDMonthlyReviewProps> = ({ onBack }) => {
               <strong>Patient:</strong> {currentPatient.name} (PHN: {currentPatient.phn})
             </div>
           )}
-          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-2">Back</Button>
         </div>
       </div>
 

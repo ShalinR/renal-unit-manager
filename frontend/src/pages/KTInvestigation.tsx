@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Heart, ArrowLeft, Loader2, Calendar, Eye, FileText, X, Download } from "lucide-react";
 import { formatDateToDDMMYYYY, formatDateTimeDisplay } from "@/lib/dateUtils";
@@ -371,143 +370,143 @@ const KTInvestigation = () => {
         </div>
 
         <Accordion type="multiple" defaultValue={[] as string[]}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <AccordionItem value="basic">
-            <AccordionTrigger>Basic Information</AccordionTrigger>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AccordionItem value="basic">
+              <AccordionTrigger>Basic Information</AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Date" value={data.date || data?.dateOfKT || '—'} />
+                  <Field label="Type" value={data.typeOfKT || data?.type || '—'} />
+                  <Field label="Post KT duration" value={data.postKTDuration} />
+                  <Field label="Body Weight (kg)" value={data.bw} />
+                  <Field label="Height (cm)" value={data.height} />
+                  <Field label="BMI" value={data.bmi} />
+                  <Field label="Blood Pressure" value={data.bp} />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </div>
+
+          <AccordionItem value="immuno">
+            <AccordionTrigger>Immunosuppression & Renal Function</AccordionTrigger>
             <AccordionContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Date" value={data.date || data?.dateOfKT || '—'} />
-                <Field label="Type" value={data.typeOfKT || data?.type || '—'} />
-                <Field label="Post KT duration" value={data.postKTDuration} />
-                <Field label="Body Weight (kg)" value={data.bw} />
-                <Field label="Height (cm)" value={data.height} />
-                <Field label="BMI" value={data.bmi} />
-                <Field label="Blood Pressure" value={data.bp} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="Tacrolimus" value={data.tacrolimus} abnormal={abnormalFor('tacrolimus', data.tacrolimus)} />
+                <Field label="S. Creatinine" value={data.creatinine} abnormal={abnormalFor('creatinine', data.creatinine)} />
+                <Field label="eGFR" value={data.eGFR} abnormal={abnormalFor('eGFR', data.eGFR)} />
               </div>
             </AccordionContent>
           </AccordionItem>
-        </div>
 
-        <AccordionItem value="immuno">
-          <AccordionTrigger>Immunosuppression & Renal Function</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="Tacrolimus" value={data.tacrolimus} abnormal={abnormalFor('tacrolimus', data.tacrolimus)} />
-              <Field label="S. Creatinine" value={data.creatinine} abnormal={abnormalFor('creatinine', data.creatinine)} />
-              <Field label="eGFR" value={data.eGFR} abnormal={abnormalFor('eGFR', data.eGFR)} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="electrolytes">
+            <AccordionTrigger>Electrolytes</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="Na+" value={data.seNa} abnormal={abnormalFor('seNa', data.seNa)} />
+                <Field label="K+" value={data.seK} abnormal={abnormalFor('seK', data.seK)} />
+                <Field label="Calcium" value={data.sCalcium} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="electrolytes">
-          <AccordionTrigger>Electrolytes</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="Na+" value={data.seNa} abnormal={abnormalFor('seNa', data.seNa)} />
-              <Field label="K+" value={data.seK} abnormal={abnormalFor('seK', data.seK)} />
-              <Field label="Calcium" value={data.sCalcium} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="fbc">
+            <AccordionTrigger>Full Blood Count (FBC)</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <Field label="Hb" value={data.hb} />
+                <Field label="PCV" value={data.pcv} />
+                <Field label="WBC Total" value={data.wbcTotal} />
+                <Field label="Neutrophils" value={data.wbcN} />
+                <Field label="Lymphocytes" value={data.wbcL} />
+                <Field label="Platelets" value={data.platelet} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="fbc">
-          <AccordionTrigger>Full Blood Count (FBC)</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <Field label="Hb" value={data.hb} />
-              <Field label="PCV" value={data.pcv} />
-              <Field label="WBC Total" value={data.wbcTotal} />
-              <Field label="Neutrophils" value={data.wbcN} />
-              <Field label="Lymphocytes" value={data.wbcL} />
-              <Field label="Platelets" value={data.platelet} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="urine">
+            <AccordionTrigger>Urine / Protein</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="Protein" value={data.urineProtein} />
+                <Field label="Pus cells" value={data.urinePusCells} />
+                <Field label="RBC" value={data.urineRBC} />
+                <Field label="Urine PCR" value={data.urinePCR} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="urine">
-          <AccordionTrigger>Urine / Protein</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="Protein" value={data.urineProtein} />
-              <Field label="Pus cells" value={data.urinePusCells} />
-              <Field label="RBC" value={data.urineRBC} />
-              <Field label="Urine PCR" value={data.urinePCR} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="diabetes">
+            <AccordionTrigger>Metabolic / Diabetes</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="FBS" value={data.fbs} />
+                <Field label="PPBS" value={data.ppbs} />
+                <Field label="HbA1c" value={data.hba1c} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="diabetes">
-          <AccordionTrigger>Metabolic / Diabetes</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="FBS" value={data.fbs} />
-              <Field label="PPBS" value={data.ppbs} />
-              <Field label="HbA1c" value={data.hba1c} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="lipids">
+            <AccordionTrigger>Lipid Profile</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <Field label="Total Cholesterol" value={data.cholesterolTotal} />
+                <Field label="Triglycerides" value={data.triglycerides} />
+                <Field label="HDL" value={data.hdl} />
+                <Field label="LDL" value={data.ldl} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="lipids">
-          <AccordionTrigger>Lipid Profile</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <Field label="Total Cholesterol" value={data.cholesterolTotal} />
-              <Field label="Triglycerides" value={data.triglycerides} />
-              <Field label="HDL" value={data.hdl} />
-              <Field label="LDL" value={data.ldl} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="lfts">
+            <AccordionTrigger>LFTs & Others</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <Field label="S. Albumin" value={data.sAlbumin} />
+                <Field label="ALP" value={data.alp} />
+                <Field label="ALT" value={data.alt} />
+                <Field label="AST" value={data.ast} />
+                <Field label="S. Bilirubin" value={data.sBilirubin} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="lfts">
-          <AccordionTrigger>LFTs & Others</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <Field label="S. Albumin" value={data.sAlbumin} />
-              <Field label="ALP" value={data.alp} />
-              <Field label="ALT" value={data.alt} />
-              <Field label="AST" value={data.ast} />
-              <Field label="S. Bilirubin" value={data.sBilirubin} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="infectious">
+            <AccordionTrigger>Infectious Screening / Annual</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="CMV PCR" value={data.cmvPCR} />
+                <Field label="BKV PCR" value={data.bkvPCR} />
+                <Field label="EBV PCR" value={data.ebvPCR} />
+                <Field label="Hep BsAg" value={data.hepBsAg} />
+                <Field label="Hep C Ab" value={data.hepCAb} />
+                <Field label="HIV Ab" value={data.hivAb} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="infectious">
-          <AccordionTrigger>Infectious Screening / Annual</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="CMV PCR" value={data.cmvPCR} />
-              <Field label="BKV PCR" value={data.bkvPCR} />
-              <Field label="EBV PCR" value={data.ebvPCR} />
-              <Field label="Hep BsAg" value={data.hepBsAg} />
-              <Field label="Hep C Ab" value={data.hepCAb} />
-              <Field label="HIV Ab" value={data.hivAb} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="imaging">
+            <AccordionTrigger>Imaging</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="US KUB / Renal Doppler" value={data.imagingUS_KUB_Pelvis_RenalDoppler} />
+                <Field label="CXR" value={data.imagingCXR} />
+                <Field label="ECG" value={data.imagingECG} />
+                <Field label="2D Echo" value={data.imaging2DEcho} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="imaging">
-          <AccordionTrigger>Imaging</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="US KUB / Renal Doppler" value={data.imagingUS_KUB_Pelvis_RenalDoppler} />
-              <Field label="CXR" value={data.imagingCXR} />
-              <Field label="ECG" value={data.imagingECG} />
-              <Field label="2D Echo" value={data.imaging2DEcho} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem value="specialist">
-          <AccordionTrigger>Specialist Reviews & Procedures</AccordionTrigger>
-          <AccordionContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Dental review" value={data.specialistDental} />
-              <Field label="Ophthalmology review" value={data.specialistOphthalmology} />
-              <Field label="Endoscopy / Procedures" value={data.proceduresEndoscopy} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="specialist">
+            <AccordionTrigger>Specialist Reviews & Procedures</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Dental review" value={data.specialistDental} />
+                <Field label="Ophthalmology review" value={data.specialistOphthalmology} />
+                <Field label="Endoscopy / Procedures" value={data.proceduresEndoscopy} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
 
         <div>
@@ -579,782 +578,770 @@ const KTInvestigation = () => {
         </div>
       </div>
 
-      <Tabs value={mode} onValueChange={(value) => {
-        setMode(value as 'standard' | 'annual');
-        setViewDetails(false);
-        setSelectedInvestigation(null);
-      }} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-          <TabsTrigger value="standard" className="flex items-center gap-2">
-            Standard Investigation
-          </TabsTrigger>
-          <TabsTrigger value="annual" className="flex items-center gap-2">
-            Annual Investigation
-          </TabsTrigger>
-        </TabsList>
+      {/* Investigation Navigation - Parent Buttons */}
+      <div className="flex flex-wrap gap-4 mb-6">
+        <Button
+          variant={mode === 'standard' ? 'default' : 'outline'}
+          size="lg"
+          className="flex items-center gap-2 px-6 py-3"
+          onClick={() => {
+            setMode('standard');
+            setViewDetails(false);
+            setSelectedInvestigation(null);
+          }}
+        >
+          <Heart className="h-5 w-5" />
+          Standard Investigation
+        </Button>
+        <Button
+          variant={mode === 'annual' ? 'default' : 'outline'}
+          size="lg"
+          className="flex items-center gap-2 px-6 py-3"
+          onClick={() => {
+            setMode('annual');
+            setViewDetails(false);
+            setSelectedInvestigation(null);
+          }}
+        >
+          <Calendar className="h-5 w-5" />
+          Annual Investigation
+        </Button>
+      </div>
 
-        {/* Standard Investigation Tab */}
-        <TabsContent value="standard" className="space-y-4">
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'create' | 'view')} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-4">
-              <TabsTrigger value="create" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Create New
-              </TabsTrigger>
-              <TabsTrigger value="view" className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                View Investigations
-              </TabsTrigger>
-            </TabsList>
+      {/* Child Buttons - Show when parent is selected */}
+      {mode && (
+        <div className="flex flex-wrap gap-3 mb-6 pl-4 border-l-2 border-blue-200 dark:border-blue-700">
+          <Button
+            variant={viewMode === 'create' ? 'default' : 'outline'}
+            className="flex items-center gap-2"
+            onClick={() => {
+              setViewMode('create');
+              setViewDetails(false);
+              setSelectedInvestigation(null);
+            }}
+          >
+            <FileText className="h-4 w-4" />
+            Create New Investigation
+          </Button>
+          <Button
+            variant={viewMode === 'view' ? 'default' : 'outline'}
+            className="flex items-center gap-2"
+            onClick={() => {
+              setViewMode('view');
+              setViewDetails(false);
+              setSelectedInvestigation(null);
+            }}
+          >
+            <Eye className="h-4 w-4" />
+            View Investigations
+          </Button>
+        </div>
+      )}
 
-            <TabsContent value="view" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Standard Investigation Records
-                  </CardTitle>
-                  <CardDescription>
-                    View and filter standard investigations by date
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Date Filter */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <Label htmlFor="filterDateStandard">Filter by Date</Label>
-                        <div className="flex gap-2 mt-1">
-                          <Input
-                            id="filterDateStandard"
-                            type="date"
-                            value={filterDate}
-                            onChange={(e) => setFilterDate(e.target.value)}
-                            className="flex-1"
-                          />
-                          {filterDate && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setFilterDate('')}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+      {/* Content Area */}
+      {/* Standard Investigation */}
+      {mode === 'standard' && (
+        <div className="space-y-4">
+          {viewMode === 'create' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Standard Investigation</CardTitle>
+                <CardDescription>
+                  Enter routine follow-up investigation results
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="patientStandard">Patient ID</Label>
+                      <Input id="patientStandard" value={formData.patientId} onChange={(e) => handleChange('patientId', e.target.value)} placeholder="Patient ID" required />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateStandard">Date</Label>
+                      <Input id="dateStandard" type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} required />
+                    </div>
+                  </div>
+
+                  {/* Standard Investigation Form */}
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold">1. Basic Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Date of KT</Label>
+                        <Input type="date" value={formData.dateOfKT} onChange={(e) => handleChange('dateOfKT', e.target.value)} />
                       </div>
-                      <div className="pt-6">
-                        <Badge variant="outline" className="text-sm">
-                          {filteredInvestigations.filter(inv => inv.type === 'standard').length} record{filteredInvestigations.filter(inv => inv.type === 'standard').length !== 1 ? 's' : ''}
-                        </Badge>
+                      <div>
+                        <Label>Type of KT</Label>
+                        <Input value={formData.typeOfKT} onChange={(e) => handleChange('typeOfKT', e.target.value)} placeholder="LDKT / DDKT" />
+                      </div>
+                      <div>
+                        <Label>Post KT duration</Label>
+                        <Input value={formData.postKTDuration} onChange={(e) => handleChange('postKTDuration', e.target.value)} placeholder="e.g. 6 months" />
                       </div>
                     </div>
 
-                    {/* Loading State */}
-                    {loadingInvestigations ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <h3 className="text-lg font-semibold">2. Examination</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label>BW (kg)</Label>
+                        <Input value={formData.bw} onChange={(e) => handleChange('bw', e.target.value)} />
                       </div>
-                    ) : sortedDates.filter(date => groupedByDate[date].some(inv => inv.type === 'standard')).length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No standard investigations found</p>
+                      <div>
+                        <Label>Height (cm)</Label>
+                        <Input value={formData.height} onChange={(e) => handleChange('height', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>BMI</Label>
+                        <Input value={formData.bmi} onChange={(e) => handleChange('bmi', e.target.value)} readOnly />
+                      </div>
+                      <div>
+                        <Label>BP</Label>
+                        <Input value={formData.bp} onChange={(e) => handleChange('bp', e.target.value)} placeholder="e.g. 120/80" />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">3. Immunosuppression & Renal Function</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Tacrolimus Level (ng/mL)</Label>
+                        <Input value={formData.tacrolimus} onChange={(e) => handleChange('tacrolimus', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>S. Creatinine (µmol/L or mg/dL)</Label>
+                        <Input value={formData.creatinine} onChange={(e) => handleChange('creatinine', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>eGFR</Label>
+                        <Input value={formData.eGFR} onChange={(e) => handleChange('eGFR', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">4. Electrolytes</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Serum Na+</Label>
+                        <Input value={formData.seNa} onChange={(e) => handleChange('seNa', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Serum K+</Label>
+                        <Input value={formData.seK} onChange={(e) => handleChange('seK', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>S. Calcium</Label>
+                        <Input value={formData.sCalcium} onChange={(e) => handleChange('sCalcium', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>S. Phosphate</Label>
+                        <Input value={formData.sPhosphate} onChange={(e) => handleChange('sPhosphate', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">5. Full Blood Count (FBC)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label>Hb</Label>
+                        <Input value={formData.hb} onChange={(e) => handleChange('hb', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>PCV</Label>
+                        <Input value={formData.pcv} onChange={(e) => handleChange('pcv', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>WBC - Total</Label>
+                        <Input value={formData.wbcTotal} onChange={(e) => handleChange('wbcTotal', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Neutrophils (N)</Label>
+                        <Input value={formData.wbcN} onChange={(e) => handleChange('wbcN', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Lymphocytes (L)</Label>
+                        <Input value={formData.wbcL} onChange={(e) => handleChange('wbcL', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Platelet count</Label>
+                        <Input value={formData.platelet} onChange={(e) => handleChange('platelet', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">6. Urine Analysis</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Protein</Label>
+                        <Input value={formData.urineProtein} onChange={(e) => handleChange('urineProtein', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Pus cells</Label>
+                        <Input value={formData.urinePusCells} onChange={(e) => handleChange('urinePusCells', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>RBC</Label>
+                        <Input value={formData.urineRBC} onChange={(e) => handleChange('urineRBC', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Urine PCR</Label>
+                        <Input value={formData.urinePCR} onChange={(e) => handleChange('urinePCR', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">7. Metabolic / Diabetes</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>FBS</Label>
+                        <Input value={formData.fbs} onChange={(e) => handleChange('fbs', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>PPBS</Label>
+                        <Input value={formData.ppbs} onChange={(e) => handleChange('ppbs', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>HbA1c</Label>
+                        <Input value={formData.hba1c} onChange={(e) => handleChange('hba1c', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">8. Lipid Profile</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label>Total Cholesterol</Label>
+                        <Input value={formData.cholesterolTotal} onChange={(e) => handleChange('cholesterolTotal', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Triglycerides (TG)</Label>
+                        <Input value={formData.triglycerides} onChange={(e) => handleChange('triglycerides', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>HDL</Label>
+                        <Input value={formData.hdl} onChange={(e) => handleChange('hdl', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>LDL</Label>
+                        <Input value={formData.ldl} onChange={(e) => handleChange('ldl', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">9. LFTs & Other Tests</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label>S. Albumin</Label>
+                        <Input value={formData.sAlbumin} onChange={(e) => handleChange('sAlbumin', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>ALP</Label>
+                        <Input value={formData.alp} onChange={(e) => handleChange('alp', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Uric Acid</Label>
+                        <Input value={formData.uricAcid} onChange={(e) => handleChange('uricAcid', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>ALT</Label>
+                        <Input value={formData.alt} onChange={(e) => handleChange('alt', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>AST</Label>
+                        <Input value={formData.ast} onChange={(e) => handleChange('ast', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>S. Bilirubin (Total)</Label>
+                        <Input value={formData.sBilirubin} onChange={(e) => handleChange('sBilirubin', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Additional Notes</Label>
+                      <Textarea value={formData.notes} onChange={(e) => handleChange('notes', e.target.value)} rows={3} />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/investigation')} disabled={submitting}>Cancel</Button>
+                    <Button type="submit" className="flex-1" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Submit Investigation'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Standard Investigation Records
+                </CardTitle>
+                <CardDescription>
+                  View and filter standard investigations by date
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Date Filter */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <Label htmlFor="filterDateStandard">Filter by Date</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          id="filterDateStandard"
+                          type="date"
+                          value={filterDate}
+                          onChange={(e) => setFilterDate(e.target.value)}
+                          className="flex-1"
+                        />
                         {filterDate && (
-                          <p className="text-sm mt-2">Try selecting a different date</p>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setFilterDate('')}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
-                    ) : (
-                      /* Grouped Standard Investigations by Date */
-                      <div className="space-y-6">
-                        {sortedDates
-                          .filter(date => groupedByDate[date].some(inv => inv.type === 'standard'))
-                          .map((date) => (
-                            <div key={date} className="space-y-3">
-                              <div className="flex items-center gap-2 pb-2 border-b">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <h3 className="font-semibold text-lg">{formatDateToDDMMYYYY(date)}</h3>
-                                <Badge variant="outline" className="ml-auto">
-                                  {groupedByDate[date].filter(inv => inv.type === 'standard').length} {groupedByDate[date].filter(inv => inv.type === 'standard').length === 1 ? 'record' : 'records'}
-                                </Badge>
-                              </div>
-                              <div className="grid gap-3">
-                                {groupedByDate[date]
-                                  .filter(inv => inv.type === 'standard')
-                                  .map((inv) => (
-                                    <Card key={inv.id} className="hover:shadow-md transition-shadow">
-                                      <CardContent className="p-4">
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-3">
-                                            <Badge
-                                              variant="outline"
-                                              className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                                            >
-                                              Standard
-                                            </Badge>
-                                            <span className="text-sm text-muted-foreground">Created: {inv.createdAt ? formatDateTimeDisplay(inv.createdAt) : 'N/A'}</span>
-                                          </div>
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleViewDetails(inv)}
-                                            className="flex items-center gap-2"
-                                          >
-                                            <Eye className="h-4 w-4" />
-                                            View Details
-                                          </Button>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                              </div>
+                    </div>
+                    <div className="pt-6">
+                      <Badge variant="outline" className="text-sm">
+                        {filteredInvestigations.filter(inv => inv.type === 'standard').length} record{filteredInvestigations.filter(inv => inv.type === 'standard').length !== 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Loading State */}
+                  {loadingInvestigations ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : sortedDates.filter(date => groupedByDate[date].some(inv => inv.type === 'standard')).length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No standard investigations found</p>
+                      {filterDate && (
+                        <p className="text-sm mt-2">Try selecting a different date</p>
+                      )}
+                    </div>
+                  ) : (
+                    /* Grouped Standard Investigations by Date */
+                    <div className="space-y-6">
+                      {sortedDates
+                        .filter(date => groupedByDate[date].some(inv => inv.type === 'standard'))
+                        .map((date) => (
+                          <div key={date} className="space-y-3">
+                            <div className="flex items-center gap-2 pb-2 border-b">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <h3 className="font-semibold text-lg">{formatDateToDDMMYYYY(date)}</h3>
+                              <Badge variant="outline" className="ml-auto">
+                                {groupedByDate[date].filter(inv => inv.type === 'standard').length} {groupedByDate[date].filter(inv => inv.type === 'standard').length === 1 ? 'record' : 'records'}
+                              </Badge>
                             </div>
-                          ))}
+                            <div className="grid gap-3">
+                              {groupedByDate[date]
+                                .filter(inv => inv.type === 'standard')
+                                .map((inv) => (
+                                  <Card key={inv.id} className="hover:shadow-md transition-shadow">
+                                    <CardContent className="p-4">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <Badge
+                                            variant="outline"
+                                            className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                                          >
+                                            Standard
+                                          </Badge>
+                                          <span className="text-sm text-muted-foreground">Created: {inv.createdAt ? formatDateTimeDisplay(inv.createdAt) : 'N/A'}</span>
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleViewDetails(inv)}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                          View Details
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Investigation Details Modal for Standard */}
+          {viewDetails && selectedInvestigation && selectedInvestigation.type === 'standard' && (
+            <Dialog open={viewDetails} onOpenChange={(open) => {
+              if (!open) {
+                setViewDetails(false);
+                setSelectedInvestigation(null);
+              }
+            }}>
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-lg sm:text-xl">Standard Investigation Details</DialogTitle>
+                  <DialogDescription className="text-sm">{formatDateToDDMMYYYY(selectedInvestigation.date)} - Standard</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
+                      <p className="font-medium text-sm sm:text-base">{formatDateToDDMMYYYY(selectedInvestigation.date)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
+                      <p className="font-medium text-sm sm:text-base capitalize">{selectedInvestigation.type}</p>
+                    </div>
+                    {selectedInvestigation.createdAt && (
+                      <div>
+                        <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
+                        <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.createdAt)}</p>
+                      </div>
+                    )}
+                    {selectedInvestigation.updatedAt && (
+                      <div>
+                        <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
+                        <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.updatedAt)}</p>
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Investigation Details Modal */}
-              {viewDetails && selectedInvestigation && selectedInvestigation.type === 'standard' && (
-                <Dialog open={viewDetails} onOpenChange={(open) => {
-                  if (!open) {
-                    setViewDetails(false);
-                    setSelectedInvestigation(null);
-                  }
-                }}>
-                  <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-lg sm:text-xl">Standard Investigation Details</DialogTitle>
-                      <DialogDescription className="text-sm">{formatDateToDDMMYYYY(selectedInvestigation.date)} - Standard</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
-                          <p className="font-medium text-sm sm:text-base">{formatDateToDDMMYYYY(selectedInvestigation.date)}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
-                          <p className="font-medium text-sm sm:text-base capitalize">{selectedInvestigation.type}</p>
-                        </div>
-                        {selectedInvestigation.createdAt && (
-                          <div>
-                            <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.createdAt)}</p>
-                          </div>
-                        )}
-                        {selectedInvestigation.updatedAt && (
-                          <div>
-                            <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.updatedAt)}</p>
-                          </div>
-                        )}
-                      </div>
-                      {selectedInvestigation.payload && (
-                        <div>
-                          <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
-                          {renderPayload(selectedInvestigation.payload)}
-                        </div>
-                      )}
+                  {selectedInvestigation.payload && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
+                      {renderPayload(selectedInvestigation.payload)}
                     </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </TabsContent>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      )}
 
-            <TabsContent value="create" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Standard Investigation</CardTitle>
-                  <CardDescription>
-                    Enter the standard panel of tests for routine follow-up
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Annual Investigation */}
+      {mode === 'annual' && (
+        <div className="space-y-4">
+          {viewMode === 'create' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Annual Investigation</CardTitle>
+                <CardDescription>
+                  Enter annual comprehensive investigation results
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="patientAnnual">Patient ID</Label>
+                      <Input id="patientAnnual" value={formData.patientId} onChange={(e) => handleChange('patientId', e.target.value)} placeholder="Patient ID" required />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateAnnual">Date</Label>
+                      <Input id="dateAnnual" type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} required />
+                    </div>
+                  </div>
+
+                  {/* Annual Investigation Form */}
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold">1. Annual Screening Tests</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Annual Screening (summary)</Label>
+                        <Input value={formData.annualScreening} onChange={(e) => handleChange('annualScreening', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>CMV PCR</Label>
+                        <Input value={formData.cmvPCR} onChange={(e) => handleChange('cmvPCR', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>BKV PCR</Label>
+                        <Input value={formData.bkvPCR} onChange={(e) => handleChange('bkvPCR', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>EBV PCR</Label>
+                        <Input value={formData.ebvPCR} onChange={(e) => handleChange('ebvPCR', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Hep B Surface Antigen (Hep BsAg)</Label>
+                        <Input value={formData.hepBsAg} onChange={(e) => handleChange('hepBsAg', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Hep C Antibody (Hep C Ab)</Label>
+                        <Input value={formData.hepCAb} onChange={(e) => handleChange('hepCAb', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>HIV Antibody (HIV Ab)</Label>
+                        <Input value={formData.hivAb} onChange={(e) => handleChange('hivAb', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Urine for Cytology</Label>
+                        <Input value={formData.urineCytology} onChange={(e) => handleChange('urineCytology', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>PTH</Label>
+                        <Input value={formData.pth} onChange={(e) => handleChange('pth', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Vitamin D level</Label>
+                        <Input value={formData.vitD} onChange={(e) => handleChange('vitD', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold">2. Imaging</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="patientStandard">Patient ID</Label>
-                        <Input id="patientStandard" value={formData.patientId} onChange={(e) => handleChange('patientId', e.target.value)} placeholder="Patient ID" required />
+                        <Label>USS abdomen KUB & Pelvis / Renal Doppler</Label>
+                        <Input value={formData.imagingUS_KUB_Pelvis_RenalDoppler} onChange={(e) => handleChange('imagingUS_KUB_Pelvis_RenalDoppler', e.target.value)} />
                       </div>
                       <div>
-                        <Label htmlFor="dateStandard">Date</Label>
-                        <Input id="dateStandard" type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} required />
+                        <Label>CXR</Label>
+                        <Input value={formData.imagingCXR} onChange={(e) => handleChange('imagingCXR', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>ECG</Label>
+                        <Input value={formData.imagingECG} onChange={(e) => handleChange('imagingECG', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>2D Echo</Label>
+                        <Input value={formData.imaging2DEcho} onChange={(e) => handleChange('imaging2DEcho', e.target.value)} />
                       </div>
                     </div>
 
-            {/* Standard Investigation Form */}
-            {(
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">1. Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  
-                  <div>
-                    <Label>Date of KT</Label>
-                    <Input type="date" value={formData.dateOfKT} onChange={(e) => handleChange('dateOfKT', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Type of KT</Label>
-                    <Input value={formData.typeOfKT} onChange={(e) => handleChange('typeOfKT', e.target.value)} placeholder="LDKT / DDKT" />
-                  </div>
-                  <div>
-                    <Label>Post KT duration</Label>
-                    <Input value={formData.postKTDuration} onChange={(e) => handleChange('postKTDuration', e.target.value)} placeholder="e.g. 6 months" />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">2. Examination</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label>BW (kg)</Label>
-                    <Input value={formData.bw} onChange={(e) => handleChange('bw', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Height (cm)</Label>
-                    <Input value={formData.height} onChange={(e) => handleChange('height', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>BMI</Label>
-                    <Input value={formData.bmi} onChange={(e) => handleChange('bmi', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>BP</Label>
-                    <Input value={formData.bp} onChange={(e) => handleChange('bp', e.target.value)} placeholder="e.g. 120/80" />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">3. Immunosuppression</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Tacrolimus Level (ng/mL)</Label>
-                    <Input value={formData.tacrolimus} onChange={(e) => handleChange('tacrolimus', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>S. Creatinine (µmol/L or mg/dL)</Label>
-                    <Input value={formData.creatinine} onChange={(e) => handleChange('creatinine', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">4. Electrolytes</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>eGFR</Label>
-                    <Input value={formData.eGFR} onChange={(e) => handleChange('eGFR', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Serum Na+</Label>
-                    <Input value={formData.seNa} onChange={(e) => handleChange('seNa', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Serum K+</Label>
-                    <Input value={formData.seK} onChange={(e) => handleChange('seK', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">5. Full Blood Count (FBC)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label>Hb</Label>
-                    <Input value={formData.hb} onChange={(e) => handleChange('hb', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>PCV</Label>
-                    <Input value={formData.pcv} onChange={(e) => handleChange('pcv', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>WBC - Total</Label>
-                    <Input value={formData.wbcTotal} onChange={(e) => handleChange('wbcTotal', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Neutrophils (N)</Label>
-                    <Input value={formData.wbcN} onChange={(e) => handleChange('wbcN', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Lymphocytes (L)</Label>
-                    <Input value={formData.wbcL} onChange={(e) => handleChange('wbcL', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Platelet count</Label>
-                    <Input value={formData.platelet} onChange={(e) => handleChange('platelet', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">6. UFR</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Protein</Label>
-                    <Input value={formData.urineProtein} onChange={(e) => handleChange('urineProtein', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Pus cells</Label>
-                    <Input value={formData.urinePusCells} onChange={(e) => handleChange('urinePusCells', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>RBC</Label>
-                    <Input value={formData.urineRBC} onChange={(e) => handleChange('urineRBC', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">7. Urine PCR & Metabolic</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Urine PCR</Label>
-                    <Input value={formData.urinePCR} onChange={(e) => handleChange('urinePCR', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>S. Calcium (Ca2+)</Label>
-                    <Input value={formData.sCalcium} onChange={(e) => handleChange('sCalcium', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>S. Phosphate (PO4)</Label>
-                    <Input value={formData.sPhosphate} onChange={(e) => handleChange('sPhosphate', e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>FBS</Label>
-                    <Input value={formData.fbs} onChange={(e) => handleChange('fbs', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>PPBS</Label>
-                    <Input value={formData.ppbs} onChange={(e) => handleChange('ppbs', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>HbA1c</Label>
-                    <Input value={formData.hba1c} onChange={(e) => handleChange('hba1c', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">8. Lipid Profile</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label>Total Cholesterol</Label>
-                    <Input value={formData.cholesterolTotal} onChange={(e) => handleChange('cholesterolTotal', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Triglycerides (TG)</Label>
-                    <Input value={formData.triglycerides} onChange={(e) => handleChange('triglycerides', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>HDL</Label>
-                    <Input value={formData.hdl} onChange={(e) => handleChange('hdl', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>LDL</Label>
-                    <Input value={formData.ldl} onChange={(e) => handleChange('ldl', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">9. LFTs / Other</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label>S. Albumin</Label>
-                    <Input value={formData.sAlbumin} onChange={(e) => handleChange('sAlbumin', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>ALP</Label>
-                    <Input value={formData.alp} onChange={(e) => handleChange('alp', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Uric Acid</Label>
-                    <Input value={formData.uricAcid} onChange={(e) => handleChange('uricAcid', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>ALT</Label>
-                    <Input value={formData.alt} onChange={(e) => handleChange('alt', e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>AST</Label>
-                    <Input value={formData.ast} onChange={(e) => handleChange('ast', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>S. Bilirubin (Total)</Label>
-                    <Input value={formData.sBilirubin} onChange={(e) => handleChange('sBilirubin', e.target.value)} />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Additional Notes</Label>
-                  <Textarea value={formData.notes} onChange={(e) => handleChange('notes', e.target.value)} rows={3} />
-                </div>
-              </div>
-            )}
-
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/investigation')} disabled={submitting}>Cancel</Button>
-                      <Button type="submit" className="flex-1" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          'Submit Investigation'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
-
-        {/* Annual Investigation Tab */}
-        <TabsContent value="annual" className="space-y-4">
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'create' | 'view')} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-4">
-              <TabsTrigger value="create" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Create New
-              </TabsTrigger>
-              <TabsTrigger value="view" className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                View Investigations
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="view" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Annual Investigation Records
-                  </CardTitle>
-                  <CardDescription>
-                    View and filter annual investigations by date
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Date Filter */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <Label htmlFor="filterDateAnnual">Filter by Date</Label>
-                        <div className="flex gap-2 mt-1">
-                          <Input
-                            id="filterDateAnnual"
-                            type="date"
-                            value={filterDate}
-                            onChange={(e) => setFilterDate(e.target.value)}
-                            className="flex-1"
-                          />
-                          {filterDate && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setFilterDate('')}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                    <h3 className="text-lg font-semibold">3. Hematological and Oncology Screening</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Blood picture</Label>
+                        <Input value={formData.hematologyBloodPicture} onChange={(e) => handleChange('hematologyBloodPicture', e.target.value)} />
                       </div>
-                      <div className="pt-6">
-                        <Badge variant="outline" className="text-sm">
-                          {filteredInvestigations.filter(inv => inv.type === 'annual').length} record{filteredInvestigations.filter(inv => inv.type === 'annual').length !== 1 ? 's' : ''}
-                        </Badge>
+                      <div>
+                        <Label>Breast screen</Label>
+                        <Input value={formData.breastScreen} onChange={(e) => handleChange('breastScreen', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>PSA</Label>
+                        <Input value={formData.psa} onChange={(e) => handleChange('psa', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Pap smear</Label>
+                        <Input value={formData.papSmear} onChange={(e) => handleChange('papSmear', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Stools occult blood</Label>
+                        <Input value={formData.stoolOccultBlood} onChange={(e) => handleChange('stoolOccultBlood', e.target.value)} />
                       </div>
                     </div>
 
-                    {/* Loading State */}
-                    {loadingInvestigations ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <h3 className="text-lg font-semibold">4. Procedures</h3>
+                    <div>
+                      <Label>Endoscopy</Label>
+                      <Input value={formData.proceduresEndoscopy} onChange={(e) => handleChange('proceduresEndoscopy', e.target.value)} />
+                    </div>
+
+                    <h3 className="text-lg font-semibold">5. Specialist Reviews</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Dental review</Label>
+                        <Input value={formData.specialistDental} onChange={(e) => handleChange('specialistDental', e.target.value)} />
                       </div>
-                    ) : sortedDates.filter(date => groupedByDate[date].some(inv => inv.type === 'annual')).length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No annual investigations found</p>
+                      <div>
+                        <Label>Ophthalmology review</Label>
+                        <Input value={formData.specialistOphthalmology} onChange={(e) => handleChange('specialistOphthalmology', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Additional Notes</Label>
+                      <Textarea value={formData.notes} onChange={(e) => handleChange('notes', e.target.value)} rows={3} />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/investigation')} disabled={submitting}>Cancel</Button>
+                    <Button type="submit" className="flex-1" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Submit Investigation'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Annual Investigation Records
+                </CardTitle>
+                <CardDescription>
+                  View and filter annual investigations by date
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Date Filter */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <Label htmlFor="filterDateAnnual">Filter by Date</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          id="filterDateAnnual"
+                          type="date"
+                          value={filterDate}
+                          onChange={(e) => setFilterDate(e.target.value)}
+                          className="flex-1"
+                        />
                         {filterDate && (
-                          <p className="text-sm mt-2">Try selecting a different date</p>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setFilterDate('')}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
-                    ) : (
-                      /* Grouped Annual Investigations by Date */
-                      <div className="space-y-6">
-                        {sortedDates
-                          .filter(date => groupedByDate[date].some(inv => inv.type === 'annual'))
-                          .map((date) => (
-                            <div key={date} className="space-y-3">
-                              <div className="flex items-center gap-2 pb-2 border-b">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <h3 className="font-semibold text-lg">{formatDateToDDMMYYYY(date)}</h3>
-                                <Badge variant="outline" className="ml-auto">
-                                  {groupedByDate[date].filter(inv => inv.type === 'annual').length} {groupedByDate[date].filter(inv => inv.type === 'annual').length === 1 ? 'record' : 'records'}
-                                </Badge>
-                              </div>
-                              <div className="grid gap-3">
-                                {groupedByDate[date]
-                                  .filter(inv => inv.type === 'annual')
-                                  .map((inv) => (
-                                    <Card key={inv.id} className="hover:shadow-md transition-shadow">
-                                      <CardContent className="p-4">
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-3">
-                                            <Badge
-                                              variant="outline"
-                                              className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
-                                            >
-                                              Annual
-                                            </Badge>
-                                            <span className="text-sm text-muted-foreground">Created: {inv.createdAt ? formatDateTimeDisplay(inv.createdAt) : 'N/A'}</span>
-                                          </div>
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleViewDetails(inv)}
-                                            className="flex items-center gap-2"
-                                          >
-                                            <Eye className="h-4 w-4" />
-                                            View Details
-                                          </Button>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                              </div>
+                    </div>
+                    <div className="pt-6">
+                      <Badge variant="outline" className="text-sm">
+                        {filteredInvestigations.filter(inv => inv.type === 'annual').length} record{filteredInvestigations.filter(inv => inv.type === 'annual').length !== 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Loading State */}
+                  {loadingInvestigations ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : sortedDates.filter(date => groupedByDate[date].some(inv => inv.type === 'annual')).length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No annual investigations found</p>
+                      {filterDate && (
+                        <p className="text-sm mt-2">Try selecting a different date</p>
+                      )}
+                    </div>
+                  ) : (
+                    /* Grouped Annual Investigations by Date */
+                    <div className="space-y-6">
+                      {sortedDates
+                        .filter(date => groupedByDate[date].some(inv => inv.type === 'annual'))
+                        .map((date) => (
+                          <div key={date} className="space-y-3">
+                            <div className="flex items-center gap-2 pb-2 border-b">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <h3 className="font-semibold text-lg">{formatDateToDDMMYYYY(date)}</h3>
+                              <Badge variant="outline" className="ml-auto">
+                                {groupedByDate[date].filter(inv => inv.type === 'annual').length} {groupedByDate[date].filter(inv => inv.type === 'annual').length === 1 ? 'record' : 'records'}
+                              </Badge>
                             </div>
-                          ))}
+                            <div className="grid gap-3">
+                              {groupedByDate[date]
+                                .filter(inv => inv.type === 'annual')
+                                .map((inv) => (
+                                  <Card key={inv.id} className="hover:shadow-md transition-shadow">
+                                    <CardContent className="p-4">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <Badge
+                                            variant="outline"
+                                            className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                                          >
+                                            Annual
+                                          </Badge>
+                                          <span className="text-sm text-muted-foreground">Created: {inv.createdAt ? formatDateTimeDisplay(inv.createdAt) : 'N/A'}</span>
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleViewDetails(inv)}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                          View Details
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Investigation Details Modal for Annual */}
+          {viewDetails && selectedInvestigation && selectedInvestigation.type === 'annual' && (
+            <Dialog open={viewDetails} onOpenChange={(open) => {
+              if (!open) {
+                setViewDetails(false);
+                setSelectedInvestigation(null);
+              }
+            }}>
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-lg sm:text-xl">Annual Investigation Details</DialogTitle>
+                  <DialogDescription className="text-sm">{formatDateToDDMMYYYY(selectedInvestigation.date)} - Annual</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
+                      <p className="font-medium text-sm sm:text-base">{formatDateToDDMMYYYY(selectedInvestigation.date)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
+                      <p className="font-medium text-sm sm:text-base capitalize">{selectedInvestigation.type}</p>
+                    </div>
+                    {selectedInvestigation.createdAt && (
+                      <div>
+                        <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
+                        <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.createdAt)}</p>
+                      </div>
+                    )}
+                    {selectedInvestigation.updatedAt && (
+                      <div>
+                        <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
+                        <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.updatedAt)}</p>
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Investigation Details Modal */}
-              {viewDetails && selectedInvestigation && selectedInvestigation.type === 'annual' && (
-                <Dialog open={viewDetails} onOpenChange={(open) => {
-                  if (!open) {
-                    setViewDetails(false);
-                    setSelectedInvestigation(null);
-                  }
-                }}>
-                  <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-lg sm:text-xl">Annual Investigation Details</DialogTitle>
-                      <DialogDescription className="text-sm">{formatDateToDDMMYYYY(selectedInvestigation.date)} - Annual</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <Label className="text-muted-foreground text-xs sm:text-sm">Date</Label>
-                          <p className="font-medium text-sm sm:text-base">{formatDateToDDMMYYYY(selectedInvestigation.date)}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground text-xs sm:text-sm">Type</Label>
-                          <p className="font-medium text-sm sm:text-base capitalize">{selectedInvestigation.type}</p>
-                        </div>
-                        {selectedInvestigation.createdAt && (
-                          <div>
-                            <Label className="text-muted-foreground text-xs sm:text-sm">Created At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.createdAt)}</p>
-                          </div>
-                        )}
-                        {selectedInvestigation.updatedAt && (
-                          <div>
-                            <Label className="text-muted-foreground text-xs sm:text-sm">Updated At</Label>
-                            <p className="font-medium text-sm sm:text-base break-words">{formatDateTimeDisplay(selectedInvestigation.updatedAt)}</p>
-                          </div>
-                        )}
-                      </div>
-                      {selectedInvestigation.payload && (
-                        <div>
-                          <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
-                          {renderPayload(selectedInvestigation.payload)}
-                        </div>
-                      )}
+                  {selectedInvestigation.payload && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs sm:text-sm">Investigation Data</Label>
+                      {renderPayload(selectedInvestigation.payload)}
                     </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </TabsContent>
-
-            <TabsContent value="create" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Annual Investigation</CardTitle>
-                  <CardDescription>
-                    Enter annual comprehensive investigation results
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="patientAnnual">Patient ID</Label>
-                        <Input id="patientAnnual" value={formData.patientId} onChange={(e) => handleChange('patientId', e.target.value)} placeholder="Patient ID" required />
-                      </div>
-                      <div>
-                        <Label htmlFor="dateAnnual">Date</Label>
-                        <Input id="dateAnnual" type="date" value={formData.date} onChange={(e) => handleChange('date', e.target.value)} required />
-                      </div>
-                    </div>
-
-            {/* Annual Investigation Form */}
-            {(
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">1. Annual Screening Tests</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Annual Screening (summary)</Label>
-                    <Input value={formData.annualScreening} onChange={(e) => handleChange('annualScreening', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>CMV PCR</Label>
-                    <Input value={formData.cmvPCR} onChange={(e) => handleChange('cmvPCR', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>BKV PCR</Label>
-                    <Input value={formData.bkvPCR} onChange={(e) => handleChange('bkvPCR', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>EBV PCR</Label>
-                    <Input value={formData.ebvPCR} onChange={(e) => handleChange('ebvPCR', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Hep B Surface Antigen (Hep BsAg)</Label>
-                    <Input value={formData.hepBsAg} onChange={(e) => handleChange('hepBsAg', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Hep C Antibody (Hep C Ab)</Label>
-                    <Input value={formData.hepCAb} onChange={(e) => handleChange('hepCAb', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>HIV Antibody (HIV Ab)</Label>
-                    <Input value={formData.hivAb} onChange={(e) => handleChange('hivAb', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Urine for Cytology</Label>
-                    <Input value={formData.urineCytology} onChange={(e) => handleChange('urineCytology', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>PTH</Label>
-                    <Input value={formData.pth} onChange={(e) => handleChange('pth', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Vitamin D level</Label>
-                    <Input value={formData.vitD} onChange={(e) => handleChange('vitD', e.target.value)} />
-                  </div>
+                  )}
                 </div>
-
-                <h3 className="text-lg font-semibold">2. Imaging</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>USS abdomen KUB & Pelvis / Renal Doppler</Label>
-                    <Input value={formData.imagingUS_KUB_Pelvis_RenalDoppler} onChange={(e) => handleChange('imagingUS_KUB_Pelvis_RenalDoppler', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>CXR</Label>
-                    <Input value={formData.imagingCXR} onChange={(e) => handleChange('imagingCXR', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>ECG</Label>
-                    <Input value={formData.imagingECG} onChange={(e) => handleChange('imagingECG', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>2D Echo</Label>
-                    <Input value={formData.imaging2DEcho} onChange={(e) => handleChange('imaging2DEcho', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">3. Hematological and Oncology Screening</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Blood picture</Label>
-                    <Input value={formData.hematologyBloodPicture} onChange={(e) => handleChange('hematologyBloodPicture', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Breast screen</Label>
-                    <Input value={formData.breastScreen} onChange={(e) => handleChange('breastScreen', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>PSA</Label>
-                    <Input value={formData.psa} onChange={(e) => handleChange('psa', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Pap smear</Label>
-                    <Input value={formData.papSmear} onChange={(e) => handleChange('papSmear', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Stools occult blood</Label>
-                    <Input value={formData.stoolOccultBlood} onChange={(e) => handleChange('stoolOccultBlood', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">4. Procedures</h3>
-                <div>
-                  <Label>Endoscopy</Label>
-                  <Input value={formData.proceduresEndoscopy} onChange={(e) => handleChange('proceduresEndoscopy', e.target.value)} />
-                </div>
-
-                <h3 className="text-lg font-semibold">5. Lipid Profile</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label>Total Cholesterol (TC)</Label>
-                    <Input value={formData.cholesterolTotal} onChange={(e) => handleChange('cholesterolTotal', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>LDL</Label>
-                    <Input value={formData.ldl} onChange={(e) => handleChange('ldl', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>HDL</Label>
-                    <Input value={formData.hdl} onChange={(e) => handleChange('hdl', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Triglycerides (TG)</Label>
-                    <Input value={formData.triglycerides} onChange={(e) => handleChange('triglycerides', e.target.value)} />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-semibold">6. Specialist Reviews</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Dental review</Label>
-                    <Input value={formData.specialistDental} onChange={(e) => handleChange('specialistDental', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Ophthalmology review</Label>
-                    <Input value={formData.specialistOphthalmology} onChange={(e) => handleChange('specialistOphthalmology', e.target.value)} />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Additional Notes</Label>
-                  <Textarea value={formData.notes} onChange={(e) => handleChange('notes', e.target.value)} rows={3} />
-                </div>
-              </div>
-            )}
-
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" className="flex-1" onClick={() => navigate('/investigation')} disabled={submitting}>Cancel</Button>
-                      <Button type="submit" className="flex-1" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          'Submit Investigation'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
-      </Tabs>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 export default KTInvestigation;
-

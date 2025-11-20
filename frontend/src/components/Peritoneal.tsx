@@ -41,7 +41,7 @@ interface CAPDData {
   tunnelInfections: TunnelEpisode[];
 }
 
-const STORAGE_KEY = "capdSummary";
+// No localStorage persistence for Peritoneal component (managed on backend)
 
 const Peritoneal = () => {
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
@@ -62,34 +62,17 @@ const Peritoneal = () => {
       const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
       const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
 
-      // Combine both datasets
+      // Combine both datasets and set state
       if (registrationData || capdSummaryData) {
         const combinedData = {
           ...registrationData,
           ...capdSummaryData,
         };
         setCapdData(combinedData);
-        // Also save to localStorage for backward compatibility
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedData));
-        } catch (e) {
-          console.error("Failed to save to localStorage:", e);
-        }
         return;
       }
-
-      // Fallback to localStorage if no data from backend
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setCapdData(JSON.parse(raw));
     } catch (error) {
       console.error("Failed to fetch from backend:", error);
-      // Fallback to localStorage
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) setCapdData(JSON.parse(raw));
-      } catch (e) {
-        console.error("Failed to load from localStorage:", e);
-      }
     }
   };
 
@@ -106,11 +89,7 @@ const Peritoneal = () => {
   }, [activeView]);
 
   const persistCAPD = (data: CAPDData) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.error("Failed to save CAPD summary:", e);
-    }
+    // Persist only to component state; saving to backend handled elsewhere
     setCapdData(data);
   };
 

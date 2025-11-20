@@ -16,7 +16,8 @@ public class PatientProfileDTO {
     private String address;
     private String nicNo;
     private String contactDetails;
-    private String emailAddress;
+    private String emailAddress
+            ;
 
     // Assessment data
     private RecipientAssessmentResponseDTO recipientAssessment;

@@ -5,68 +5,60 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cdf81b1d-e1c9-47ae-a5a9-74cef8a1d4d4" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../BACKEND_NOTES.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../COMPLETION_CHECKLIST.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../HEMODIALYSIS_CHANGES_SUMMARY.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../HEMODIALYSIS_RESTRUCTURE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../STYLING_MATCH_DETAILS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/HemodialysisInvestigationController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/HemodialysisMonthlyReviewController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisInvestigationDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisMonthlyReviewDto.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisInvestigation.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisMonthlyReview.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisInvestigationRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisMonthlyReviewRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/service/HemodialysisInvestigationService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/HemodialysisMonthlyReviewService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../create_hemodialysis_table.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDInvestigation.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDMonthlyReview.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDScheduleAppointment.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDSessionForm.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDSessionList.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDSummary.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/pages/ForgotPassword.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/services/hdInvestigationApi.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewApi.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewInvestigationApi.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../frontend/src/services/monthlyAssessmentApi.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SESSION_HISTORY_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SESSION_HISTORY_IMPLEMENTATION.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SESSION_HISTORY_QUICK_REFERENCE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SESSION_HISTORY_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/HdScheduleController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HdScheduleAppointmentDto.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HdScheduleAppointment.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HdScheduleAppointmentRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/HdScheduleService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/EXAMPLE_SESSION_HISTORY_INTEGRATION.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/HDWeekScheduleFloating.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/components/SessionHistoryView.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/hooks/useLocalStorage.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/hooks/useSessionHistory.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/lib/sessionHistoryUtils.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/src/services/hdScheduleApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../AUTHENTICATION_DEBUG.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../BACKEND_NOTES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../COMPLETION_CHECKLIST.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../HEMODIALYSIS_CHANGES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../HEMODIALYSIS_RESTRUCTURE.md" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/KTSurgeryController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/KTSurgeryController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisRecordDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/HemodialysisRecordDto.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisRecord.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/HemodialysisRecord.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisRecordRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/HemodialysisRecordRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/HemodialysisRecordService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/HemodialysisRecordService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/KTSurgeryService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/renal/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hs_err_pid6780.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/AuthenticationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/AuthenticationController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/filter/JwtAuthenticationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/filter/JwtAuthenticationFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/PatientP.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_capd_summary_table.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_feedback_table.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_hemodialysis_table.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_infection_tracking_table.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_kt_surgery_anthropometrics.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_monthly_assessment_table.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_patient_registration_table.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../create_users_table.sql" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/Layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/DialysisCalendar.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormDateInput.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormInput.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormSelect.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/FormTextArea.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/HemodialysisDataPreview.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/PatientSummary.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/ScheduleAppointment.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/SectionCard.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/WeeklyTimetable.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/ConfirmationStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/DialysisSessionStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/HDPrescriptionStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/OtherNotesStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/hemodialysis/steps/VascularAccessStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/ui/checkbox.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/ui/checkbox.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/Dashboard.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/HDInvestigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/HDInvestigation.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDMonthlyReview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDMonthlyReview.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDScheduleAppointment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDScheduleAppointment.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDSessionForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDSessionForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDSummary.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDSummary.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/PDMonitoring.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/PDMonitoring.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/components/Peritoneal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/Peritoneal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/context/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/context/AuthContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/Dialysis.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/pages/HaemoDialysis.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/HaemoDialysis.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/Login.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/services/followupApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/followupApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/KTInvestigation.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/KTInvestigation.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/RegisterPatient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/RegisterPatient.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/donorApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/donorApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/hdInvestigationApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/hdInvestigationApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewInvestigationApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/hdMonthlyReviewInvestigationApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/hemodialysisApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/hemodialysisApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/services/recipientApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/recipientApi.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../frontend/src/services/transplantApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/services/transplantApi.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/types/hemodialysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/types/hemodialysis.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/types/transplant.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/types/transplant.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/types/patient.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/types/patient.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -158,7 +150,8 @@
       <workItem from="1761310931557" duration="56000" />
       <workItem from="1761310996784" duration="14000" />
       <workItem from="1763486745964" duration="3588000" />
-      <workItem from="1763528165973" duration="924000" />
+      <workItem from="1763528165973" duration="3808000" />
+      <workItem from="1763617620902" duration="1817000" />
     </task>
     <servers />
   </component>

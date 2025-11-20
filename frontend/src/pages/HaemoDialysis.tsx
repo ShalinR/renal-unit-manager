@@ -13,6 +13,7 @@ import HDSessionForm, { HemodialysisForm } from '@/components/HDSessionForm';
 import HDMonthlyReview from '@/components/HDMonthlyReview';
 import HDScheduleAppointment from '@/components/HDScheduleAppointment';
 import HDSummary from '@/components/HDSummary';
+import HDWeekScheduleFloating from '@/components/HDWeekScheduleFloating';
 
 type ActiveView =
   | 'dashboard'
@@ -33,6 +34,7 @@ const initialForm: HemodialysisForm = {
 const HaemoDialysisPage: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [form, setForm] = useState<HemodialysisForm>(initialForm);
+  const [showFloating, setShowFloating] = useState(false);
 
   const handleBack = () => {
     setActiveView('dashboard');
@@ -202,6 +204,17 @@ const HaemoDialysisPage: React.FC = () => {
         {activeView === 'view-summary' && (
           <HDSummary onBack={handleBack} />
         )}
+      </div>
+      {/* Floating action button */}
+      <div>
+        <button
+          onClick={() => setShowFloating((s) => !s)}
+          aria-label="Open HD Weekly Timetable"
+          className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg"
+        >
+          <CalendarDays className="w-6 h-6" />
+        </button>
+        {showFloating && <HDWeekScheduleFloating onClose={() => setShowFloating(false)} />}
       </div>
     </div>
   );

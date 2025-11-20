@@ -150,6 +150,8 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
   const [loadingSessions, setLoadingSessions] = useState(false);
   const { patient, globalPatient } = usePatientContext();
   const { toast } = useToast();
+  const currentPhn = (patient || globalPatient)?.phn;
+  const STORAGE_KEY = currentPhn ? `hemodialysis-draft-${currentPhn}` : 'hemodialysis-draft';
   const totalSteps = FORM_STEPS.length;
 
   const currentPatient = patient || globalPatient;
@@ -194,7 +196,41 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
     }
   }, [currentPatient?.phn, showSavedSessions, toast]);
 
-  // Auto-compute inter-dialytic weight gain
+  // Load local draft for this patient (if available)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // parsed may be a payload shape from previous save; attempt to map to form shape
+        const loadedForm: HemodialysisForm = {
+          personal: parsed.personal || form.personal,
+          prescription: parsed.prescription || parsed.prescription || form.prescription,
+          vascular: parsed.vascular || parsed.vascular || form.vascular,
+          session: parsed.session || parsed.session || form.session,
+          otherNotes: parsed.otherNotes || form.otherNotes,
+          completedBy: parsed.completedBy || form.completedBy,
+        } as HemodialysisForm;
+        // Only apply draft if it contains some data (avoid overwriting a loaded backend session)
+        const hasData = Object.keys(parsed || {}).length > 0;
+        if (hasData) setForm(loadedForm);
+      }
+    } catch (e) {
+      console.error('Failed to load hemodialysis draft', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [STORAGE_KEY]);
+
+  // Auto-save draft to localStorage whenever form changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+    } catch (e) {
+      console.error('Failed to save hemodialysis draft', e);
+    }
+  }, [form, STORAGE_KEY]);
+
+  // Auto-compute inter-dialytic weight gain at session level
   useEffect(() => {
     const dry = form.prescription.dryWeightKg ?? 0;
     const pre = form.session.preDialysisWeightKg ?? 0;
@@ -206,6 +242,32 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
       }));
     }
   }, [form.prescription.dryWeightKg, form.session.preDialysisWeightKg, setForm]);
+
+  // Auto-compute inter-dialytic weight gain for hourly records
+  useEffect(() => {
+    const hourlyRecords = form.session?.hourlyRecords || [];
+    let updated = false;
+    const newRecords = hourlyRecords.map((record) => {
+      const pre = record.preDialysisWeightKg ?? 0;
+      const post = record.postDialysisWeightKg ?? 0;
+      
+      if (pre && post) {
+        const calculatedGain = parseFloat((pre - post).toFixed(2));
+        if (calculatedGain !== record.interDialyticWeightGainKg) {
+          updated = true;
+          return { ...record, interDialyticWeightGainKg: calculatedGain };
+        }
+      }
+      return record;
+    });
+
+    if (updated) {
+      setForm((prev) => ({
+        ...prev,
+        session: { ...prev.session, hourlyRecords: newRecords },
+      }));
+    }
+  }, [form.session?.hourlyRecords?.map((r) => `${r.preDialysisWeightKg}-${r.postDialysisWeightKg}`).join('|'), setForm]);
 
   // Ensure hourlyRecords array exists when entering Dialysis Session step
   useEffect(() => {
@@ -273,6 +335,43 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
 
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
+  /**
+   * Validate that hourly session times are in chronological order (24-hour format)
+   */
+  const validateHourlySessionTimes = (): { isValid: boolean; error?: string } => {
+    const hourlyRecords = form.session?.hourlyRecords || [];
+    
+    // Check if all hourly records have times set
+    const allTimesSet = hourlyRecords.every(record => record.time);
+    if (hourlyRecords.length > 0 && !allTimesSet) {
+      return { isValid: false, error: 'All hourly session times must be set' };
+    }
+
+    // Validate chronological order
+    for (let i = 0; i < hourlyRecords.length - 1; i++) {
+      const currentTime = hourlyRecords[i].time;
+      const nextTime = hourlyRecords[i + 1].time;
+
+      if (!currentTime || !nextTime) continue;
+
+      // Convert time strings (HH:MM) to comparable format
+      const currentMinutes = parseInt(currentTime.replace(':', ''));
+      const nextMinutes = parseInt(nextTime.replace(':', ''));
+
+      if (currentMinutes >= nextMinutes) {
+        return {
+          isValid: false,
+          error: `Hour ${i + 1} time (${currentTime}) must be before Hour ${i + 2} time (${nextTime}). Times must be in chronological order.`
+        };
+      }
+    }
+
+    return { isValid: true };
+  };
+
+  // prev already declared above; avoid redeclaration here
+  // const prev = () => setStep((s) => Math.max(s - 1, 0));
+
   const loadSession = async (sessionId: number) => {
     try {
       const record = await getHemodialysisRecordById(sessionId);
@@ -326,6 +425,18 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
   };
 
   const submit = async () => {
+    // Validate hourly session times before submission
+    const timeValidation = validateHourlySessionTimes();
+    if (!timeValidation.isValid) {
+      toast({
+        title: 'Invalid Time Order',
+        description: timeValidation.error || 'Please check your hourly session times',
+        variant: 'destructive'
+      });
+      setStep(2); // Navigate to Dialysis Session step
+      return;
+    }
+
     // Submission no longer blocked by form validation or staff sign-off (early development)
 
     setIsSubmitting(true);
@@ -354,12 +465,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         saved = await createHemodialysisRecord(patientId!, payload);
         toast({ title: 'Saved', description: 'Hemodialysis record submitted successfully', variant: 'default' });
         // Clear draft if present
-        localStorage.removeItem('hemodialysis-draft');
+        localStorage.removeItem(STORAGE_KEY);
         onBack();
       } catch (e) {
         // backend not available or error — save draft locally
         console.warn('Backend save failed, saving draft locally', e);
-        localStorage.setItem('hemodialysis-draft', JSON.stringify(payload));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         toast({ title: 'Saved locally', description: 'No backend available — draft saved locally', variant: 'destructive' });
       }
     } catch (error) {
@@ -913,15 +1024,56 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   {(form.session.hourlyRecords || [])[hourIndex] && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Time</Label>
-                      <Input
-                        type="time"
-                        value={form.session.hourlyRecords?.[hourIndex]?.time || ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.time`, e.target.value)}
-                        className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
-                      />
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Time (24-hour format) <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="time"
+                          value={form.session.hourlyRecords?.[hourIndex]?.time || ''}
+                          onChange={(e) => {
+                            const newTime = e.target.value;
+                            const hours = form.session.hourlyRecords || [];
+                            
+                            // Validate chronological order
+                            if (hourIndex > 0 && newTime) {
+                              const prevTime = hours[hourIndex - 1]?.time;
+                              if (prevTime && newTime <= prevTime) {
+                                toast({
+                                  title: 'Invalid Time',
+                                  description: `Hour ${hourIndex + 1} time must be after Hour ${hourIndex} time (${prevTime})`,
+                                  variant: 'destructive'
+                                });
+                                return;
+                              }
+                            }
+                            
+                            if (hourIndex < hours.length - 1 && newTime) {
+                              const nextTime = hours[hourIndex + 1]?.time;
+                              if (nextTime && newTime >= nextTime) {
+                                toast({
+                                  title: 'Invalid Time',
+                                  description: `Hour ${hourIndex + 1} time must be before Hour ${hourIndex + 2} time (${nextTime})`,
+                                  variant: 'destructive'
+                                });
+                                return;
+                              }
+                            }
+                            
+                            handleChange(`session.hourlyRecords.${hourIndex}.time`, newTime);
+                          }}
+                          className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md font-mono"
+                          placeholder="HH:MM"
+                        />
+                        <span className="text-xs text-gray-500 mt-1 block">
+                          {hourIndex === 0 && 'First session start time'}
+                          {hourIndex === 1 && `Must be after Hour 1: ${form.session.hourlyRecords?.[0]?.time || 'Not set'}`}
+                          {hourIndex === 2 && `Must be after Hour 2: ${form.session.hourlyRecords?.[1]?.time || 'Not set'}`}
+                          {hourIndex === 3 && `Must be after Hour 3: ${form.session.hourlyRecords?.[2]?.time || 'Not set'}`}
+                        </span>
+                      </div>
                     </div>
-
+                    
                     <div className="space-y-2">
                       <Label className="text-sm font-semibold text-gray-700">Duration (min)</Label>
                       <Input
@@ -931,7 +1083,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
-
+                     <div className="space-y-2">        </div>       
                     <div className="space-y-2">
                       <Label className="text-sm font-semibold text-gray-700">Pre-Dialysis Weight (kg)</Label>
                       <Input
@@ -956,13 +1108,16 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
 
                     <div className="space-y-2">
                       <Label className="text-sm font-semibold text-gray-700">Inter-Dialytic Weight Gain (kg)</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={form.session.hourlyRecords?.[hourIndex]?.interDialyticWeightGainKg ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.interDialyticWeightGainKg`, Number(e.target.value))}
-                        className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
-                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={form.session.hourlyRecords?.[hourIndex]?.interDialyticWeightGainKg ?? ''}
+                          disabled
+                          className="h-10 w-full border-2 border-gray-300 bg-gray-100 focus:border-gray-300 rounded-md text-gray-700"
+                        />
+                        
+                      </div>
                     </div>
 
                     <div className="space-y-2">
