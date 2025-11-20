@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Heart,
   UserCheck,
@@ -29,7 +31,9 @@ import {
   CheckCircle,
   Loader2,
   Eye,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
 import RecipientSummaryOverlay from "@/components/RecipientSummaryOverlay";
 import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
@@ -97,6 +101,19 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
   const [transfusions, setTransfusions] = useState<
     { date: string; indication: string; volume: string }[]
   >([{ date: "", indication: "", volume: "" }]);
+
+  // Generate printable recipient report (limited sections)
+  const generateRecipientReport = useCallback(() => {
+    const form = recipientForm as any;
+    const comorbidities = form.comorbidities || {};
+    const rrt = form.rrtDetails || {};
+    const transfusionHistory = form.transfusionHistory || [];
+    const immuno = form.immunologicalDetails || {};
+    const html = `<!doctype html><html><head><meta charset='utf-8'><title>Recipient Report</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:28px;color:#111} h1{font-size:22px;margin:0 0 18px} h2{font-size:16px;margin:22px 0 8px} .kv{display:grid;grid-template-columns:180px 1fr;gap:6px 16px;font-size:12px} .kv div.label{font-weight:600} table{border-collapse:collapse;width:100%;margin-top:8px;font-size:12px} th,td{border:1px solid #ddd;padding:6px;text-align:left} th{background:#f0f4ff} .section{margin-bottom:18px} .footer{margin-top:32px;font-size:11px;color:#555;text-align:center}</style></head><body><h1>Recipient Assessment Report</h1><h2>Basic Information</h2><div class='kv'>${['name','phn','age','gender'].map(k=>`<div class='label'>${k}</div><div>${form[k]??'—'}</div>`).join('')}</div><h2>Donor Details</h2><div class='kv'>${['donorName','donorPhn','donorBloodGroup','relationToRecipient','relationType'].map(k=>`<div class='label'>${k}</div><div>${form[k]??'—'}</div>`).join('')}</div><h2>Comorbidities</h2><div class='kv'>${Object.entries(comorbidities).map(([k,v])=>`<div class='label'>${k}</div><div>${typeof v==='boolean'?(v?'Yes':'No'):(v||'—')}</div>`).join('')}</div><h2>RRT Details</h2><div class='kv'>${Object.entries(rrt).map(([k,v])=>`<div class='label'>${k}</div><div>${typeof v==='boolean'?(v?'Yes':'No'):(v||'—')}</div>`).join('')}</div>${transfusionHistory.length?`<h2>Transfusion History</h2><table><thead><tr><th>Date</th><th>Indication</th><th>Volume</th></tr></thead><tbody>${transfusionHistory.map((t:any)=>`<tr><td>${t.date||'—'}</td><td>${t.indication||'—'}</td><td>${t.volume||'—'}</td></tr>`).join('')}</tbody></table>`:''}<h2>Immunological Details</h2><div class='kv'>${(()=>{const c=[]; if(immuno.bloodGroup){Object.entries(immuno.bloodGroup).forEach(([k,v])=>c.push(`<div class='label'>bloodGroup.${k}</div><div>${v||'—'}</div>`));} if(immuno.crossMatch){Object.entries(immuno.crossMatch).forEach(([k,v])=>c.push(`<div class='label'>crossMatch.${k}</div><div>${v||'—'}</div>`));} ['praPre','praPost','dsa','immunologicalRisk'].forEach(k=>{if(immuno[k]) c.push(`<div class='label'>${k}</div><div>${immuno[k]||'—'}</div>`);}); return c.join('');})()}</div><div class='footer'>Generated ${new Date().toLocaleString()} | Renal Unit Manager</div><script>window.onload=()=>window.print()</script></body></html>`;
+    const w = window.open('', '_blank');
+    if(!w){ alert('Popup blocked'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }, [recipientForm]);
 
   // Build recipient summary sections
   const handleSelectDonor = async (donor: Donor) => {
@@ -1309,16 +1326,30 @@ const searchDonorByPhn = async () => {
                     >
                       Date of Birth <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input
-                      id="recipientDOB"
-                      type="date"
-                      value={recipientForm.dateOfBirth}
-                      onChange={(e) =>
-                        handleNestedChange("dateOfBirth", e.target.value)
-                      }
-                      className={`h-12 border-2 ${errors.dateOfBirth ? "border-red-500" : "border-gray-200"} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg`}
-                      required
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={`h-12 w-full justify-start text-left font-normal border-2 ${errors.dateOfBirth ? "border-red-500" : "border-gray-200"}`}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {recipientForm.dateOfBirth ? formatDateToDDMMYYYY(recipientForm.dateOfBirth) : 'Select date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={isoStringToDate(recipientForm.dateOfBirth)}
+                          onSelect={(date) => {
+                            if (date) {
+                              handleNestedChange("dateOfBirth", toLocalISO(date));
+                            }
+                          }}
+                          disabled={(date) => date > new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     {errors.dateOfBirth && (
                       <ErrorMessage message={errors.dateOfBirth} />
                     )}
@@ -2090,18 +2121,30 @@ const searchDonorByPhn = async () => {
                       >
                         Starting Date
                       </Label>
-                      <Input
-                        id="rrtStartDate"
-                        type="date"
-                        value={recipientForm.rrtDetails?.startingDate || ""}
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "rrtDetails.startingDate",
-                            e.target.value
-                          )
-                        }
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {recipientForm.rrtDetails?.startingDate ? formatDateToDDMMYYYY(recipientForm.rrtDetails.startingDate) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(recipientForm.rrtDetails?.startingDate)}
+                            onSelect={(date) => {
+                              if (date) {
+                                handleNestedChange("rrtDetails.startingDate", toLocalISO(date));
+                              }
+                            }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 </div>
@@ -2246,18 +2289,31 @@ const searchDonorByPhn = async () => {
                               {idx + 1}
                             </td>
                             <td className="border border-gray-200 p-2">
-                              <Input
-                                type="date"
-                                value={row.date}
-                                onChange={(e) =>
-                                  handleTransfusionChange(
-                                    idx,
-                                    "date",
-                                    e.target.value
-                                  )
-                                }
-                                className="h-10 border-gray-300 focus:border-blue-500 rounded-md"
-                              />
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start text-left font-normal text-xs"
+                                  >
+                                    <CalendarIcon className="mr-1 h-3 w-3" />
+                                    {row.date ? formatDateToDDMMYYYY(row.date) : 'Select'}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={isoStringToDate(row.date)}
+                                    onSelect={(date) => {
+                                      if (date) {
+                                        handleTransfusionChange(idx, "date", toLocalISO(date));
+                                      }
+                                    }}
+                                    disabled={(date) => date > new Date()}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
                             </td>
                             <td className="border border-gray-200 p-2">
                               <Input
@@ -2664,6 +2720,15 @@ const searchDonorByPhn = async () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
+                {/* Quick Summary Actions */}
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="outline" size="sm" onClick={() => setShowRecipientSummary(true)} className="flex items-center gap-2">
+                    <Eye className="w-4 h-4" /> View Updated Summary
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={generateRecipientReport} className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Print Recipient Report
+                  </Button>
+                </div>
                 {/* Summary cards removed as requested */}
 
                 {/* Medical Staff Information */}
@@ -2690,20 +2755,30 @@ const searchDonorByPhn = async () => {
                       <Label className="text-sm font-semibold text-gray-700">
                         Completion Date
                       </Label>
-                      <Input
-                        type="date"
-                        value={
-                          recipientForm.completedBy?.completionDate ||
-                          new Date().toISOString().split("T")[0]
-                        }
-                        onChange={(e) =>
-                          handleNestedChange(
-                            "completedBy.completionDate",
-                            e.target.value
-                          )
-                        }
-                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {recipientForm.completedBy?.completionDate ? formatDateToDDMMYYYY(recipientForm.completedBy.completionDate) : formatDateToDDMMYYYY(new Date().toISOString().split("T")[0])}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(recipientForm.completedBy?.completionDate) || new Date()}
+                            onSelect={(date) => {
+                              if (date) {
+                                handleNestedChange("completedBy.completionDate", toLocalISO(date));
+                              }
+                            }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 </div>

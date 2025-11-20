@@ -10,6 +10,7 @@ import { exportInvestigationData, flattenHDInvestigationData } from '@/lib/expor
 import { useToast } from "@/hooks/use-toast";
 import * as hdMonthlyReviewInvestigationApi from "@/services/hdMonthlyReviewInvestigationApi";
 import { usePatientContext } from "@/context/PatientContext";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 interface InvestigationData {
   patientId: string;
@@ -219,10 +220,10 @@ const HDInvestigation = () => {
                   >
                     <div>
                       <p className="font-medium">
-                        {inv.investigationDate ? new Date(inv.investigationDate).toLocaleDateString() : "No date"}
+                        {inv.investigationDate ? formatDateToDDMMYYYY(inv.investigationDate) : "No date"}
                       </p>
                       <p className="text-sm text-gray-600">
-                        Created: {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : "N/A"}
+                        Created: {inv.createdAt ? formatDateToDDMMYYYY(inv.createdAt) : "N/A"}
                       </p>
                     </div>
                     <Button

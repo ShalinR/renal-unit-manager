@@ -1,11 +1,15 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Printer, TrendingUp, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Printer, TrendingUp, X, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { usePatientContext } from '@/context/PatientContext';
 import { useToast } from '@/hooks/use-toast';
 import { getHemodialysisRecordsByPatientId } from '@/services/hemodialysisApi';
+import { formatDateToDDMMYYYY, toLocalISO } from '@/lib/dateUtils';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { isoStringToDate } from '@/lib/dateUtils';
 
 interface HDSummaryProps {
   onBack: () => void;
@@ -62,31 +66,130 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
   const prepareChartData = (data: any[]) => {
     // Sort by date and prepare chart data
     const sorted = [...data].sort((a, b) => new Date(a.hemoDialysisSessionDate || 0).getTime() - new Date(b.hemoDialysisSessionDate || 0).getTime());
-    const chartData = sorted.map((record, idx) => ({
-      date: record.hemoDialysisSessionDate ? new Date(record.hemoDialysisSessionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `Session ${idx + 1}`,
-      bloodPressure: record.bloodPressure ? parseFloat(record.bloodPressure.split('/')[0]) : 0,
-      arterialPressure: record.arterialPressure ? parseFloat(record.arterialPressure) : 0,
-      venousPressure: record.venousPressure ? parseFloat(record.venousPressure) : 0,
-      ufRate: record.ufRate ? parseFloat(record.ufRate) : 0,
-      sessionTime: record.sessionTime ? parseFloat(record.sessionTime) : 0,
-    }));
+    const chartData = sorted.map((record, idx) => {
+      // Derive per-session averages from 4 hourly mini sessions
+      let arterialAvg: number | undefined;
+      let venousAvg: number | undefined;
+      let flowAvg: number | undefined;
+      if (record.session?.hourlyRecords?.length) {
+        const arterialVals = record.session.hourlyRecords
+          .map((hr: any) => hr.arterialPressureMmHg ?? hr.arterialPressure)
+          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+        const venousVals = record.session.hourlyRecords
+          .map((hr: any) => hr.venousPressureMmHg ?? hr.venousPressure)
+          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+        const flowVals = record.session.hourlyRecords
+          .map((hr: any) => hr.bloodFlowRateMlPerMin ?? hr.bloodFlowRate)
+          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+        if (arterialVals.length > 0) {
+          arterialAvg = parseFloat((arterialVals.reduce((a: number,b: number)=>a+b,0) / 4).toFixed(1));
+        }
+        if (venousVals.length > 0) {
+          venousAvg = parseFloat((venousVals.reduce((a: number,b: number)=>a+b,0) / 4).toFixed(1));
+        }
+        if (flowVals.length > 0) {
+          flowAvg = parseFloat((flowVals.reduce((a: number,b: number)=>a+b,0) / flowVals.length).toFixed(1));
+        }
+      }
+      // Fallback to root-level if no hourly data
+      if (arterialAvg === undefined && record.arterialPressure) {
+        arterialAvg = parseFloat(record.arterialPressure);
+      }
+      if (venousAvg === undefined && record.venousPressure) {
+        venousAvg = parseFloat(record.venousPressure);
+      }
+      // Fallback flow (no root-level defined currently; keep undefined if absent)
+
+      return {
+        date: record.hemoDialysisSessionDate ? formatDateToDDMMYYYY(record.hemoDialysisSessionDate) : `Session ${idx + 1}`,
+        bloodPressure: record.bloodPressure ? parseFloat(record.bloodPressure.split('/')[0]) : 0,
+        arterialPressure: arterialAvg ?? 0,
+        venousPressure: venousAvg ?? 0,
+        bloodFlowRate: flowAvg ?? 0,
+        // Removed duration & UF Rate chart; keep raw data accessible if needed later
+      };
+    });
     setChartData(chartData);
   };
 
+  // Listen for new HD records added elsewhere (e.g., HDSessionForm) to refresh analytics
+  useEffect(() => {
+    const handler = () => loadRecords();
+    window.addEventListener('hd-record-added', handler);
+    return () => window.removeEventListener('hd-record-added', handler);
+  }, []);
+
   const calculateStatistics = (data: any[]) => {
     if (data.length === 0) return {};
-    
-    const bloodPressures = data.map(r => r.bloodPressure ? parseFloat(r.bloodPressure.split('/')[0]) : 0).filter(v => v > 0);
-    const arterialPressures = data.map(r => r.arterialPressure ? parseFloat(r.arterialPressure) : 0).filter(v => v > 0);
-    const venousPressures = data.map(r => r.venousPressure ? parseFloat(r.venousPressure) : 0).filter(v => v > 0);
 
-    const avg = (arr: number[]) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : 'N/A';
+    // Blood pressure (systolic/diastolic) unchanged logic
+    const systolics: number[] = [];
+    const diastolics: number[] = [];
+    data.forEach(r => {
+      if (r.bloodPressure && /\d+\/\d+/.test(r.bloodPressure)) {
+        const [sysStr, diaStr] = r.bloodPressure.split('/');
+        const sys = parseFloat(sysStr);
+        const dia = parseFloat(diaStr);
+        if (sys) systolics.push(sys);
+        if (dia) diastolics.push(dia);
+      } else if (r.session?.hourlyRecords?.length) {
+        const firstWithBP = r.session.hourlyRecords.find((hr: any) => hr.systolic && hr.diastolic);
+        if (firstWithBP) {
+          systolics.push(firstWithBP.systolic);
+          diastolics.push(firstWithBP.diastolic);
+        }
+      }
+    });
+
+    // Per-session arterial/venous averages (divide sum of 4 hourly readings by 4)
+    const perSessionArterial: number[] = [];
+    const perSessionVenous: number[] = [];
+    const perSessionFlow: number[] = [];
+    data.forEach(r => {
+      if (r.session?.hourlyRecords?.length) {
+        const arterialVals = r.session.hourlyRecords
+          .map((hr: any) => hr.arterialPressureMmHg ?? hr.arterialPressure)
+          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+        const venousVals = r.session.hourlyRecords
+          .map((hr: any) => hr.venousPressureMmHg ?? hr.venousPressure)
+          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+        const flowVals = r.session.hourlyRecords
+          .map((hr: any) => hr.bloodFlowRateMlPerMin ?? hr.bloodFlowRate)
+          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+        if (arterialVals.length === 4) {
+          perSessionArterial.push(arterialVals.reduce((a:number,b:number)=>a+b,0)/4);
+        } else if (arterialVals.length > 0) {
+          // partial data: average available values
+          perSessionArterial.push(arterialVals.reduce((a:number,b:number)=>a+b,0)/arterialVals.length);
+        }
+        if (venousVals.length === 4) {
+          perSessionVenous.push(venousVals.reduce((a:number,b:number)=>a+b,0)/4);
+        } else if (venousVals.length > 0) {
+          perSessionVenous.push(venousVals.reduce((a:number,b:number)=>a+b,0)/venousVals.length);
+        }
+        if (flowVals.length > 0) {
+          perSessionFlow.push(flowVals.reduce((a:number,b:number)=>a+b,0)/flowVals.length);
+        }
+      } else {
+        // Fallback to root-level if no hourly detail
+        if (r.arterialPressure) perSessionArterial.push(parseFloat(r.arterialPressure));
+        if (r.venousPressure) perSessionVenous.push(parseFloat(r.venousPressure));
+      }
+    });
+
+    const avg = (arr: number[]) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : undefined;
+    const avgSys = avg(systolics);
+    const avgDia = avg(diastolics);
+    const avgArt = avg(perSessionArterial);
+    const avgVen = avg(perSessionVenous);
+    const avgFlow = avg(perSessionFlow);
 
     return {
       totalSessions: data.length,
-      avgBloodPressure: avg(bloodPressures),
-      avgArterialPressure: avg(arterialPressures),
-      avgVenousPressure: avg(venousPressures),
+      avgBloodPressure: avgSys && avgDia ? `${avgSys.toFixed(0)}/${avgDia.toFixed(0)}` : 'N/A',
+      avgArterialPressure: avgArt !== undefined ? avgArt.toFixed(1) : 'N/A',
+      avgVenousPressure: avgVen !== undefined ? avgVen.toFixed(1) : 'N/A',
+      avgBloodFlowRate: avgFlow !== undefined ? avgFlow.toFixed(1) : 'N/A',
     };
   };
 
@@ -116,7 +219,7 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
           .patient-info span { display: block; color: #333; font-size: 14px; }
           .section { margin: 25px 0; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; }
           .section h2 { color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 8px; margin: 0 0 15px 0; font-size: 16px; }
-          .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 15px 0; }
+          .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin: 15px 0; }
           .stat-box { padding: 12px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 4px solid #0066cc; border-radius: 4px; }
           .stat-label { font-size: 12px; color: #0066cc; font-weight: bold; }
           .stat-value { font-size: 20px; font-weight: bold; color: #0066cc; }
@@ -135,7 +238,7 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
             <p>Full Session Report</p>
           </div>
           
-          <div class="date-range">Report Period: ${startDate} to ${endDate} | Generated: ${new Date().toLocaleString()}</div>
+          <div class="date-range">Report Period: ${startDate || 'N/A'} to ${endDate || 'N/A'} | Generated: ${formatDateToDDMMYYYY(new Date().toISOString())} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
           
           <div class="section">
             <h2>Patient Information</h2>
@@ -158,11 +261,15 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
               </div>
               <div class="stat-box">
                 <div class="stat-label">Avg Blood Pressure</div>
-                <div class="stat-value">${stats.avgBloodPressure} mmHg</div>
+                <div class="stat-value">${stats.avgBloodPressure}</div>
               </div>
               <div class="stat-box">
                 <div class="stat-label">Avg Arterial Pressure</div>
                 <div class="stat-value">${stats.avgArterialPressure} mmHg</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">Avg Blood Flow Rate</div>
+                <div class="stat-value">${stats.avgBloodFlowRate} mL/min</div>
               </div>
             </div>
           </div>
@@ -177,7 +284,6 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                   <th>Arterial Pressure</th>
                   <th>Venous Pressure</th>
                   <th>Session Time (min)</th>
-                  <th>UF Rate (ml/hr)</th>
                   <th>Notes</th>
                 </tr>
               </thead>
@@ -189,7 +295,6 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                     <td>${r.arterialPressure || 'N/A'}</td>
                     <td>${r.venousPressure || 'N/A'}</td>
                     <td>${r.sessionTime || 'N/A'}</td>
-                    <td>${r.ufRate || 'N/A'}</td>
                     <td>${(r.otherNotes || 'N/A').substring(0, 30)}</td>
                   </tr>
                 `).join('')}
@@ -237,8 +342,8 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card className="shadow-lg border-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+      {/* Header (sticky for persistent Back visibility) */}
+      <Card className="shadow-lg border-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white sticky top-0 z-40">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -251,7 +356,7 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
               <Button onClick={generateFullReport} className="bg-white text-blue-600 hover:bg-gray-100">
                 <Printer className="w-4 h-4 mr-2" /> Generate Report
               </Button>
-              <Button variant="outline" onClick={onBack} className="border-white text-white hover:bg-blue-500">
+              <Button onClick={onBack} className="bg-white text-blue-600 hover:bg-blue-50 border border-blue-200">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
             </div>
@@ -268,21 +373,57 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="text-sm font-semibold text-gray-600">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full mt-2 px-3 py-2 border rounded-lg text-sm"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-2 justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? formatDateToDDMMYYYY(startDate) : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={isoStringToDate(startDate)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setStartDate(toLocalISO(date));
+                      }
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <label className="text-sm font-semibold text-gray-600">End Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full mt-2 px-3 py-2 border rounded-lg text-sm"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-2 justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? formatDateToDDMMYYYY(endDate) : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={isoStringToDate(endDate || '')}
+                    onSelect={(date) => {
+                      if (date) {
+                        setEndDate(toLocalISO(date));
+                      }
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex items-end">
               <Button onClick={() => { setStartDate(''); setEndDate(''); }} className="w-full bg-gray-500 hover:bg-gray-600">Reset</Button>
@@ -336,7 +477,7 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
           </Card>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card className="border-l-4 border-l-blue-600">
               <CardContent className="pt-6">
                 <div className="text-3xl font-bold text-blue-600">{stats.totalSessions}</div>
@@ -345,8 +486,8 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
             </Card>
             <Card className="border-l-4 border-l-red-500">
               <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-red-500">{stats.avgBloodPressure} mmHg</div>
-                <p className="text-sm text-gray-600">Avg Blood Pressure</p>
+                <div className="text-3xl font-bold text-red-500">{stats.avgBloodPressure}</div>
+                <p className="text-sm text-gray-600">Avg Blood Pressure (S/D)</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-green-500">
@@ -361,6 +502,12 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                 <p className="text-sm text-gray-600">Avg Venous Pressure</p>
               </CardContent>
             </Card>
+            <Card className="border-l-4 border-l-yellow-500">
+              <CardContent className="pt-6">
+                <div className="text-3xl font-bold text-yellow-500">{stats.avgBloodFlowRate} mL/min</div>
+                <p className="text-sm text-gray-600">Avg Blood Flow Rate</p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Charts Section */}
@@ -368,8 +515,8 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
             <CardHeader className="bg-gray-50">
               <div className="flex items-center justify-between">
                 <CardTitle>Treatment Analytics</CardTitle>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setChartsExpanded(!chartsExpanded)}
                   className="flex items-center gap-2"
                 >
@@ -386,113 +533,80 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className={chartsExpanded ? 'grid gap-6 grid-cols-1' : 'grid gap-6 grid-cols-1 lg:grid-cols-2'}>
-                {/* Blood Pressure Trend */}
-                <Card>
-                  <CardHeader className="bg-gray-50">
-                    <CardTitle className="text-sm">Blood Pressure Trend</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <ResponsiveContainer width="100%" height={chartsExpanded ? 400 : 250}>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="bloodPressure"
-                          stroke="#ef4444"
-                          strokeWidth={2}
-                          dot={false}
-                          name="BP (mmHg)"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Arterial vs Venous Pressure */}
-                <Card>
-                  <CardHeader className="bg-gray-50">
-                    <CardTitle className="text-sm">Pressure Comparison</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <ResponsiveContainer width="100%" height={chartsExpanded ? 400 : 250}>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="arterialPressure"
-                          stroke="#22c55e"
-                          strokeWidth={2}
-                          dot={false}
-                          name="AP (mmHg)"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="venousPressure"
-                          stroke="#8b5cf6"
-                          strokeWidth={2}
-                          dot={false}
-                          name="VP (mmHg)"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Session Duration & UF Rate - Full width when expanded */}
-                {chartsExpanded && (
-                  <Card className="lg:col-span-2">
-                    <CardHeader className="bg-gray-50">
-                      <CardTitle className="text-sm">Session Duration & UF Rate</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                      <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis yAxisId="left" />
-                          <YAxis yAxisId="right" orientation="right" />
-                          <Tooltip />
-                          <Legend />
-                          <Bar yAxisId="left" dataKey="sessionDuration" fill="#3b82f6" name="Duration (min)" />
-                          <Bar yAxisId="right" dataKey="ufRate" fill="#f59e0b" name="UF Rate (mL/hr)" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Hidden when expanded, visible when collapsed */}
-                {!chartsExpanded && (
+              {chartsExpanded ? (
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                  {/* Blood Pressure Trend */}
                   <Card>
                     <CardHeader className="bg-gray-50">
-                      <CardTitle className="text-sm">Session Duration & UF Rate</CardTitle>
+                      <CardTitle className="text-sm">Blood Pressure Trend</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={chartData}>
+                      <ResponsiveContainer width="100%" height={350}>
+                        <LineChart data={chartData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="date" />
-                          <YAxis yAxisId="left" />
-                          <YAxis yAxisId="right" orientation="right" />
+                          <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Bar yAxisId="left" dataKey="sessionDuration" fill="#3b82f6" name="Duration (min)" />
-                          <Bar yAxisId="right" dataKey="ufRate" fill="#f59e0b" name="UF Rate (mL/hr)" />
-                        </BarChart>
+                          <Line
+                            type="monotone"
+                            dataKey="bloodPressure"
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            dot={false}
+                            name="BP (mmHg)"
+                          />
+                        </LineChart>
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                )}
-              </div>
+
+                  {/* Arterial vs Venous Pressure */}
+                  <Card>
+                    <CardHeader className="bg-gray-50">
+                      <CardTitle className="text-sm">Pressure Comparison</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <ResponsiveContainer width="100%" height={350}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="arterialPressure"
+                            stroke="#22c55e"
+                            strokeWidth={2}
+                            dot={false}
+                            name="AP (mmHg)"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="venousPressure"
+                            stroke="#8b5cf6"
+                            strokeWidth={2}
+                            dot={false}
+                            name="VP (mmHg)"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="bloodFlowRate"
+                            stroke="#f59e0b"
+                            strokeWidth={2}
+                            dot={false}
+                            name="Flow (mL/min)"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500 italic">Charts collapsed. Click Expand to view treatment analytics.</div>
+              )}
             </CardContent>
           </Card>
 
@@ -522,10 +636,6 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                     <p className="text-xs text-gray-500">Session Date</p>
                     <p className="font-semibold">{getSelectedRecord()?.sessionDate}</p>
                   </div>
-                  <div className="border-l-4 border-blue-500 pl-3">
-                    <p className="text-xs text-gray-500">Duration</p>
-                    <p className="font-semibold">{getSelectedRecord()?.sessionDuration || 'N/A'} min</p>
-                  </div>
                   <div className="border-l-4 border-red-500 pl-3">
                     <p className="text-xs text-gray-500">Blood Pressure (Pre)</p>
                     <p className="font-semibold">{getSelectedRecord()?.bloodPressure || 'N/A'} mmHg</p>
@@ -537,10 +647,6 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                   <div className="border-l-4 border-purple-500 pl-3">
                     <p className="text-xs text-gray-500">Venous Pressure</p>
                     <p className="font-semibold">{getSelectedRecord()?.venousPressure || 'N/A'} mmHg</p>
-                  </div>
-                  <div className="border-l-4 border-orange-500 pl-3">
-                    <p className="text-xs text-gray-500">UF Rate</p>
-                    <p className="font-semibold">{getSelectedRecord()?.ufRate || 'N/A'} mL/hr</p>
                   </div>
                   <div className="border-l-4 border-indigo-500 pl-3">
                     <p className="text-xs text-gray-500">Sodium Removed</p>

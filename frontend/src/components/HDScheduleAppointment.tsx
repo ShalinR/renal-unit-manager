@@ -3,10 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { usePatientContext } from '@/context/PatientContext';
 import { useToast } from '@/hooks/use-toast';
 import hdScheduleApi from '@/services/hdScheduleApi';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from '@/lib/dateUtils';
 
 interface HDScheduleAppointmentProps {
   onBack: () => void;
@@ -137,7 +140,30 @@ const HDScheduleAppointment: React.FC<HDScheduleAppointmentProps> = ({ onBack })
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? formatDateToDDMMYYYY(date) : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={isoStringToDate(date)}
+                    onSelect={(selected) => {
+                      if (selected) {
+                        setDate(toLocalISO(selected));
+                      }
+                    }}
+                    disabled={(calendarDate) => calendarDate > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>

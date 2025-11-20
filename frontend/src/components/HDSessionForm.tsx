@@ -8,8 +8,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import TimePicker from '@/components/ui/TimePicker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import {
   ArrowLeft,
   ArrowRight,
@@ -25,8 +28,10 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from '@/lib/dateUtils';
 import { usePatientContext } from '@/context/PatientContext';
 import { createHemodialysisRecord, getHemodialysisRecordsByPatientId, deleteHemodialysisRecord, getHemodialysisRecordById } from '@/services/hemodialysisApi';
 import { useToast } from '@/hooks/use-toast';
@@ -442,12 +447,18 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
     setIsSubmitting(true);
     try {
       // Prepare payload - map form fields to backend DTO field names
+      // Derive blood pressure string from first hourly record if available (systolic/diastolic)
+      const hourly = form.session?.hourlyRecords || [];
+      const firstWithBP = hourly.find(r => r.systolic && r.diastolic);
+      const bloodPressure = firstWithBP ? `${firstWithBP.systolic}/${firstWithBP.diastolic}` : undefined;
+
       const payload = {
         patientId: form.personal.phn,
         hemoDialysisSessionDate: form.session?.date,
         prescription: form.prescription,
-        vascularAccess: form.vascular, // Map form.vascular to vascularAccess (DTO field name)
-        session: form.session?.hourlyRecords ? { hourlyRecords: form.session.hourlyRecords } : undefined,
+        vascularAccess: form.vascular,
+        bloodPressure, // root-level string expected by summary analytics
+        session: hourly.length ? { hourlyRecords: hourly } : undefined,
         otherNotes: form.otherNotes,
         filledBy: form.completedBy?.staffName,
         completedBy: {
@@ -466,6 +477,8 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         toast({ title: 'Saved', description: 'Hemodialysis record submitted successfully', variant: 'default' });
         // Clear draft if present
         localStorage.removeItem(STORAGE_KEY);
+        // Dispatch custom event so analytics (HDSummary) can refresh
+        window.dispatchEvent(new CustomEvent('hd-record-added'));
         onBack();
       } catch (e) {
         // backend not available or error — save draft locally
@@ -946,14 +959,30 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   <Label className="text-sm font-semibold text-gray-700">
                     Date of Creation
                   </Label>
-                  <Input
-                    type="date"
-                    value={form.vascular.dateOfCreation || ''}
-                    onChange={(e) =>
-                      handleChange('vascular.dateOfCreation', e.target.value)
-                    }
-                    className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full h-10 justify-start text-left font-normal border-2 border-gray-200"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {form.vascular.dateOfCreation ? formatDateToDDMMYYYY(form.vascular.dateOfCreation) : 'Select date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={isoStringToDate(form.vascular.dateOfCreation)}
+                        onSelect={(date) => {
+                          if (date) {
+                            handleChange('vascular.dateOfCreation', toLocalISO(date));
+                          }
+                        }}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
@@ -994,14 +1023,30 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   <Label className="text-sm font-semibold text-gray-700">
                     Date <span className="text-red-500 ml-1">*</span>
                   </Label>
-                  <Input
-                    type="date"
-                    value={form.session.date}
-                    onChange={(e) =>
-                      handleChange('session.date', e.target.value)
-                    }
-                    className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-md"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full h-10 justify-start text-left font-normal border-2 border-gray-200"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {form.session.date ? formatDateToDDMMYYYY(form.session.date) : 'Select date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={isoStringToDate(form.session.date)}
+                        onSelect={(date) => {
+                          if (date) {
+                            handleChange('session.date', toLocalISO(date));
+                          }
+                        }}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
               </div>
@@ -1028,14 +1073,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         Time (24-hour format) <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative">
-                        <Input
-                          type="time"
+                        <TimePicker
                           value={form.session.hourlyRecords?.[hourIndex]?.time || ''}
-                          onChange={(e) => {
-                            const newTime = e.target.value;
+                          onChange={(newTime) => {
                             const hours = form.session.hourlyRecords || [];
-                            
-                            // Validate chronological order
+
+                            // Validate chronological order with new time
                             if (hourIndex > 0 && newTime) {
                               const prevTime = hours[hourIndex - 1]?.time;
                               if (prevTime && newTime <= prevTime) {
@@ -1047,7 +1090,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                                 return;
                               }
                             }
-                            
+
                             if (hourIndex < hours.length - 1 && newTime) {
                               const nextTime = hours[hourIndex + 1]?.time;
                               if (nextTime && newTime >= nextTime) {
@@ -1059,11 +1102,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                                 return;
                               }
                             }
-                            
+
                             handleChange(`session.hourlyRecords.${hourIndex}.time`, newTime);
                           }}
-                          className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md font-mono"
-                          placeholder="HH:MM"
+                          placeholder="Select time"
                         />
                         <span className="text-xs text-gray-500 mt-1 block">
                           {hourIndex === 0 && 'First session start time'}
