@@ -4,7 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Plus, RefreshCw, Notebook } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Calendar as CalendarIcon, Plus, RefreshCw, Notebook } from 'lucide-react';
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO, formatDateToInputValue } from '@/lib/dateUtils';
 import { usePatientContext } from '@/context/PatientContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -151,7 +154,6 @@ const HDMonthlyReview: React.FC<HDMonthlyReviewProps> = ({ onBack }) => {
               <strong>Patient:</strong> {currentPatient.name} (PHN: {currentPatient.phn})
             </div>
           )}
-          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-2">Back</Button>
         </div>
       </div>
 
@@ -168,7 +170,30 @@ const HDMonthlyReview: React.FC<HDMonthlyReviewProps> = ({ onBack }) => {
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="space-y-2">
                 <Label>Date</Label>
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? formatDateToDDMMYYYY(date) : 'Select date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={isoStringToDate(date)}
+                      onSelect={(selectedDate) => {
+                        if (selectedDate) {
+                          setDate(toLocalISO(selectedDate));
+                        }
+                      }}
+                      disabled={(d) => d > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label>Doctor's Note</Label>
@@ -176,7 +201,7 @@ const HDMonthlyReview: React.FC<HDMonthlyReviewProps> = ({ onBack }) => {
               </div>
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1" disabled={saving}>Save Note</Button>
-                <Button variant="outline" onClick={() => { setNotes(''); setDate(new Date().toISOString().split('T')[0]); }} className="flex-1">Clear</Button>
+                <Button variant="outline" onClick={() => { setNotes(''); setDate(formatDateToInputValue(new Date().toISOString())); }} className="flex-1">Clear</Button>
               </div>
             </form>
           </CardContent>
@@ -190,7 +215,31 @@ const HDMonthlyReview: React.FC<HDMonthlyReviewProps> = ({ onBack }) => {
                 <div className="text-sm text-muted-foreground">View and filter saved follow-up notes</div>
               </div>
             <div className="flex items-center gap-2">
-              <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="h-8" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filterDate ? formatDateToDDMMYYYY(filterDate) : 'Filter'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={isoStringToDate(filterDate)}
+                    onSelect={(selectedDate) => {
+                      if (selectedDate) {
+                        setFilterDate(toLocalISO(selectedDate));
+                      }
+                    }}
+                    disabled={(d) => d > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <Input placeholder="Search notes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-8" />
               <Button variant="outline" size="sm" onClick={() => { setShowSaved((s) => { const next = !s; if (next && phn) loadAssessments(); return next; }); }}>
                 {showSaved ? 'Hide' : 'Show'}

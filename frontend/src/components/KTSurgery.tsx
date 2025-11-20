@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText, UserCheck, Eye, X } from "lucide-react";
+import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText, UserCheck, Eye, X, Calendar as CalendarIcon } from "lucide-react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
 import { transplantApi, handleApiError } from "../services/transplantApi";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -672,14 +675,30 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     <Label htmlFor="dob" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
                       Date of Birth <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input
-                      id="dob"
-                      type="date"
-                      value={form.dob}
-                      onChange={e => handleChange("dob", e.target.value)}
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      required
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200 dark:border-slate-600"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.dob ? formatDateToDDMMYYYY(form.dob) : 'Select date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={isoStringToDate(form.dob)}
+                          onSelect={(date) => {
+                            if (date) {
+                              handleChange("dob", toLocalISO(date));
+                            }
+                          }}
+                          disabled={(date) => date > new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-3">
                     <Label htmlFor="age" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
@@ -898,13 +917,30 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                     <Label htmlFor="ktDate" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Date of Transplantation
                     </Label>
-                    <Input
-                      id="ktDate"
-                      type="date"
-                      value={form.ktDate}
-                      onChange={e => handleChange("ktDate", e.target.value)}
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200 dark:border-slate-600"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.ktDate ? formatDateToDDMMYYYY(form.ktDate) : 'Select date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={isoStringToDate(form.ktDate)}
+                          onSelect={(date) => {
+                            if (date) {
+                              handleChange("ktDate", toLocalISO(date));
+                            }
+                          }}
+                          disabled={(date) => date > new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   
                   <div className="space-y-3">
@@ -1481,7 +1517,30 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       </div>
                       <div className="flex items-center gap-3">
                         <Input id="cotriDuration" value={form.cotriDuration} onChange={e => handleChange("cotriDuration", e.target.value)} placeholder="Duration (e.g., 6 months)" className="h-10 border-2 border-gray-200 rounded-lg" />
-                        <Input id="cotriStopped" type="date" value={form.cotriStopped} onChange={e => handleChange("cotriStopped", e.target.value)} className="h-10 border-2 border-gray-200 rounded-lg" />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-10 px-3 border-2 border-gray-200"
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={isoStringToDate(form.cotriStopped)}
+                              onSelect={(date) => {
+                                if (date) {
+                                  handleChange("cotriStopped", toLocalISO(date));
+                                }
+                              }}
+                              disabled={(date) => date > new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
@@ -1494,7 +1553,30 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       </div>
                       <div className="flex items-center gap-3">
                         <Input id="valganDuration" value={form.valganDuration} onChange={e => handleChange("valganDuration", e.target.value)} placeholder="Duration" className="h-10 border-2 border-gray-200 rounded-lg" />
-                        <Input id="valganStopped" type="date" value={form.valganStopped} onChange={e => handleChange("valganStopped", e.target.value)} className="h-10 border-2 border-gray-200 rounded-lg" />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-10 px-3 border-2 border-gray-200"
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={isoStringToDate(form.valganStopped)}
+                              onSelect={(date) => {
+                                if (date) {
+                                  handleChange("valganStopped", toLocalISO(date));
+                                }
+                              }}
+                              disabled={(date) => date > new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>

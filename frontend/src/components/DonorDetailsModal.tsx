@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { User, Heart, Activity, TestTube, Stethoscope, ClipboardList, Pill, Users } from 'lucide-react';
 import { DonorAssessmentForm } from '../types/donor';
+import { formatDateToDDMMYYYY } from '@/lib/dateUtils';
 // ERROR: These imports are missing
 interface DonorDetailsModalProps {
   isOpen: boolean;
@@ -223,7 +224,7 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Date of Birth</label>
-                <p className="text-gray-900">{getValue(donorData.dateOfBirth)}</p>
+                <p className="text-gray-900">{donorData.dateOfBirth ? formatDateToDDMMYYYY(donorData.dateOfBirth) : 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Occupation</label>

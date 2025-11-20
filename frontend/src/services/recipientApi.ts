@@ -40,6 +40,7 @@ const handleApiRequest = async <T>(
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: 'include',
       headers: {
         ...getHeaders(),
         ...options.headers,

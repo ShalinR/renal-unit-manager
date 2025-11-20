@@ -29,6 +29,7 @@ const handleApiRequest = async <T>(url: string, options: RequestInit = {}): Prom
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: 'include',
       headers: {
         ...getHeaders(),
         ...options.headers,

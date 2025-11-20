@@ -9,7 +9,7 @@ import { FullPageSpinner } from "@/components/ui/spinner";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const Login = lazy(() => import("./pages/Login"));
-const RegisterPatient = lazy(() => import("./pages/RegisterPatient"));
+//const RegisterPatient = lazy(() => import("./pages/RegisterPatient"));
 const WardManagement = lazy(() => import("./pages/WardManagement"));
 const Peritoneal = lazy(() => import("./pages/Peritoneal"));
 const HaemoDialysis = lazy(() => import("./pages/HaemoDialysis"));
@@ -44,14 +44,7 @@ const App = () => (
                   <Route path="/" element={<Navigate to="/kidney-transplant" replace />} />
                   {/* Backward compatibility: redirect old dialysis route */}
                   <Route path="/dialysis" element={<Navigate to="/haemodialysis" replace />} />
-                  <Route 
-                    path="/register-patient" 
-                    element={
-                      <ProtectedRoute>
-                        <Layout><RegisterPatient /></Layout>
-                      </ProtectedRoute>
-                    } 
-                  />
+                  
                   <Route 
                     path="/ward-management" 
                     element={

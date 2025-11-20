@@ -337,4 +337,3 @@ const RegisterPatient = () => {
 };
 
 export default RegisterPatient;
-

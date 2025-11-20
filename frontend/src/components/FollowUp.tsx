@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, ArrowLeft, Download, Plus, FileText, BarChart3, ClipboardList, Stethoscope, Notebook, Loader2 } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarIcon, ArrowLeft, Download, Plus, FileText, BarChart3, ClipboardList, Stethoscope, Notebook, Loader2 } from "lucide-react";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO, formatDateToInputValue } from "@/lib/dateUtils";
 import { usePatientContext } from "@/context/PatientContext";
 import { followupApi } from "@/services/followupApi";
 
@@ -48,7 +51,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
   const [followUps, setFollowUps] = useState<FollowUpNote[]>([]);
   const [loadingFollowups, setLoadingFollowups] = useState(false);
   const [newFollowUp, setNewFollowUp] = useState<{ date: string; doctorNote: string }>({ 
-    date: new Date().toISOString().split('T')[0], 
+    date: toLocalISO(new Date()), 
     doctorNote: '' 
   });
   const [followupFilterDate, setFollowupFilterDate] = useState<string>('');
@@ -57,7 +60,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
   const [filterType, setFilterType] = useState<"all" | "frequent" | "annual">("all");
 
   const [frequentForm, setFrequentForm] = useState<Omit<Investigation, "id" | "type">>({
-    date: new Date().toISOString().split('T')[0],
+    date: toLocalISO(new Date()),
     tacrolimus: "",
     creatinine: "",
     eGFR: "",
@@ -70,7 +73,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
   });
 
   const [annualForm, setAnnualForm] = useState<Omit<Investigation, "id" | "type">>({
-    date: new Date().toISOString().split('T')[0],
+    date: toLocalISO(new Date()),
     tacrolimus: "",
     creatinine: "",
     eGFR: "",
@@ -117,7 +120,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
         dateOfVisit: newFollowUp.date,
         notes: newFollowUp.doctorNote,
       });
-      setNewFollowUp({ date: new Date().toISOString().split('T')[0], doctorNote: '' });
+      setNewFollowUp({ date: toLocalISO(new Date()), doctorNote: '' });
       await loadFollowups(currentPatient.phn);
     } catch (error) {
       console.error("Error saving followup:", error);
@@ -140,7 +143,6 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
         variant="outline"
         className="flex items-center gap-2"
       >
-        <Calendar className="w-4 h-4" />
         KT Investigation
       </Button>
     </div>
@@ -155,7 +157,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
     };
     setInvestigations(prev => [newInvestigation, ...prev]);
     setFrequentForm({
-      date: new Date().toISOString().split('T')[0],
+      date: toLocalISO(new Date()),
       tacrolimus: "",
       creatinine: "",
       eGFR: "",
@@ -177,7 +179,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
     };
     setInvestigations(prev => [newInvestigation, ...prev]);
     setAnnualForm({
-      date: new Date().toISOString().split('T')[0],
+      date: toLocalISO(new Date()),
       tacrolimus: "",
       creatinine: "",
       eGFR: "",
@@ -325,12 +327,30 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="searchDate">Search by Date</Label>
-                  <Input
-                    id="searchDate"
-                    type="date"
-                    value={searchDate}
-                    onChange={(e) => setSearchDate(e.target.value)}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {searchDate ? formatDateToDDMMYYYY(searchDate) : 'Select date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={isoStringToDate(searchDate)}
+                        onSelect={(date) => {
+                          if (date) {
+                            setSearchDate(toLocalISO(date));
+                          }
+                        }}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 
                 <div className="space-y-2">
@@ -437,13 +457,30 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
                   <form onSubmit={handleFrequentSubmit} className="space-y-6">
                     <div className="space-y-4">
                       <Label htmlFor="frequentDate">Test Date</Label>
-                      <Input
-                        id="frequentDate"
-                        type="date"
-                        value={frequentForm.date}
-                        onChange={(e) => setFrequentForm(prev => ({ ...prev, date: e.target.value }))}
-                        required
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {frequentForm.date ? formatDateToDDMMYYYY(frequentForm.date) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(frequentForm.date)}
+                            onSelect={(date) => {
+                              if (date) {
+                                setFrequentForm(prev => ({ ...prev, date: toLocalISO(date) }));
+                              }
+                            }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -541,13 +578,30 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
                   <form onSubmit={handleAnnualSubmit} className="space-y-6">
                     <div className="space-y-4">
                       <Label htmlFor="annualDate">Test Date</Label>
-                      <Input
-                        id="annualDate"
-                        type="date"
-                        value={annualForm.date}
-                        onChange={(e) => setAnnualForm(prev => ({ ...prev, date: e.target.value }))}
-                        required
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {annualForm.date ? formatDateToDDMMYYYY(annualForm.date) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(annualForm.date)}
+                            onSelect={(date) => {
+                              if (date) {
+                                setAnnualForm(prev => ({ ...prev, date: toLocalISO(date) }));
+                              }
+                            }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -772,12 +826,30 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="followupDate">Date</Label>
-                  <Input 
-                    id="followupDate" 
-                    type="date" 
-                    value={newFollowUp.date} 
-                    onChange={(e) => setNewFollowUp(prev => ({ ...prev, date: e.target.value }))} 
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newFollowUp.date ? formatDateToDDMMYYYY(newFollowUp.date) : 'Select date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={isoStringToDate(newFollowUp.date)}
+                        onSelect={(date) => {
+                          if (date) {
+                            setNewFollowUp(prev => ({ ...prev, date: toLocalISO(date) }));
+                          }
+                        }}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="followupNote">Doctor's Note</Label>
@@ -796,7 +868,7 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => setNewFollowUp({ date: new Date().toISOString().split('T')[0], doctorNote: '' })} 
+                    onClick={() => setNewFollowUp({ date: toLocalISO(new Date()), doctorNote: '' })} 
                     className="flex-1"
                   >
                     Clear
@@ -821,12 +893,30 @@ const KTFollowUpForm: React.FC<FollowUpFormProps> = ({ setActiveView }) => {
               <div className="space-y-4">
                 {/* Filters */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Input 
-                    type="date" 
-                    value={followupFilterDate} 
-                    onChange={(e) => setFollowupFilterDate(e.target.value)} 
-                    className="h-10" 
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="h-10 justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {followupFilterDate ? formatDateToDDMMYYYY(followupFilterDate) : 'Filter by date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={isoStringToDate(followupFilterDate)}
+                        onSelect={(date) => {
+                          if (date) {
+                            setFollowupFilterDate(toLocalISO(date));
+                          }
+                        }}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <Input 
                     placeholder="Search notes..." 
                     value={followupSearch} 

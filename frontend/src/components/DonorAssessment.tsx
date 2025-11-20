@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Heart,
   UserCheck,
@@ -37,7 +39,9 @@ import {
   AlertCircle,
   Search,
   Trash2,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
 import { DonorDetailsModal } from "./DonorDetailsModal";
 import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
@@ -1160,19 +1164,33 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
                 >
                   Date of Birth <span className="text-red-500 ml-1">*</span>
                 </Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      dateOfBirth: e.target.value,
-                    }))
-                  }
-                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
-                  required
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal border-slate-300"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.dateOfBirth ? formatDateToDDMMYYYY(formData.dateOfBirth) : 'Select date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={isoStringToDate(formData.dateOfBirth)}
+                      onSelect={(date) => {
+                        if (date) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            dateOfBirth: toLocalISO(date),
+                          }));
+                        }
+                      }}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
