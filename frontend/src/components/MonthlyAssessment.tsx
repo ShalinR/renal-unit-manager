@@ -8,7 +8,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Calendar, TrendingUp, Eye, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, TrendingUp, Eye, Trash2, RefreshCw } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
 import { usePatientContext } from "@/context/PatientContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -373,14 +376,25 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div className="space-y-2">
+                        <div className="space-y-2">
                         <Label>Assessment Date <span className="text-red-500">*</span></Label>
-                        <Input
-                          type="date"
-                          value={assessment.date}
-                          onChange={(e) => updateAssessment(assessment.id, 'date', e.target.value)}
-                          className={fieldErrors[assessment.id]?.date ? "border-red-500" : ""}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={`w-full justify-start text-left font-normal ${fieldErrors[assessment.id]?.date ? "border-red-500" : ""}`}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {assessment.date ? formatDateToDDMMYYYY(assessment.date) : 'Select date'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={isoStringToDate(assessment.date)}
+                              onSelect={(date) => { if (date) updateAssessment(assessment.id, 'date', toLocalISO(date)); }}
+                              disabled={(date) => date > new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                         {fieldErrors[assessment.id]?.date && (
                           <p className="text-sm text-red-500">{fieldErrors[assessment.id].date}</p>
                         )}

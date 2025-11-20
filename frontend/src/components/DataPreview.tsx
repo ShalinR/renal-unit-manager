@@ -5,6 +5,7 @@ import { FileText, Download, ArrowLeft, AlertCircle, Stethoscope, RefreshCw } fr
 import { useEffect, useState, useCallback } from "react";
 import { usePatientContext } from "@/context/PatientContext";
 import { exportInvestigationData, flattenPeritonealData } from '@/lib/exportUtils';
+import { formatDateToDDMMYYYY } from '@/lib/dateUtils';
 
 interface CAPDData {
   counsellingDate: string;
@@ -231,15 +232,15 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Counselling Date</p>
-            <p className="font-semibold">{capdData.counsellingDate || "—"}</p>
+            <p className="font-semibold">{capdData.counsellingDate ? formatDateToDDMMYYYY(capdData.counsellingDate) : "—"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Initiation Date</p>
-            <p className="font-semibold">{capdData.initiationDate || "—"}</p>
+            <p className="font-semibold">{capdData.initiationDate ? formatDateToDDMMYYYY(capdData.initiationDate) : "—"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Catheter Insertion Date</p>
-            <p className="font-semibold">{capdData.catheterInsertionDate || "—"}</p>
+            <p className="font-semibold">{capdData.catheterInsertionDate ? formatDateToDDMMYYYY(capdData.catheterInsertionDate) : "—"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Insertion Done By</p>
@@ -259,15 +260,15 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">1st Flushing</p>
-            <p className="font-semibold">{capdData.firstFlushing || "—"}</p>
+            <p className="font-semibold">{capdData.firstFlushing ? formatDateToDDMMYYYY(capdData.firstFlushing) : "—"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">2nd Flushing</p>
-            <p className="font-semibold">{capdData.secondFlushing || "—"}</p>
+            <p className="font-semibold">{capdData.secondFlushing ? formatDateToDDMMYYYY(capdData.secondFlushing) : "—"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">3rd Flushing</p>
-            <p className="font-semibold">{capdData.thirdFlushing || "—"}</p>
+            <p className="font-semibold">{capdData.thirdFlushing ? formatDateToDDMMYYYY(capdData.thirdFlushing) : "—"}</p>
           </div>
         </CardContent>
       </Card>
@@ -291,7 +292,7 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
                 title={`Jump to ${key} PET Test`}
               >
                 <span className="capitalize">{key}</span>
-                <Badge>{entry.date || "No date"}</Badge>
+                <Badge>{entry.date ? formatDateToDDMMYYYY(entry.date) : "No date"}</Badge>
               </button>
             );
           })}
@@ -321,7 +322,7 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-semibold text-primary capitalize mb-1">{key} PET Test</p>
-                    <p className="text-xs text-muted-foreground">Date: {testEntry.date || "Not specified"}</p>
+                    <p className="text-xs text-muted-foreground">Date: {testEntry.date ? formatDateToDDMMYYYY(testEntry.date) : "Not specified"}</p>
                   </div>
                  <div>
                    <Button variant="ghost" onClick={() => scrollToTest(key)} className="text-xs">Scroll to</Button>
@@ -435,7 +436,7 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-semibold text-primary capitalize mb-1">{key} Adequacy Test</p>
-                    <p className="text-xs text-muted-foreground">Date: {testEntry.date || "Not specified"}</p>
+                    <p className="text-xs text-muted-foreground">Date: {testEntry.date ? formatDateToDDMMYYYY(testEntry.date) : "Not specified"}</p>
                   </div>
                 </div>
                 
@@ -790,7 +791,7 @@ const InfectionTrackingSection = ({ patientId, refreshKey }: { patientId: string
                         <Badge variant="destructive" className="text-sm">Episode {index + 1}</Badge>
                         {episode.episodeDate && (
                           <span className="text-sm text-muted-foreground font-normal">
-                            Date: {episode.episodeDate}
+                            Date: {formatDateToDDMMYYYY(episode.episodeDate)}
                           </span>
                         )}
                       </div>
@@ -895,7 +896,7 @@ const InfectionTrackingSection = ({ patientId, refreshKey }: { patientId: string
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Badge variant="secondary">Episode {index + 1}</Badge>
-                    <span className="text-sm text-muted-foreground">Date: {episode.dateOnset || episode.episodeDate || "N/A"}</span>
+                    <span className="text-sm text-muted-foreground">Date: {episode.dateOnset ? formatDateToDDMMYYYY(episode.dateOnset) : episode.episodeDate ? formatDateToDDMMYYYY(episode.episodeDate) : "N/A"}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
@@ -965,7 +966,7 @@ const InfectionTrackingSection = ({ patientId, refreshKey }: { patientId: string
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Badge>Record {index + 1}</Badge>
-                    <span className="text-sm text-muted-foreground">Date: {episode.episodeDate || "N/A"}</span>
+                    <span className="text-sm text-muted-foreground">Date: {episode.episodeDate ? formatDateToDDMMYYYY(episode.episodeDate) : "N/A"}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
