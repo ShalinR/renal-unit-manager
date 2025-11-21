@@ -5,6 +5,8 @@ import { FileText, Download, ArrowLeft, AlertCircle, Stethoscope, RefreshCw } fr
 import { useEffect, useState, useCallback } from "react";
 import { usePatientContext } from "@/context/PatientContext";
 import { exportInvestigationData, flattenPeritonealData } from '@/lib/exportUtils';
+import { formatDateToDDMMYYYY } from '@/lib/dateUtils';
+import { capdSummaryApi } from '@/services/capdSummaryApi';
 
 interface CAPDData {
   counsellingDate: string;
@@ -321,6 +323,9 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
                   <div>
                     <p className="text-sm font-semibold text-primary capitalize mb-1">{key} PET Test</p>
                     <p className="text-xs text-muted-foreground">Date: {testEntry.date ? formatDateToDDMMYYYY(testEntry.date) : "Not specified"}</p>
+                    {petData?.insertionDoneBy && (
+                      <p className="text-xs text-muted-foreground">Insertion Done by: {petData.insertionDoneBy}</p>
+                    )}
                   </div>
                  <div>
                    <Button variant="ghost" onClick={() => scrollToTest(key)} className="text-xs">Scroll to</Button>

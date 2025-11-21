@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Plus, Trash2, TestTube, Calendar as CalendarIcon } from "lucide-react";
+import { CheckCircle, XCircle, Plus, TestTube, Calendar as CalendarIcon } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
@@ -232,16 +232,21 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
 
       {/* Active form */}
       {active ? (
-        <Card>
+        <Card className="relative">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => removeTest(active.id)}
+            className="absolute top-4 right-4 z-10"
+          >
+            Remove
+          </Button>
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <TestTube className="w-5 h-5 text-primary" />
               {active.label}
             </CardTitle>
-            <Button type="button" variant="destructive" size="sm" onClick={() => removeTest(active.id)}>
-              <Trash2 className="w-4 h-4 mr-1" />
-              Remove
-            </Button>
           </CardHeader>
 
           <CardContent className="space-y-6">

@@ -9,6 +9,7 @@ import java.util.Map;
 public class PetDataDto {
 
     private String date;
+    private String insertionDoneBy;
 
     // This Map handles the "t0", "t1", etc. keys
     private Map<String, TimePointMeasurementDto> measurements;
@@ -22,6 +23,9 @@ public class PetDataDto {
     // --- Getters and Setters ---
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
+
+    public String getInsertionDoneBy() { return insertionDoneBy; }
+    public void setInsertionDoneBy(String insertionDoneBy) { this.insertionDoneBy = insertionDoneBy; }
 
     public Map<String, TimePointMeasurementDto> getMeasurements() { return measurements; }
     public void setMeasurements(Map<String, TimePointMeasurementDto> measurements) { this.measurements = measurements; }

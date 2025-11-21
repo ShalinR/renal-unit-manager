@@ -9,10 +9,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Calendar, TrendingUp, Eye, Trash2, RefreshCw } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Plus, Calendar as CalendarIcon, TrendingUp, Eye, Trash2, RefreshCw, FileText } from "lucide-react";
 import { usePatientContext } from "@/context/PatientContext";
 import { useToast } from "@/hooks/use-toast";
 import { monthlyAssessmentApi } from "@/services/monthlyAssessmentApi";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
 
 interface MonthlyAssessmentProps {
   onComplete: () => void;
@@ -323,7 +326,7 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
             onClick={() => navigate("/investigation/pd")}
             className="flex items-center gap-2"
           >
-            <FileSearch className="w-4 h-4" />
+            <FileText className="w-4 h-4" />
             View PD Investigation
           </Button>
         </div>
@@ -675,7 +678,6 @@ const MonthlyAssessment = ({ onComplete }: MonthlyAssessmentProps) => {
                 </div>
               ) : savedAssessments.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>No monthly assessments found.</p>
                   <p className="text-sm">Enter assessments in the "Enter Assessment" tab to get started.</p>
                 </div>
