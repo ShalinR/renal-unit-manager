@@ -4,7 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TestTube, Plus, Trash2, Loader2 } from "lucide-react";
+import { TestTube, Plus, Trash2, Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
 import { usePatientContext } from "@/context/PatientContext";
 interface PETTestProps {
   petResults: {
@@ -328,12 +331,23 @@ export default function PETTestWithSearch({ petResults, onUpdate }: PETTestProps
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label>Test Date</Label>
-              <Input
-                type="date"
-                value={active.payload.date}
-                onChange={(e) => updatePayload(active.id, "date", e.target.value)}
-                className={`h-10 ${errors[active.id]?.date ? "border-red-500" : ""}`}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={`h-10 w-full justify-start text-left font-normal ${errors[active.id]?.date ? "border-red-500" : ""}`}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {active.payload.date ? formatDateToDDMMYYYY(active.payload.date) : 'Select date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={isoStringToDate(active.payload.date)}
+                    onSelect={(date) => { if (date) updatePayload(active.id, 'date', toLocalISO(date)); }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               {errors[active.id]?.date && (
                 <p className="text-sm text-red-500">{errors[active.id].date}</p>
               )}

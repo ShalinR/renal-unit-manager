@@ -265,7 +265,6 @@ const Peritoneal = () => {
                 </div>
               ) : (
                 <div className="inline-flex items-center justify-center gap-2 text-lg text-amber-600 bg-amber-50 px-4 py-2 rounded-full">
-                  <span>⚠️ Please search for a patient by PHN to begin</span>
                 </div>
               )}
             </div>

@@ -135,8 +135,7 @@ const FORM_STEPS = [
   { label: "Immediate Post KT", icon: FileText },
   { label: "Surgery Complications", icon: FileText },
   { label: "Medication", icon: Pill },
-  { label: "Confirmation", icon: UserCheck },
-  { label: "Recommendations", icon: FileText }
+  { label: "Confirmation", icon: UserCheck }
 ];
 
 const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
@@ -145,6 +144,8 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const [step, setStep] = useState(0);
   const [viewDetails, setViewDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ktConfirmAccurate, setKtConfirmAccurate] = useState(false);
+  const [ktConsentProcessing, setKtConsentProcessing] = useState(false);
   const { patient } = usePatientContext();
 
   const emptyHLA: HLA = { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" };
@@ -353,10 +354,9 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             const reportLines: string[] = [];
             reportLines.push(`KT Surgery Report — ${data?.name || ''} ${data?.ktDate || ''}`);
             reportLines.push('');
-            Object.entries(data).forEach(([k, v]) => {
-              if (k === 'immunologicalDetails' || typeof v === 'object') return;
-              reportLines.push(`${k}: ${v}`);
-            });
+            // Basic key/value entries
+            const keysToShow = ['ktDate','ktType','donorRelationship','ktUnit','ktSurgeon','height','weight','bmi'];
+            keysToShow.forEach(k => reportLines.push(`${k}: ${((data as any)[k]) ?? '—'}`));
             reportLines.push('');
             reportLines.push(`Surgical Notes: ${data?.surgicalNotes || ''}`);
             navigator.clipboard?.writeText(reportLines.join('\n'));
@@ -377,37 +377,66 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
         </div>
 
         <Accordion type="multiple" defaultValue={[] as string[]}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <AccordionItem value="basic">
-              <AccordionTrigger>Basic Information</AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="Date of KT" value={data.ktDate} />
-                  <Field label="Type of KT" value={data.ktType} />
-                  <Field label="Donor Relationship" value={data.donorRelationship} />
-                  <Field label="Transplant Unit" value={data.ktUnit} />
-                  <Field label="Surgeon" value={data.ktSurgeon} />
-                  <Field label="Height (cm)" value={data.height} />
-                  <Field label="Weight (kg)" value={data.weight} />
-                  <Field label="BMI (kg/m²)" value={data.bmi} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </div>
-
-          <AccordionItem value="immuno">
-            <AccordionTrigger>Immunological</AccordionTrigger>
+          {/* 1. Basic information */}
+          <AccordionItem value="basic">
+            <AccordionTrigger>Basic information</AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Donor Blood Group" value={data.immunologicalDetails?.bloodGroupDonor || ''} />
-                <Field label="Recipient Blood Group" value={data.immunologicalDetails?.bloodGroupRecipient || ''} />
-                <Field label="PRA Pre" value={data.immunologicalDetails?.praPre || ''} />
-                <Field label="PRA Post" value={data.immunologicalDetails?.praPost || ''} />
-                <Field label="DSA" value={data.immunologicalDetails?.dsa || ''} />
+                <Field label="Patient Name" value={data.name} />
+                <Field label="Date of KT" value={data.ktDate} />
+                <Field label="Type of KT" value={data.ktType} />
+                <Field label="Donor Relationship" value={data.donorRelationship} />
+                <Field label="Transplant Unit" value={data.ktUnit} />
+                <Field label="Surgeon" value={data.ktSurgeon} />
               </div>
             </AccordionContent>
           </AccordionItem>
 
+          {/* 2. Medical History */}
+          <AccordionItem value="medical">
+            <AccordionTrigger>Medical History</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Diabetes" value={data.diabetes === 'true' ? 'Yes' : 'No'} />
+                <Field label="Hypertension" value={data.hypertension === 'true' ? 'Yes' : 'No'} />
+                <Field label="IHD" value={data.ihd === 'true' ? 'Yes' : 'No'} />
+                <Field label="Dyslipidaemia" value={data.dyslipidaemia === 'true' ? 'Yes' : 'No'} />
+                <Field label="Other" value={data.other === 'true' ? data.otherSpecify || 'Yes' : 'No'} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 3. Pre-Transplant Details */}
+          <AccordionItem value="pretransplant">
+            <AccordionTrigger>Pre-Transplant Details</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Primary Diagnosis" value={data.primaryDiagnosis} />
+                <Field label="Mode of RRT" value={data.modeOfRRT} />
+                <Field label="Duration of RRT" value={data.durationRRT} />
+                <Field label="Height (cm)" value={data.height} />
+                <Field label="Weight (kg)" value={data.weight} />
+                <Field label="BMI (kg/m²)" value={data.bmi} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 4. Transplantation Details */}
+          <AccordionItem value="transplant">
+            <AccordionTrigger>Transplantation Details</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Date of Transplantation" value={data.ktDate} />
+                <Field label="Transplant Number" value={data.numberOfKT} />
+                <Field label="Type of Transplant" value={data.ktType} />
+                <Field label="Peritoneal Position" value={data.peritonealPosition} />
+                <Field label="Side of Transplant" value={data.sideOfKT} />
+                <Field label="Donor Relationship" value={data.donorRelationship} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 5. Infection Screen */}
           <AccordionItem value="infection">
             <AccordionTrigger>Infection Screen</AccordionTrigger>
             <AccordionContent>
@@ -422,22 +451,82 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="surgery">
-            <AccordionTrigger>Surgery & Complications</AccordionTrigger>
+          {/* 6. Immunological Details */}
+          <AccordionItem value="immuno">
+            <AccordionTrigger>Immunological Details</AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Pre-op Status" value={data.preOpStatus} />
-                <Field label="Surgical Notes" value={data.surgicalNotes} />
-                <Field label="Pre KT Creatinine" value={data.preKTCreatinine} abnormal={abnormalFor('preKTCreatinine', data.preKTCreatinine)} />
-                <Field label="Post KT Creatinine" value={data.postKTCreatinine} abnormal={abnormalFor('postKTCreatinine', data.postKTCreatinine)} />
-                <Field label="Delayed Graft" value={data.delayedGraftYes ? 'Yes' : 'No'} />
-                <Field label="Post KT Dialysis" value={data.postKTDialysisYes ? 'Yes' : 'No'} />
+                <Field label="Donor Blood Group" value={data.immunologicalDetails?.bloodGroupDonor || ''} />
+                <Field label="Recipient Blood Group" value={data.immunologicalDetails?.bloodGroupRecipient || ''} />
+                <Field label="PRA Pre" value={data.immunologicalDetails?.praPre || ''} />
+                <Field label="PRA Post" value={data.immunologicalDetails?.praPost || ''} />
+                <Field label="DSA" value={data.immunologicalDetails?.dsa || ''} />
+                <Field label="Immunological Risk" value={data.immunologicalDetails?.immunologicalRisk || ''} />
               </div>
             </AccordionContent>
           </AccordionItem>
 
+          {/* 7. Immunosuppression Therapy */}
+          <AccordionItem value="immunoTherapy">
+            <AccordionTrigger>Immunosuppression Therapy</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Pre KT" value={data.preKT} />
+                <Field label="Induction Therapy" value={Array.isArray(data.inductionTherapy) ? (data.inductionTherapy as any).join(', ') : data.inductionTherapy} />
+                <Field label="Maintenance (summary)" value={`${data.maintenancePred ? 'Pred ' : ''}${data.maintenanceMMF ? 'MMF ' : ''}${data.maintenanceTac ? 'Tac ' : ''}${data.maintenanceEverolimus ? 'Everolimus' : ''}`.trim() || data.maintenanceOtherText || data.maintenanceOther || '—'} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 8. Prophylaxis */}
+          <AccordionItem value="prophylaxis">
+            <AccordionTrigger>Prophylaxis</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Cotrimoxazole" value={data.cotrimoxazoleYes ? 'Yes' : 'No'} />
+                <Field label="Cotrimoxazole stopped" value={data.cotriStopped || '—'} />
+                <Field label="Valganciclovir" value={data.valganciclovirYes ? 'Yes' : 'No'} />
+                <Field label="Valganciclovir stopped" value={data.valganStopped || '—'} />
+                <Field label="Vaccination - COVID" value={data.vaccinationCOVID ? 'Yes' : 'No'} />
+                <Field label="Vaccination - Influenza" value={data.vaccinationInfluenza ? 'Yes' : 'No'} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 9. Immediate Post-Transplant Details */}
+          <AccordionItem value="immediate">
+            <AccordionTrigger>Immediate Post-Transplant Details</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Pre-transplant Creatinine" value={data.preKTCreatinine} abnormal={abnormalFor('preKTCreatinine', data.preKTCreatinine)} />
+                <Field label="Post-transplant Creatinine" value={data.postKTCreatinine} abnormal={abnormalFor('postKTCreatinine', data.postKTCreatinine)} />
+                <Field label="Delayed Graft Function" value={data.delayedGraftYes ? 'Yes' : 'No'} />
+                <Field label="Post KT Dialysis" value={data.postKTDialysisYes ? 'Yes' : 'No'} />
+                <Field label="Acute Rejection" value={data.acuteRejectionYes ? 'Yes' : 'No'} />
+                <Field label="Acute Rejection Details" value={data.acuteRejectionDetails} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 10. Surgery Complications */}
+          <AccordionItem value="surgeryComps">
+            <AccordionTrigger>Surgery Complications</AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Complication 1" value={data.postKTComp1} />
+                <Field label="Complication 2" value={data.postKTComp2} />
+                <Field label="Complication 3" value={data.postKTComp3} />
+                <Field label="Complication 4" value={data.postKTComp4} />
+                <Field label="Complication 5" value={data.postKTComp5} />
+                <Field label="Complication 6" value={data.postKTComp6} />
+                <Field label="Other Complications" value={data.otherComplications} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 11. Current Medications */}
           <AccordionItem value="meds">
-            <AccordionTrigger>Medications & Recommendations</AccordionTrigger>
+            <AccordionTrigger>Current Medications</AccordionTrigger>
             <AccordionContent>
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -449,7 +538,6 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                       )) : <div className="text-sm">—</div>}
                     </div>
                   </div>
-                  <Field label="Recommendations" value={data.recommendations} />
                 </div>
               </div>
             </AccordionContent>
@@ -483,6 +571,14 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
     // Only actually submit when on the last step
     if (step < FORM_STEPS.length - 1) {
       nextStep();
+      return;
+    }
+
+    // Require both confirmation checkboxes before submitting
+    if (!ktConfirmAccurate || !ktConsentProcessing) {
+      const confirmationIndex = FORM_STEPS.findIndex((s) => s.label === "Confirmation");
+      if (confirmationIndex >= 0) setStep(confirmationIndex);
+      alert("Please tick both consent and confirmation checkboxes before submitting the form.");
       return;
     }
 
@@ -1955,50 +2051,39 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                   />
                 </div>
                 
-                <div className="flex items-start space-x-3 p-4 bg-white rounded-lg border border-blue-200">
-                  <Checkbox id="ktFinalCheck" className="border-2 border-blue-300 mt-1" required />
+                <div className="bg-white p-4 rounded-lg border border-blue-200 space-y-3">
+                  <h4 className="font-semibold text-gray-800 mb-2">Consent and Confirmation</h4>
                   <div className="space-y-2">
-                    <Label htmlFor="ktFinalCheck" className="text-gray-700 font-medium leading-relaxed">
-                      I confirm that all information provided in this surgery assessment is accurate and complete to the best of my knowledge.
-                    </Label>
-                    <p className="text-sm text-gray-600">
-                      By checking this box, I acknowledge that this assessment will be used for medical decision-making and transplant evaluation.
-                    </p>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        id="kt-confirm-accurate"
+                        checked={ktConfirmAccurate}
+                        onCheckedChange={(checked: boolean) => setKtConfirmAccurate(!!checked)}
+                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <span className="text-sm text-slate-700 leading-relaxed">
+                        I confirm that all information provided in this surgery assessment is accurate and complete to the best of my knowledge.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        id="kt-consent-processing"
+                        checked={ktConsentProcessing}
+                        onCheckedChange={(checked: boolean) => setKtConsentProcessing(!!checked)}
+                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <span className="text-sm text-slate-700 leading-relaxed">
+                        I consent to the processing of this information for clinical care, transplant evaluation and quality improvement purposes.
+                      </span>
+                    </label>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 13: Recommendations */}
-          {step === 13 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <FileText className="w-6 h-6" />
-                  Management Recommendations
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Enter recommendations for ongoing management
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-3">
-                  <Label htmlFor="recommendations" className="text-sm font-semibold text-gray-700">
-                    Recommendations
-                  </Label>
-                  <Textarea
-                    id="recommendations"
-                    value={form.recommendations}
-                    onChange={e => handleChange("recommendations", e.target.value)}
-                    placeholder="Enter recommendations for ongoing management..."
-                    rows={6}
-                    className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Recommendations removed per request */}
 
           {/* Navigation Buttons */}
           <div className="flex justify-between items-center pt-8 pb-4">

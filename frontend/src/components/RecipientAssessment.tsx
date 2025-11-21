@@ -1051,7 +1051,7 @@ const searchDonorByPhn = async () => {
             <div className="flex items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
-                  Recipient Assessment {isEditing && "(Editing)"}
+                  Recipient Assessment {isEditing && ""}
                 </h1>
                 <p className="text-blue-600 dark:text-blue-300">
                   {patient && patient.name

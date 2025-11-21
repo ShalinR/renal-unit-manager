@@ -4,7 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Plus, Trash2, TestTube } from "lucide-react";
+import { CheckCircle, XCircle, Plus, Trash2, TestTube, Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
 
 interface AdequacyTestProps {
   adequacyResults: {
@@ -254,11 +257,23 @@ export default function AdequacyTest({ adequacyResults, onUpdate }: AdequacyTest
               </div>
               <div className="space-y-2">
                 <Label>Test Date</Label>
-                <Input
-                  type="date"
-                  value={active.payload.date}
-                  onChange={(e) => updatePayload(active.id, "date", e.target.value)}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {active.payload.date ? formatDateToDDMMYYYY(active.payload.date) : 'Select date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={isoStringToDate(active.payload.date)}
+                      onSelect={(date) => { if (date) updatePayload(active.id, 'date', toLocalISO(date)); }}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 

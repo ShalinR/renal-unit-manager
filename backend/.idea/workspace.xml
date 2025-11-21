@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cdf81b1d-e1c9-47ae-a5a9-74cef8a1d4d4" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDMonthlyReview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDMonthlyReview.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDScheduleAppointment.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDScheduleAppointment.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDSessionForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDSessionForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/HDSummary.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/HDSummary.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/components/KTSurgery.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../package.json" afterDir="false" />
-    </list>
+    <list default="true" id="cdf81b1d-e1c9-47ae-a5a9-74cef8a1d4d4" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -103,7 +96,7 @@
       <workItem from="1761310996784" duration="14000" />
       <workItem from="1763486745964" duration="3588000" />
       <workItem from="1763528165973" duration="3808000" />
-      <workItem from="1763617620902" duration="2709000" />
+      <workItem from="1763617620902" duration="3310000" />
     </task>
     <servers />
   </component>
