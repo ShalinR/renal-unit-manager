@@ -4,26 +4,50 @@ import { Button } from "@/components/ui/button";
 import { Search, UserCheck, Loader2 } from "lucide-react";
 import { usePatientContext } from "@/context/PatientContext";
 
+import { useNavigate } from "react-router-dom"; // Import useNavigate - NEW
+
 const GlobalSearch: React.FC = () => {
   const { searchPatientByPhn, patient, isSearching } = usePatientContext();
   const [searchPhn, setSearchPhn] = useState("");
   const [localSearching, setLocalSearching] = useState(false);
 
+  const navigate = useNavigate(); // Initialize navigate - NEW
+
   const handleSearch = async () => {
     if (searchPhn.trim()) {
-      console.log('GlobalSearch: click search', searchPhn);
+      console.log("GlobalSearch: click search", searchPhn);
       setLocalSearching(true);
       try {
         await searchPatientByPhn(searchPhn.trim());
-        console.log('GlobalSearch: searchPatientByPhn returned');
+        console.log("GlobalSearch: searchPatientByPhn returned");
+
+        // Redirect to the ward-management page with the PHN as a query parameter
+        navigate(`/ward-management?phn=${searchPhn.trim()}`);
       } catch (error) {
         // Error is already handled in the context
-        console.log('GlobalSearch: search completed with error', error);
+        console.log("GlobalSearch: search completed with error", error);
       } finally {
         setLocalSearching(false);
       }
     }
   };
+
+  // OLD CODE
+  // const handleSearch = async () => {
+  //   if (searchPhn.trim()) {
+  //     console.log('GlobalSearch: click search', searchPhn);
+  //     setLocalSearching(true);
+  //     try {
+  //       await searchPatientByPhn(searchPhn.trim());
+  //       console.log('GlobalSearch: searchPatientByPhn returned');
+  //     } catch (error) {
+  //       // Error is already handled in the context
+  //       console.log('GlobalSearch: search completed with error', error);
+  //     } finally {
+  //       setLocalSearching(false);
+  //     }
+  //   }
+  // };
 
   const isLoading = isSearching || localSearching;
 

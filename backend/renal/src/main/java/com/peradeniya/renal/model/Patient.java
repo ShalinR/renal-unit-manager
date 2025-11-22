@@ -9,6 +9,7 @@ import java.util.List;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Patient {
@@ -17,9 +18,10 @@ public class Patient {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(unique = true)
+	@Column(unique = true, nullable = false)
 	private String phn; // Personal Health Number
 
+    @Column(nullable = false)
 	private String name;
 	private Integer age;
 	private String gender;
@@ -29,6 +31,14 @@ public class Patient {
 	private String nicNo;
 	private String contactDetails;
 	private String emailAddress;
+	
+    private String mohArea;
+    private String ethnicGroup;
+    private String religion;
+    private String maritalStatus; 
+
+    // Active status (Admitted / Discharged)
+    private String status;
 
 	public String getContactDetails() {
 		return contactDetails;
@@ -134,13 +144,27 @@ public class Patient {
 		this.recipientAssessments = recipientAssessments;
 	}
 
+    // Relationships
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Admission> admissions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<MedicalProblem> medicalHistory = new ArrayList<>();
+
+    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Allergy> allergies = new ArrayList<>();
 
 	@OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonIgnore
+	@Builder.Default
 	private List<RecipientAssessment> recipientAssessments = new ArrayList<>();
 
 	@OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonIgnore
+	@Builder.Default
 	private List<DonorAssessment> donorAssessments = new ArrayList<>();
 
 }
