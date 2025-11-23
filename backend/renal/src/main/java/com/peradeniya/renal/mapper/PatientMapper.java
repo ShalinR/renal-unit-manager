@@ -4,6 +4,8 @@ import com.peradeniya.renal.dto.PatientCreateRequest;
 import com.peradeniya.renal.model.Patient;
 import com.peradeniya.renal.model.Admission;
 import org.springframework.stereotype.Component;
+import java.time.LocalDate;
+import java.time.Period;
 
 @Component
 public class PatientMapper {
@@ -21,6 +23,16 @@ public class PatientMapper {
         patient.setPhn(request.getPhn());
         patient.setName(request.getName());
         patient.setDateOfBirth(request.getDateOfBirth());
+        // Calculate age from dateOfBirth when available and set it on the entity
+        LocalDate dob = request.getDateOfBirth();
+        if (dob != null) {
+            try {
+                int years = Period.between(dob, LocalDate.now()).getYears();
+                patient.setAge(years);
+            } catch (Exception e) {
+                // fallback: do not set age if calculation fails
+            }
+        }
         patient.setGender(request.getGender());
         
         // Patient demographics

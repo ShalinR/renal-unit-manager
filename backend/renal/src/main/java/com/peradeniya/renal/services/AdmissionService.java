@@ -10,6 +10,7 @@ import com.peradeniya.renal.dto.PatientCreateRequest;
 import com.peradeniya.renal.model.Admission;
 import com.peradeniya.renal.model.Patient;
 import com.peradeniya.renal.repository.AdmissionRepository;
+import com.peradeniya.renal.repository.PatientRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class AdmissionService {
 
     private final AdmissionRepository admissionRepository;
+    private final PatientRepository patientRepository;
 
     public Admission createAdmission(Patient patient, PatientCreateRequest request) {
         System.out.println("➕ Creating admission for patient: " + patient.getPhn());
@@ -60,6 +62,18 @@ public class AdmissionService {
         // FIXED: Set both active flags properly
         admission.setActive(true);
         admission.setDischargeSummaryAvailable(false);
+
+        // Ensure patient age is persisted (useful for existing patients admitted again)
+        try {
+            if ((patient.getAge() == null || patient.getAge() == 0) && patient.getDateOfBirth() != null) {
+                int years = java.time.Period.between(patient.getDateOfBirth(), java.time.LocalDate.now()).getYears();
+                patient.setAge(years);
+                patientRepository.save(patient);
+                System.out.println("ℹ️ Computed and saved patient age on admission: " + years + " for PHN: " + patient.getPhn());
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Failed to compute/save patient age on admission: " + e.getMessage());
+        }
 
         Admission savedAdmission = admissionRepository.save(admission);
         System.out.println("✅ Admission created with ID: " + savedAdmission.getId() + 

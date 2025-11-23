@@ -84,7 +84,17 @@ public class PatientService {
 
         // Update fields
         patient.setName(patientDetails.getName());
-        patient.setAge(patientDetails.getAge());
+        // If a dateOfBirth is provided, compute age server-side to keep DB consistent
+        if (patientDetails.getDateOfBirth() != null) {
+            try {
+                int years = java.time.Period.between(patientDetails.getDateOfBirth(), java.time.LocalDate.now()).getYears();
+                patient.setAge(years);
+            } catch (Exception e) {
+                patient.setAge(patientDetails.getAge());
+            }
+        } else {
+            patient.setAge(patientDetails.getAge());
+        }
         patient.setGender(patientDetails.getGender());
         patient.setDateOfBirth(patientDetails.getDateOfBirth());
         patient.setOccupation(patientDetails.getOccupation());
@@ -195,6 +205,17 @@ public class PatientService {
 
         // Create patient
         Patient patient = mapper.toPatient(request);
+        // Ensure age is set on the entity: calculate from dateOfBirth if missing
+        try {
+            if ((patient.getAge() == null || patient.getAge() == 0) && request.getDateOfBirth() != null) {
+                int years = java.time.Period.between(request.getDateOfBirth(), java.time.LocalDate.now()).getYears();
+                patient.setAge(years);
+                System.out.println("ℹ️ Computed age on create: " + years + " for PHN: " + patient.getPhn());
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Failed to compute age on create: " + e.getMessage());
+        }
+
         Patient savedPatient = repository.save(patient);
 
         // Create admission
