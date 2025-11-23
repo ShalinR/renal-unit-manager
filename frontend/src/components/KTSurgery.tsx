@@ -1,22 +1,69 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Activity, Save, User, Heart, Pill, ClipboardList, Shield, FileText, UserCheck, Eye, X, Calendar as CalendarIcon } from "lucide-react";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  ArrowLeft,
+  Activity,
+  Save,
+  User,
+  Heart,
+  Pill,
+  ClipboardList,
+  Shield,
+  FileText,
+  UserCheck,
+  Eye,
+  X,
+  Calendar as CalendarIcon,
+} from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
+import {
+  formatDateToDDMMYYYY,
+  isoStringToDate,
+  toLocalISO,
+} from "@/lib/dateUtils";
 import { transplantApi, handleApiError } from "../services/transplantApi";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
-import type { KTFormData, ImmunologicalDetails, HLA } from "../types/transplant";
+import type {
+  KTFormData,
+  ImmunologicalDetails,
+  HLA,
+} from "../types/transplant";
 import type { ActiveView } from "../pages/KidneyTransplant";
 import { usePatientContext } from "../context/PatientContext";
 
@@ -70,8 +117,22 @@ const initialForm: KTFormData = {
     crossMatchBcell: "",
     hlaTyping: {
       donor: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-      recipient: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
-      conclusion: { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" },
+      recipient: {
+        hlaA: "",
+        hlaB: "",
+        hlaC: "",
+        hlaDR: "",
+        hlaDP: "",
+        hlaDQ: "",
+      },
+      conclusion: {
+        hlaA: "",
+        hlaB: "",
+        hlaC: "",
+        hlaDR: "",
+        hlaDP: "",
+        hlaDQ: "",
+      },
     },
     praPre: "",
     praPost: "",
@@ -117,7 +178,7 @@ const initialForm: KTFormData = {
   postKTComp4: "",
   postKTComp5: "",
   postKTComp6: "",
-  medications: [ { name: "", dosage: "" } ],
+  medications: [{ name: "", dosage: "" }],
   recommendations: "",
   filledBy: "",
 };
@@ -135,7 +196,7 @@ const FORM_STEPS = [
   { label: "Immediate Post KT", icon: FileText },
   { label: "Surgery Complications", icon: FileText },
   { label: "Medication", icon: Pill },
-  { label: "Confirmation", icon: UserCheck }
+  { label: "Confirmation", icon: UserCheck },
 ];
 
 const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
@@ -148,13 +209,24 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   const [ktConsentProcessing, setKtConsentProcessing] = useState(false);
   const { patient } = usePatientContext();
 
-  const emptyHLA: HLA = { hlaA: "", hlaB: "", hlaC: "", hlaDR: "", hlaDP: "", hlaDQ: "" };
+  const emptyHLA: HLA = {
+    hlaA: "",
+    hlaB: "",
+    hlaC: "",
+    hlaDR: "",
+    hlaDP: "",
+    hlaDQ: "",
+  };
   const emptyImmuno: ImmunologicalDetails = {
     bloodGroupDonor: "",
     bloodGroupRecipient: "",
     crossMatchTcell: "",
     crossMatchBcell: "",
-    hlaTyping: { donor: { ...emptyHLA }, recipient: { ...emptyHLA }, conclusion: { ...emptyHLA } },
+    hlaTyping: {
+      donor: { ...emptyHLA },
+      recipient: { ...emptyHLA },
+      conclusion: { ...emptyHLA },
+    },
     praPre: "",
     praPost: "",
     dsa: "",
@@ -162,25 +234,33 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   };
 
   const updateImmuno = (updates: Partial<ImmunologicalDetails>) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       immunologicalDetails: {
         ...emptyImmuno,
         ...(prev.immunologicalDetails || {}),
         ...updates,
-      }
+      },
     }));
   };
 
-  const handleHlaChange = (side: 'donor' | 'recipient' | 'conclusion', key: keyof import('../types/transplant').HLA, value: string) => {
-    setForm(prev => {
+  const handleHlaChange = (
+    side: "donor" | "recipient" | "conclusion",
+    key: keyof import("../types/transplant").HLA,
+    value: string
+  ) => {
+    setForm((prev) => {
       const prevImmuno = prev.immunologicalDetails || emptyImmuno;
-      const prevTyping = prevImmuno.hlaTyping || { donor: { ...emptyHLA }, recipient: { ...emptyHLA }, conclusion: { ...emptyHLA } };
+      const prevTyping = prevImmuno.hlaTyping || {
+        donor: { ...emptyHLA },
+        recipient: { ...emptyHLA },
+        conclusion: { ...emptyHLA },
+      };
       const donor = { ...prevTyping.donor };
       const recipient = { ...prevTyping.recipient };
       const conclusion = { ...prevTyping.conclusion };
-      if (side === 'donor') donor[key] = value;
-      else if (side === 'recipient') recipient[key] = value;
+      if (side === "donor") donor[key] = value;
+      else if (side === "recipient") recipient[key] = value;
       else conclusion[key] = value;
       return {
         ...prev,
@@ -190,19 +270,22 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             donor,
             recipient,
             conclusion,
-          }
-        }
+          },
+        },
       };
     });
   };
 
-  const handleImmunoField = (field: keyof ImmunologicalDetails, value: string) => {
-    setForm(prev => ({
+  const handleImmunoField = (
+    field: keyof ImmunologicalDetails,
+    value: string
+  ) => {
+    setForm((prev) => ({
       ...prev,
       immunologicalDetails: {
         ...(prev.immunologicalDetails || emptyImmuno),
         [field]: value,
-      } as ImmunologicalDetails
+      } as ImmunologicalDetails,
     }));
   };
 
@@ -227,22 +310,42 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   useEffect(() => {
     const loadSavedKTSurgery = async () => {
       if (patient?.phn) {
-        console.log(`📋 KTSurgery.tsx: Loading saved data for patient PHN: ${patient.phn}`);
+        console.log(
+          `📋 KTSurgery.tsx: Loading saved data for patient PHN: ${patient.phn}`
+        );
         try {
-          const savedData = await transplantApi.getKTSurgeryByPatientPhn(patient.phn);
-          console.log(`📋 KTSurgery.tsx: Received savedData from API:`, savedData);
-          console.log(`📋 KTSurgery.tsx: savedData is null? ${savedData === null}`);
-          console.log(`📋 KTSurgery.tsx: savedData is undefined? ${savedData === undefined}`);
-          console.log(`📋 KTSurgery.tsx: typeof savedData: ${typeof savedData}`);
-          
+          const savedData = await transplantApi.getKTSurgeryByPatientPhn(
+            patient.phn
+          );
+          console.log(
+            `📋 KTSurgery.tsx: Received savedData from API:`,
+            savedData
+          );
+          console.log(
+            `📋 KTSurgery.tsx: savedData is null? ${savedData === null}`
+          );
+          console.log(
+            `📋 KTSurgery.tsx: savedData is undefined? ${savedData === undefined}`
+          );
+          console.log(
+            `📋 KTSurgery.tsx: typeof savedData: ${typeof savedData}`
+          );
+
           if (savedData) {
-            console.log("✅ KTSurgery.tsx: Successfully loaded saved data:", savedData);
+            console.log(
+              "✅ KTSurgery.tsx: Successfully loaded saved data:",
+              savedData
+            );
             const normalized = {
               ...initialForm, // Start with initial form
-              ...savedData,   // Override with saved data
-              inductionTherapy: Array.isArray((savedData as any).inductionTherapy)
+              ...savedData, // Override with saved data
+              inductionTherapy: Array.isArray(
+                (savedData as any).inductionTherapy
+              )
                 ? (savedData as any).inductionTherapy
-                : (savedData && (savedData as any).inductionTherapy ? String((savedData as any).inductionTherapy).split(/\s*,\s*/) : []),
+                : savedData && (savedData as any).inductionTherapy
+                  ? String((savedData as any).inductionTherapy).split(/\s*,\s*/)
+                  : [],
               // Ensure patient info is preserved
               patientPhn: patient.phn,
               name: savedData.name || patient.name || "",
@@ -257,10 +360,15 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             setSavedRecord(normalized);
             setStep(0); // Reset to first step
           } else {
-            console.log(`ℹ️ KTSurgery.tsx: No saved data found for PHN ${patient.phn}. Form will use patient auto-population only.`);
+            console.log(
+              `ℹ️ KTSurgery.tsx: No saved data found for PHN ${patient.phn}. Form will use patient auto-population only.`
+            );
           }
         } catch (error) {
-          console.error("❌ KTSurgery.tsx: Error loading KT Surgery data:", error);
+          console.error(
+            "❌ KTSurgery.tsx: Error loading KT Surgery data:",
+            error
+          );
           // Don't show alert for expected errors
         }
       } else {
@@ -276,16 +384,16 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
       const next = { ...prev, [field]: value } as KTFormData;
 
       // Auto-calculate BMI when height or weight changes. Height expected in cm, weight in kg.
-      if (field === 'height' || field === 'weight') {
-        const rawHeight = field === 'height' ? value : (prev.height || '');
-        const rawWeight = field === 'weight' ? value : (prev.weight || '');
-        const h = Number(String(rawHeight).replace(/[^0-9.\-]/g, ''));
-        const w = Number(String(rawWeight).replace(/[^0-9.\-]/g, ''));
+      if (field === "height" || field === "weight") {
+        const rawHeight = field === "height" ? value : prev.height || "";
+        const rawWeight = field === "weight" ? value : prev.weight || "";
+        const h = Number(String(rawHeight).replace(/[^0-9.\-]/g, ""));
+        const w = Number(String(rawWeight).replace(/[^0-9.\-]/g, ""));
         if (Number.isFinite(h) && Number.isFinite(w) && h > 0) {
           const bmiVal = w / ((h / 100) * (h / 100));
           next.bmi = (Math.round(bmiVal * 10) / 10).toString();
         } else {
-          next.bmi = '';
+          next.bmi = "";
         }
       }
 
@@ -294,8 +402,10 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   };
 
   const toggleInduction = (name: string, checked: boolean) => {
-    setForm(prev => {
-      const current = Array.isArray(prev.inductionTherapy) ? [...prev.inductionTherapy] : [];
+    setForm((prev) => {
+      const current = Array.isArray(prev.inductionTherapy)
+        ? [...prev.inductionTherapy]
+        : [];
       if (checked) {
         if (!current.includes(name)) current.push(name);
       } else {
@@ -307,7 +417,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
   };
 
   const parseNumber = (v: any) => {
-    const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+    const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
     return Number.isFinite(n) ? n : NaN;
   };
 
@@ -315,30 +425,64 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
     const n = parseNumber(val);
     if (Number.isNaN(n)) return undefined;
     switch (key) {
-      case 'preKTCreatinine':
-      case 'postKTCreatinine':
-        if (n > 120) return { severity: 'high' as const, message: 'Raised creatinine — consider review' };
+      case "preKTCreatinine":
+      case "postKTCreatinine":
+        if (n > 120)
+          return {
+            severity: "high" as const,
+            message: "Raised creatinine — consider review",
+          };
         return undefined;
-      case 'tacrolimus':
-        if (n < 5) return { severity: 'low' as const, message: 'Low tacrolimus level — risk of rejection' };
-        if (n > 15) return { severity: 'high' as const, message: 'High tacrolimus level — toxicity risk' };
+      case "tacrolimus":
+        if (n < 5)
+          return {
+            severity: "low" as const,
+            message: "Low tacrolimus level — risk of rejection",
+          };
+        if (n > 15)
+          return {
+            severity: "high" as const,
+            message: "High tacrolimus level — toxicity risk",
+          };
         return undefined;
       default:
         return undefined;
     }
   };
 
-  const Field = ({ label, value, abnormal }: { label: string; value: any; abnormal?: { severity: 'high' | 'low' | 'warn'; message?: string } }) => (
+  const Field = ({
+    label,
+    value,
+    abnormal,
+  }: {
+    label: string;
+    value: any;
+    abnormal?: { severity: "high" | "low" | "warn"; message?: string };
+  }) => (
     <div>
       <Label className="text-muted-foreground text-xs">{label}</Label>
       <div className="flex items-center gap-2">
-        <p className="font-medium text-sm text-black dark:text-white break-words">{value === '' || value === null || value === undefined ? '—' : String(value)}</p>
+        <p className="font-medium text-sm text-black dark:text-white break-words">
+          {value === "" || value === null || value === undefined
+            ? "—"
+            : String(value)}
+        </p>
         {abnormal && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge className={`${abnormal.severity === 'high' ? 'bg-red-600 text-white' : abnormal.severity === 'low' ? 'bg-yellow-500 text-black' : 'bg-amber-500 text-black'} px-2 py-0.5 text-xs`}>{abnormal.severity === 'high' ? 'High' : abnormal.severity === 'low' ? 'Low' : 'Warn'}</Badge>
+              <Badge
+                className={`${abnormal.severity === "high" ? "bg-red-600 text-white" : abnormal.severity === "low" ? "bg-yellow-500 text-black" : "bg-amber-500 text-black"} px-2 py-0.5 text-xs`}
+              >
+                {abnormal.severity === "high"
+                  ? "High"
+                  : abnormal.severity === "low"
+                    ? "Low"
+                    : "Warn"}
+              </Badge>
             </TooltipTrigger>
-            <TooltipContent>{abnormal.message || `${label} is ${abnormal.severity}`}</TooltipContent>
+            <TooltipContent>
+              {abnormal.message || `${label} is ${abnormal.severity}`}
+            </TooltipContent>
           </Tooltip>
         )}
       </div>
@@ -350,30 +494,64 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
     return (
       <div className="space-y-4 mt-2">
         <div className="flex gap-2 justify-end">
-          <Button size="sm" variant="outline" onClick={() => {
-            const reportLines: string[] = [];
-            reportLines.push(`KT Surgery Report — ${data?.name || ''} ${data?.ktDate || ''}`);
-            reportLines.push('');
-            // Basic key/value entries
-            const keysToShow = ['ktDate','ktType','donorRelationship','ktUnit','ktSurgeon','height','weight','bmi'];
-            keysToShow.forEach(k => reportLines.push(`${k}: ${((data as any)[k]) ?? '—'}`));
-            reportLines.push('');
-            reportLines.push(`Surgical Notes: ${data?.surgicalNotes || ''}`);
-            navigator.clipboard?.writeText(reportLines.join('\n'));
-            alert('Report copied to clipboard');
-          }}>Copy as report</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const reportLines: string[] = [];
+              reportLines.push(
+                `KT Surgery Report — ${data?.name || ""} ${data?.ktDate || ""}`
+              );
+              reportLines.push("");
+              // Basic key/value entries
+              const keysToShow = [
+                "ktDate",
+                "ktType",
+                "donorRelationship",
+                "ktUnit",
+                "ktSurgeon",
+                "height",
+                "weight",
+                "bmi",
+              ];
+              keysToShow.forEach((k) =>
+                reportLines.push(`${k}: ${(data as any)[k] ?? "—"}`)
+              );
+              reportLines.push("");
+              reportLines.push(`Surgical Notes: ${data?.surgicalNotes || ""}`);
+              navigator.clipboard?.writeText(reportLines.join("\n"));
+              alert("Report copied to clipboard");
+            }}
+          >
+            Copy as report
+          </Button>
 
-          <Button size="sm" onClick={() => {
-            const html = `<!doctype html><html><head><meta charset="utf-8"><title>KT Surgery Report</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#111} h1{font-size:18px} .section{margin-bottom:12px;} .label{font-weight:600;margin-bottom:4px;} .value{margin-bottom:6px}</style></head><body><h1>KT Surgery Report</h1><p><strong>Patient:</strong> ${data?.name || ''} ${data?.ktDate || ''}</p>${Object.entries(data).map(([k,v])=>{ if(k==='immunologicalDetails') return ''; if(typeof v === 'object') return ''; return `<div class="section"><div class="label">${k}</div><div class="value">${String(v||'—')}</div></div>`}).join('')}<script>window.onload=()=>{window.print();}</script></body></html>`;
-            const w = window.open('', '_blank');
-            if (w) {
-              w.document.open();
-              w.document.write(html);
-              w.document.close();
-            } else {
-              alert('Unable to open print window — please allow popups');
-            }
-          }}>Export / Print</Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              const html = `<!doctype html><html><head><meta charset="utf-8"><title>KT Surgery Report</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#111} h1{font-size:18px} .section{margin-bottom:12px;} .label{font-weight:600;margin-bottom:4px;} .value{margin-bottom:6px}</style></head><body><h1>KT Surgery Report</h1><p><strong>Patient:</strong> ${data?.name || ""} ${data?.ktDate || ""}</p>${Object.entries(
+                data
+              )
+                .map(([k, v]) => {
+                  if (k === "immunologicalDetails") return "";
+                  if (typeof v === "object") return "";
+                  return `<div class="section"><div class="label">${k}</div><div class="value">${String(v || "—")}</div></div>`;
+                })
+                .join(
+                  ""
+                )}<script>window.onload=()=>{window.print();}</script></body></html>`;
+              const w = window.open("", "_blank");
+              if (w) {
+                w.document.open();
+                w.document.write(html);
+                w.document.close();
+              } else {
+                alert("Unable to open print window — please allow popups");
+              }
+            }}
+          >
+            Export / Print
+          </Button>
         </div>
 
         <Accordion type="multiple" defaultValue={[] as string[]}>
@@ -385,7 +563,10 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                 <Field label="Patient Name" value={data.name} />
                 <Field label="Date of KT" value={data.ktDate} />
                 <Field label="Type of KT" value={data.ktType} />
-                <Field label="Donor Relationship" value={data.donorRelationship} />
+                <Field
+                  label="Donor Relationship"
+                  value={data.donorRelationship}
+                />
                 <Field label="Transplant Unit" value={data.ktUnit} />
                 <Field label="Surgeon" value={data.ktSurgeon} />
               </div>
@@ -397,11 +578,25 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             <AccordionTrigger>Medical History</AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Diabetes" value={data.diabetes === 'true' ? 'Yes' : 'No'} />
-                <Field label="Hypertension" value={data.hypertension === 'true' ? 'Yes' : 'No'} />
-                <Field label="IHD" value={data.ihd === 'true' ? 'Yes' : 'No'} />
-                <Field label="Dyslipidaemia" value={data.dyslipidaemia === 'true' ? 'Yes' : 'No'} />
-                <Field label="Other" value={data.other === 'true' ? data.otherSpecify || 'Yes' : 'No'} />
+                <Field
+                  label="Diabetes"
+                  value={data.diabetes === "true" ? "Yes" : "No"}
+                />
+                <Field
+                  label="Hypertension"
+                  value={data.hypertension === "true" ? "Yes" : "No"}
+                />
+                <Field label="IHD" value={data.ihd === "true" ? "Yes" : "No"} />
+                <Field
+                  label="Dyslipidaemia"
+                  value={data.dyslipidaemia === "true" ? "Yes" : "No"}
+                />
+                <Field
+                  label="Other"
+                  value={
+                    data.other === "true" ? data.otherSpecify || "Yes" : "No"
+                  }
+                />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -411,7 +606,10 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             <AccordionTrigger>Pre-Transplant Details</AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Primary Diagnosis" value={data.primaryDiagnosis} />
+                <Field
+                  label="Primary Diagnosis"
+                  value={data.primaryDiagnosis}
+                />
                 <Field label="Mode of RRT" value={data.modeOfRRT} />
                 <Field label="Duration of RRT" value={data.durationRRT} />
                 <Field label="Height (cm)" value={data.height} />
@@ -429,9 +627,15 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                 <Field label="Date of Transplantation" value={data.ktDate} />
                 <Field label="Transplant Number" value={data.numberOfKT} />
                 <Field label="Type of Transplant" value={data.ktType} />
-                <Field label="Peritoneal Position" value={data.peritonealPosition} />
+                <Field
+                  label="Peritoneal Position"
+                  value={data.peritonealPosition}
+                />
                 <Field label="Side of Transplant" value={data.sideOfKT} />
-                <Field label="Donor Relationship" value={data.donorRelationship} />
+                <Field
+                  label="Donor Relationship"
+                  value={data.donorRelationship}
+                />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -456,12 +660,30 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             <AccordionTrigger>Immunological Details</AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Donor Blood Group" value={data.immunologicalDetails?.bloodGroupDonor || ''} />
-                <Field label="Recipient Blood Group" value={data.immunologicalDetails?.bloodGroupRecipient || ''} />
-                <Field label="PRA Pre" value={data.immunologicalDetails?.praPre || ''} />
-                <Field label="PRA Post" value={data.immunologicalDetails?.praPost || ''} />
-                <Field label="DSA" value={data.immunologicalDetails?.dsa || ''} />
-                <Field label="Immunological Risk" value={data.immunologicalDetails?.immunologicalRisk || ''} />
+                <Field
+                  label="Donor Blood Group"
+                  value={data.immunologicalDetails?.bloodGroupDonor || ""}
+                />
+                <Field
+                  label="Recipient Blood Group"
+                  value={data.immunologicalDetails?.bloodGroupRecipient || ""}
+                />
+                <Field
+                  label="PRA Pre"
+                  value={data.immunologicalDetails?.praPre || ""}
+                />
+                <Field
+                  label="PRA Post"
+                  value={data.immunologicalDetails?.praPost || ""}
+                />
+                <Field
+                  label="DSA"
+                  value={data.immunologicalDetails?.dsa || ""}
+                />
+                <Field
+                  label="Immunological Risk"
+                  value={data.immunologicalDetails?.immunologicalRisk || ""}
+                />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -472,8 +694,23 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Pre KT" value={data.preKT} />
-                <Field label="Induction Therapy" value={Array.isArray(data.inductionTherapy) ? (data.inductionTherapy as any).join(', ') : data.inductionTherapy} />
-                <Field label="Maintenance (summary)" value={`${data.maintenancePred ? 'Pred ' : ''}${data.maintenanceMMF ? 'MMF ' : ''}${data.maintenanceTac ? 'Tac ' : ''}${data.maintenanceEverolimus ? 'Everolimus' : ''}`.trim() || data.maintenanceOtherText || data.maintenanceOther || '—'} />
+                <Field
+                  label="Induction Therapy"
+                  value={
+                    Array.isArray(data.inductionTherapy)
+                      ? (data.inductionTherapy as any).join(", ")
+                      : data.inductionTherapy
+                  }
+                />
+                <Field
+                  label="Maintenance (summary)"
+                  value={
+                    `${data.maintenancePred ? "Pred " : ""}${data.maintenanceMMF ? "MMF " : ""}${data.maintenanceTac ? "Tac " : ""}${data.maintenanceEverolimus ? "Everolimus" : ""}`.trim() ||
+                    data.maintenanceOtherText ||
+                    data.maintenanceOther ||
+                    "—"
+                  }
+                />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -483,27 +720,73 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
             <AccordionTrigger>Prophylaxis</AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Cotrimoxazole" value={data.cotrimoxazoleYes ? 'Yes' : 'No'} />
-                <Field label="Cotrimoxazole stopped" value={data.cotriStopped || '—'} />
-                <Field label="Valganciclovir" value={data.valganciclovirYes ? 'Yes' : 'No'} />
-                <Field label="Valganciclovir stopped" value={data.valganStopped || '—'} />
-                <Field label="Vaccination - COVID" value={data.vaccinationCOVID ? 'Yes' : 'No'} />
-                <Field label="Vaccination - Influenza" value={data.vaccinationInfluenza ? 'Yes' : 'No'} />
+                <Field
+                  label="Cotrimoxazole"
+                  value={data.cotrimoxazoleYes ? "Yes" : "No"}
+                />
+                <Field
+                  label="Cotrimoxazole stopped"
+                  value={data.cotriStopped || "—"}
+                />
+                <Field
+                  label="Valganciclovir"
+                  value={data.valganciclovirYes ? "Yes" : "No"}
+                />
+                <Field
+                  label="Valganciclovir stopped"
+                  value={data.valganStopped || "—"}
+                />
+                <Field
+                  label="Vaccination - COVID"
+                  value={data.vaccinationCOVID ? "Yes" : "No"}
+                />
+                <Field
+                  label="Vaccination - Influenza"
+                  value={data.vaccinationInfluenza ? "Yes" : "No"}
+                />
               </div>
             </AccordionContent>
           </AccordionItem>
 
           {/* 9. Immediate Post-Transplant Details */}
           <AccordionItem value="immediate">
-            <AccordionTrigger>Immediate Post-Transplant Details</AccordionTrigger>
+            <AccordionTrigger>
+              Immediate Post-Transplant Details
+            </AccordionTrigger>
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Pre-transplant Creatinine" value={data.preKTCreatinine} abnormal={abnormalFor('preKTCreatinine', data.preKTCreatinine)} />
-                <Field label="Post-transplant Creatinine" value={data.postKTCreatinine} abnormal={abnormalFor('postKTCreatinine', data.postKTCreatinine)} />
-                <Field label="Delayed Graft Function" value={data.delayedGraftYes ? 'Yes' : 'No'} />
-                <Field label="Post KT Dialysis" value={data.postKTDialysisYes ? 'Yes' : 'No'} />
-                <Field label="Acute Rejection" value={data.acuteRejectionYes ? 'Yes' : 'No'} />
-                <Field label="Acute Rejection Details" value={data.acuteRejectionDetails} />
+                <Field
+                  label="Pre-transplant Creatinine"
+                  value={data.preKTCreatinine}
+                  abnormal={abnormalFor(
+                    "preKTCreatinine",
+                    data.preKTCreatinine
+                  )}
+                />
+                <Field
+                  label="Post-transplant Creatinine"
+                  value={data.postKTCreatinine}
+                  abnormal={abnormalFor(
+                    "postKTCreatinine",
+                    data.postKTCreatinine
+                  )}
+                />
+                <Field
+                  label="Delayed Graft Function"
+                  value={data.delayedGraftYes ? "Yes" : "No"}
+                />
+                <Field
+                  label="Post KT Dialysis"
+                  value={data.postKTDialysisYes ? "Yes" : "No"}
+                />
+                <Field
+                  label="Acute Rejection"
+                  value={data.acuteRejectionYes ? "Yes" : "No"}
+                />
+                <Field
+                  label="Acute Rejection Details"
+                  value={data.acuteRejectionDetails}
+                />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -519,7 +802,10 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
                 <Field label="Complication 4" value={data.postKTComp4} />
                 <Field label="Complication 5" value={data.postKTComp5} />
                 <Field label="Complication 6" value={data.postKTComp6} />
-                <Field label="Other Complications" value={data.otherComplications} />
+                <Field
+                  label="Other Complications"
+                  value={data.otherComplications}
+                />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -531,11 +817,19 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-xs">Medications</Label>
+                    <Label className="text-muted-foreground text-xs">
+                      Medications
+                    </Label>
                     <div>
-                      {data.medications?.length ? data.medications.map((m, i) => (
-                        <div key={i} className="text-sm">{m.name} — {m.dosage}</div>
-                      )) : <div className="text-sm">—</div>}
+                      {data.medications?.length ? (
+                        data.medications.map((m, i) => (
+                          <div key={i} className="text-sm">
+                            {m.name} — {m.dosage}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm">—</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -547,7 +841,9 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
         <div>
           <h4 className="text-sm font-semibold mb-2">Filled By</h4>
           <div className="p-3 bg-muted rounded-md">
-            <p className="text-sm text-black dark:text-white whitespace-pre-wrap">{data.filledBy || '—'}</p>
+            <p className="text-sm text-black dark:text-white whitespace-pre-wrap">
+              {data.filledBy || "—"}
+            </p>
           </div>
         </div>
       </div>
@@ -561,7 +857,7 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Only check filledBy on actual submission (when on last step)
     if (step === FORM_STEPS.length - 1 && !form.filledBy) {
       alert("Please enter who filled out the form.");
@@ -576,9 +872,13 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
     // Require both confirmation checkboxes before submitting
     if (!ktConfirmAccurate || !ktConsentProcessing) {
-      const confirmationIndex = FORM_STEPS.findIndex((s) => s.label === "Confirmation");
+      const confirmationIndex = FORM_STEPS.findIndex(
+        (s) => s.label === "Confirmation"
+      );
       if (confirmationIndex >= 0) setStep(confirmationIndex);
-      alert("Please tick both consent and confirmation checkboxes before submitting the form.");
+      alert(
+        "Please tick both consent and confirmation checkboxes before submitting the form."
+      );
       return;
     }
 
@@ -586,11 +886,15 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
 
     try {
       if (!patient?.phn) {
-        alert("Missing patient identifier (PHN). Please search for a patient first.");
+        alert(
+          "Missing patient identifier (PHN). Please search for a patient first."
+        );
         return;
       }
 
-      console.log(`💾 Submitting KT Surgery form for patient PHN: ${patient.phn}`);
+      console.log(
+        `💾 Submitting KT Surgery form for patient PHN: ${patient.phn}`
+      );
       console.log(`📝 Full Form data before API call:`, form);
       console.log(`📋 Patient context:`, patient);
 
@@ -599,32 +903,40 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
       const payloadForApi = {
         ...form,
         patientPhn: patient.phn, // EXPLICITLY set patientPhn to ensure it's sent
-        inductionTherapy: Array.isArray(form.inductionTherapy) ? form.inductionTherapy.join(', ') : (form.inductionTherapy as any || ''),
+        inductionTherapy: Array.isArray(form.inductionTherapy)
+          ? form.inductionTherapy.join(", ")
+          : (form.inductionTherapy as any) || "",
       } as unknown as KTFormData;
 
       console.log(`🔍 Payload being sent to API:`, payloadForApi);
-      console.log(`📍 API Endpoint: POST /api/transplant/kt-surgery/${patient.phn}`);
+      console.log(
+        `📍 API Endpoint: POST /api/transplant/kt-surgery/${patient.phn}`
+      );
 
       // Use the API service instead of direct fetch
-      const saved = await transplantApi.createKTSurgery(patient.phn, payloadForApi);
-      
+      const saved = await transplantApi.createKTSurgery(
+        patient.phn,
+        payloadForApi
+      );
+
       console.log(`✅ KT Surgery saved successfully:`, saved);
-      console.log(`📊 Saved data fields:`, Object.keys(saved).join(', '));
+      console.log(`📊 Saved data fields:`, Object.keys(saved).join(", "));
 
       // Update patient context (ktSurgery summary fields)
-      setPatientData(prev => ({
+      setPatientData((prev) => ({
         ...prev,
         ktSurgery: {
           dateOfKT: saved.ktDate || form.ktDate || "",
           ktType: saved.ktType || form.ktType || "",
-          donorRelationship: saved.donorRelationship || form.donorRelationship || "",
-        }
+          donorRelationship:
+            saved.donorRelationship || form.donorRelationship || "",
+        },
       }));
 
       alert("KT form submitted successfully!");
       setActiveView("dashboard");
     } catch (err) {
-      console.error('❌ Submission error:', err);
+      console.error("❌ Submission error:", err);
       const errorMessage = handleApiError(err);
       alert(`Error saving KT surgery: ${errorMessage}`);
     } finally {
@@ -639,12 +951,13 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">Kidney Transplant Surgery</h1>
+              <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
+                Kidney Transplant Surgery
+              </h1>
               <p className="text-blue-600 dark:text-blue-300">
-                {patient && patient.name 
+                {patient && patient.name
                   ? `Patient: ${patient.name} (PHN: ${patient.phn})`
-                  : "Complete the KT surgery assessment form"
-                }
+                  : "Complete the KT surgery assessment form"}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -674,1479 +987,2379 @@ const KTForm: React.FC<KTFormProps> = ({ setActiveView }) => {
           {/* Progress Stepper */}
           <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-blue-900">Assessment Progress</h2>
-              <span className="text-sm text-blue-600">Step {step + 1} of {FORM_STEPS.length}</span>
+              <h2 className="text-lg font-semibold text-blue-900">
+                Assessment Progress
+              </h2>
+              <span className="text-sm text-blue-600">
+                Step {step + 1} of {FORM_STEPS.length}
+              </span>
             </div>
             <div className="w-full max-w-full overflow-x-auto pb-2">
               <div className="flex items-center gap-4 min-w-[900px]">
-              {FORM_STEPS.map((formStep, idx) => {
-                const Icon = formStep.icon;
-                const isActive = step === idx;
-                const isCompleted = step > idx;
+                {FORM_STEPS.map((formStep, idx) => {
+                  const Icon = formStep.icon;
+                  const isActive = step === idx;
+                  const isCompleted = step > idx;
 
-                return (
-                  <div key={formStep.label} className="flex items-center flex-1 min-w-[120px]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isCompleted || isActive) setStep(idx);
-                      }}
-                      className="flex flex-col items-center w-full"
+                  return (
+                    <div
+                      key={formStep.label}
+                      className="flex items-center flex-1 min-w-[120px]"
                     >
-                      <div
-                        className={`flex items-center justify-center w-10 h-10 rounded-full z-10 transition-colors ${
-                          isActive
-                            ? 'bg-blue-600 text-white'
-                            : isCompleted
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-200 text-gray-600'
-                        }`}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isCompleted || isActive) setStep(idx);
+                        }}
+                        className="flex flex-col items-center w-full"
                       >
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <span title={formStep.label} className={`mt-2 text-xs truncate w-full text-center ${isActive ? 'text-blue-700' : isCompleted ? 'text-blue-600' : 'text-gray-400'}`}>{formStep.label}</span>
-                    </button>
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-full z-10 transition-colors ${
+                            isActive
+                              ? "bg-blue-600 text-white"
+                              : isCompleted
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <span
+                          title={formStep.label}
+                          className={`mt-2 text-xs truncate w-full text-center ${isActive ? "text-blue-700" : isCompleted ? "text-blue-600" : "text-gray-400"}`}
+                        >
+                          {formStep.label}
+                        </span>
+                      </button>
 
-                    {idx < FORM_STEPS.length - 1 && (
-                      <div className={`h-1 flex-1 ml-3 mr-3 ${step > idx ? 'bg-blue-500' : 'bg-gray-200'} rounded`}></div>
-                    )}
-                  </div>
-                );
-              })}
+                      {idx < FORM_STEPS.length - 1 && (
+                        <div
+                          className={`h-1 flex-1 ml-3 mr-3 ${step > idx ? "bg-blue-500" : "bg-gray-200"} rounded`}
+                        ></div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Step 0: Patient Info */}
-          {step === 0 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <User className="w-6 h-6" />
-                  Patient Information
-                  {patient && patient.name && (
-                    <span className="text-blue-200 text-sm ml-auto">
-                      Loaded from search
-                    </span>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Step 0: Patient Info */}
+            {step === 0 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <User className="w-6 h-6" />
+                    Patient Information
+                    {patient && patient.name && (
+                      <span className="text-blue-200 text-sm ml-auto">
+                        Loaded from search
+                      </span>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    {patient && patient.name
+                      ? `Patient data loaded for: ${patient.name}`
+                      : "Search for a patient using the search bar above to auto-fill this section"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="name"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center"
+                      >
+                        Full Name <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input
+                        id="name"
+                        value={form.name}
+                        onChange={(e) => handleChange("name", e.target.value)}
+                        placeholder="Enter full name"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="contact"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center"
+                      >
+                        Contact Number
+                      </Label>
+                      <Input
+                        id="contact"
+                        value={form.contact}
+                        onChange={(e) =>
+                          handleChange("contact", e.target.value)
+                        }
+                        placeholder="Enter phone number"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="dob"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center"
+                      >
+                        Date of Birth{" "}
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200 dark:border-slate-600"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {form.dob
+                              ? formatDateToDDMMYYYY(form.dob)
+                              : "Select date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(form.dob)}
+                            onSelect={(date) => {
+                              if (date) {
+                                handleChange("dob", toLocalISO(date));
+                              }
+                            }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="age"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center"
+                      >
+                        Age at Referral (years){" "}
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input
+                        id="age"
+                        type="number"
+                        min={0}
+                        value={form.age}
+                        onChange={(e) => handleChange("age", e.target.value)}
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+                      Gender <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <RadioGroup
+                      className="flex gap-8 pt-2"
+                      value={form.gender}
+                      onValueChange={(value) => handleChange("gender", value)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <RadioGroupItem
+                          value="male"
+                          id="ktMale"
+                          className="border-2 border-blue-300"
+                        />
+                        <Label
+                          htmlFor="ktMale"
+                          className="text-gray-700 dark:text-gray-200 font-medium"
+                        >
+                          Male
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <RadioGroupItem
+                          value="female"
+                          id="ktFemale"
+                          className="border-2 border-blue-300"
+                        />
+                        <Label
+                          htmlFor="ktFemale"
+                          className="text-gray-700 dark:text-gray-200 font-medium"
+                        >
+                          Female
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <RadioGroupItem
+                          value="other"
+                          id="ktOther"
+                          className="border-2 border-blue-300"
+                        />
+                        <Label
+                          htmlFor="ktOther"
+                          className="text-gray-700 dark:text-gray-200 font-medium"
+                        >
+                          Other
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="address"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center"
+                    >
+                      Address
+                    </Label>
+                    <Textarea
+                      id="address"
+                      value={form.address}
+                      onChange={(e) => handleChange("address", e.target.value)}
+                      placeholder="Enter complete address"
+                      rows={4}
+                      className="border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg resize-none bg-white dark:bg-slate-700 text-foreground"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 1: Medical History */}
+            {step === 1 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Activity className="w-6 h-6" />
+                    Medical History
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Select all applicable conditions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        id="diabetes"
+                        checked={form.diabetes === "true"}
+                        onCheckedChange={(checked) =>
+                          handleChange("diabetes", checked ? "true" : "false")
+                        }
+                        className="border-2 border-blue-300 dark:border-blue-700"
+                      />
+                      <Label
+                        htmlFor="diabetes"
+                        className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1"
+                      >
+                        Diabetes
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        id="hypertension"
+                        checked={form.hypertension === "true"}
+                        onCheckedChange={(checked) =>
+                          handleChange(
+                            "hypertension",
+                            checked ? "true" : "false"
+                          )
+                        }
+                        className="border-2 border-blue-300 dark:border-blue-700"
+                      />
+                      <Label
+                        htmlFor="hypertension"
+                        className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1"
+                      >
+                        Hypertension
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        id="ihd"
+                        checked={form.ihd === "true"}
+                        onCheckedChange={(checked) =>
+                          handleChange("ihd", checked ? "true" : "false")
+                        }
+                        className="border-2 border-blue-300 dark:border-blue-700"
+                      />
+                      <Label
+                        htmlFor="ihd"
+                        className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1"
+                      >
+                        IHD
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        id="dyslipidaemia"
+                        checked={form.dyslipidaemia === "true"}
+                        onCheckedChange={(checked) =>
+                          handleChange(
+                            "dyslipidaemia",
+                            checked ? "true" : "false"
+                          )
+                        }
+                        className="border-2 border-blue-300 dark:border-blue-700"
+                      />
+                      <Label
+                        htmlFor="dyslipidaemia"
+                        className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1"
+                      >
+                        Dyslipidaemia
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        id="other"
+                        checked={form.other === "true"}
+                        onCheckedChange={(checked) =>
+                          handleChange("other", checked ? "true" : "false")
+                        }
+                        className="border-2 border-blue-300 dark:border-blue-700"
+                      />
+                      <Label
+                        htmlFor="other"
+                        className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1"
+                      >
+                        Other
+                      </Label>
+                    </div>
+                  </div>
+
+                  {form.other === "true" && (
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="otherSpecify"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                      >
+                        Please specify other conditions
+                      </Label>
+                      <Input
+                        id="otherSpecify"
+                        value={form.otherSpecify}
+                        onChange={(e) =>
+                          handleChange("otherSpecify", e.target.value)
+                        }
+                        placeholder="Specify other medical conditions"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
                   )}
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  {patient && patient.name 
-                    ? `Patient data loaded for: ${patient.name}`
-                    : "Search for a patient using the search bar above to auto-fill this section"
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 2: Pre-KT Details */}
+            {step === 2 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Pill className="w-6 h-6" />
+                    Pre-Transplant Details
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Renal replacement therapy information
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
                   <div className="space-y-3">
-                    <Label htmlFor="name" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-                      Full Name <span className="text-red-500 ml-1">*</span>
+                    <Label
+                      htmlFor="primaryDiagnosis"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                    >
+                      Primary Renal Diagnosis
                     </Label>
                     <Input
-                      id="name"
-                      value={form.name}
-                      onChange={e => handleChange("name", e.target.value)}
-                      placeholder="Enter full name"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      required
+                      id="primaryDiagnosis"
+                      value={form.primaryDiagnosis}
+                      onChange={(e) =>
+                        handleChange("primaryDiagnosis", e.target.value)
+                      }
+                      placeholder="Enter primary diagnosis"
+                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="contact" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-                      Contact Number
-                    </Label>
-                    <Input
-                      id="contact"
-                      value={form.contact}
-                      onChange={e => handleChange("contact", e.target.value)}
-                      placeholder="Enter phone number"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="modeOfRRT"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                      >
+                        Mode of RRT prior to KT
+                      </Label>
+                      <select
+                        id="modeOfRRT"
+                        className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        value={form.modeOfRRT}
+                        onChange={(e) =>
+                          handleChange("modeOfRRT", e.target.value)
+                        }
+                      >
+                        <option value="">Select mode</option>
+                        <option value="HD">HD</option>
+                        <option value="PD">PD</option>
+                        <option value="Pre-emptive">Pre-emptive</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="durationRRT"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                      >
+                        Duration of RRT prior to KT
+                      </Label>
+                      <Input
+                        id="durationRRT"
+                        value={form.durationRRT}
+                        onChange={(e) =>
+                          handleChange("durationRRT", e.target.value)
+                        }
+                        placeholder="e.g. 2 years"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="dob" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-                      Date of Birth <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200 dark:border-slate-600"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.dob ? formatDateToDDMMYYYY(form.dob) : 'Select date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={isoStringToDate(form.dob)}
-                          onSelect={(date) => {
-                            if (date) {
-                              handleChange("dob", toLocalISO(date));
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 3: KT Related Info */}
+            {step === 3 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <ClipboardList className="w-6 h-6" />
+                    Transplantation Details
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Transplant surgery information
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="ktDate"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                      >
+                        Date of Transplantation
+                      </Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200 dark:border-slate-600"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {form.ktDate
+                              ? formatDateToDDMMYYYY(form.ktDate)
+                              : "Select date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(form.ktDate)}
+                            onSelect={(date) => {
+                              if (date) {
+                                handleChange("ktDate", toLocalISO(date));
+                              }
+                            }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="numberOfKT"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                      >
+                        Transplant Number
+                      </Label>
+                      <select
+                        id="numberOfKT"
+                        className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        value={form.numberOfKT}
+                        onChange={(e) =>
+                          handleChange("numberOfKT", e.target.value)
+                        }
+                      >
+                        <option value="">Select number</option>
+                        <option value="1">1st Transplant</option>
+                        <option value="2">2nd Transplant</option>
+                        <option value="3">3rd Transplant</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="ktUnit"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                      >
+                        Transplant Unit
+                      </Label>
+                      <select
+                        id="ktUnit"
+                        className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        value={form.ktUnit}
+                        onChange={(e) => handleChange("ktUnit", e.target.value)}
+                      >
+                        <option value="">Select unit</option>
+                        <option value="NHK">NHK</option>
+                        <option value="THP">THP</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      {form.ktUnit === "Other" && (
+                        <div className="mt-3">
+                          <Label
+                            htmlFor="wardNumber"
+                            className="text-sm font-semibold text-gray-700 dark:text-gray-200"
+                          >
+                            Ward Number
+                          </Label>
+                          <Input
+                            id="wardNumber"
+                            value={form.wardNumber}
+                            onChange={(e) =>
+                              handleChange("wardNumber", e.target.value)
                             }
-                          }}
-                          disabled={(date) => date > new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="age" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-                      Age at Referral (years) <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Input
-                      id="age"
-                      type="number"
-                      min={0}
-                      value={form.age}
-                      onChange={e => handleChange("age", e.target.value)}
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      required
-                    />
-                  </div>
-                </div>
-                
-
-
-                  
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-                    Gender <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <RadioGroup className="flex gap-8 pt-2" value={form.gender} onValueChange={value => handleChange("gender", value)}>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="male" id="ktMale" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktMale" className="text-gray-700 dark:text-gray-200 font-medium">Male</Label>
+                            className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="female" id="ktFemale" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktFemale" className="text-gray-700 dark:text-gray-200 font-medium">Female</Label>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="ktSurgeon"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Transplant Surgeon
+                      </Label>
+                      <Input
+                        id="ktSurgeon"
+                        value={form.ktSurgeon}
+                        onChange={(e) =>
+                          handleChange("ktSurgeon", e.target.value)
+                        }
+                        placeholder="Enter surgeon name"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="other" id="ktOther" className="border-2 border-blue-300" />
-                      <Label htmlFor="ktOther" className="text-gray-700 dark:text-gray-200 font-medium">Other</Label>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="ktType"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Type of Transplant
+                      </Label>
+                      <select
+                        id="ktType"
+                        className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        value={form.ktType}
+                        onChange={(e) => handleChange("ktType", e.target.value)}
+                      >
+                        <option value="">Select type</option>
+                        <option value="Live related">Live related</option>
+                        <option value="Live unrelated">Live unrelated</option>
+                        <option value="DDKT">Deceased Donor</option>
+                      </select>
                     </div>
-                  </RadioGroup>
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="address" className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-                    Address
-                  </Label>
-                  <Textarea
-                    id="address"
-                    value={form.address}
-                    onChange={e => handleChange("address", e.target.value)}
-                    placeholder="Enter complete address"
-                    rows={4}
-                    className="border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-lg resize-none bg-white dark:bg-slate-700 text-foreground"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Step 1: Medical History */}
-          {step === 1 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Activity className="w-6 h-6" />
-                  Medical History
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Select all applicable conditions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                    <Checkbox
-                      id="diabetes"
-                      checked={form.diabetes === "true"}
-                      onCheckedChange={(checked) => handleChange("diabetes", checked ? "true" : "false")}
-                      className="border-2 border-blue-300 dark:border-blue-700"
-                    />
-                    <Label htmlFor="diabetes" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Diabetes</Label>
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="donorRelationship"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Donor Relationship
+                      </Label>
+                      <Input
+                        id="donorRelationship"
+                        value={form.donorRelationship}
+                        onChange={(e) =>
+                          handleChange("donorRelationship", e.target.value)
+                        }
+                        placeholder="e.g. Mother, Father, etc."
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                    <Checkbox
-                      id="hypertension"
-                      checked={form.hypertension === "true"}
-                      onCheckedChange={(checked) => handleChange("hypertension", checked ? "true" : "false")}
-                      className="border-2 border-blue-300 dark:border-blue-700"
-                    />
-                    <Label htmlFor="hypertension" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Hypertension</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                    <Checkbox
-                      id="ihd"
-                      checked={form.ihd === "true"}
-                      onCheckedChange={(checked) => handleChange("ihd", checked ? "true" : "false")}
-                      className="border-2 border-blue-300 dark:border-blue-700"
-                    />
-                    <Label htmlFor="ihd" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">IHD</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                    <Checkbox
-                      id="dyslipidaemia"
-                      checked={form.dyslipidaemia === "true"}
-                      onCheckedChange={(checked) => handleChange("dyslipidaemia", checked ? "true" : "false")}
-                      className="border-2 border-blue-300 dark:border-blue-700"
-                    />
-                    <Label htmlFor="dyslipidaemia" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Dyslipidaemia</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                    <Checkbox
-                      id="other"
-                      checked={form.other === "true"}
-                      onCheckedChange={(checked) => handleChange("other", checked ? "true" : "false")}
-                      className="border-2 border-blue-300 dark:border-blue-700"
-                    />
-                    <Label htmlFor="other" className="text-gray-700 dark:text-gray-200 cursor-pointer flex-1">Other</Label>
-                  </div>
-                </div>
-                
-                {form.other === "true" && (
-                  <div className="space-y-3">
-                    <Label htmlFor="otherSpecify" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Please specify other conditions
-                    </Label>
-                    <Input
-                      id="otherSpecify"
-                      value={form.otherSpecify}
-                      onChange={(e) => handleChange("otherSpecify", e.target.value)}
-                      placeholder="Specify other medical conditions"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Step 2: Pre-KT Details */}
-          {step === 2 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Pill className="w-6 h-6" />
-                  Pre-Transplant Details
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Renal replacement therapy information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-3">
-                  <Label htmlFor="primaryDiagnosis" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    Primary Renal Diagnosis
-                  </Label>
-                  <Input
-                    id="primaryDiagnosis"
-                    value={form.primaryDiagnosis}
-                    onChange={e => handleChange("primaryDiagnosis", e.target.value)}
-                    placeholder="Enter primary diagnosis"
-                    className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="modeOfRRT" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Mode of RRT prior to KT
-                    </Label>
-                    <select 
-                      id="modeOfRRT"
-                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      value={form.modeOfRRT} 
-                      onChange={e => handleChange("modeOfRRT", e.target.value)}
-                    >
-                      <option value="">Select mode</option>
-                      <option value="HD">HD</option>
-                      <option value="PD">PD</option>
-                      <option value="Pre-emptive">Pre-emptive</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="durationRRT" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Duration of RRT prior to KT
-                    </Label>
-                    <Input
-                      id="durationRRT"
-                      value={form.durationRRT}
-                      onChange={e => handleChange("durationRRT", e.target.value)}
-                      placeholder="e.g. 2 years"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="peritonealPosition"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Peritoneal Position
+                      </Label>
+                      <select
+                        id="peritonealPosition"
+                        className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        value={form.peritonealPosition}
+                        onChange={(e) =>
+                          handleChange("peritonealPosition", e.target.value)
+                        }
+                      >
+                        <option value="">Select position</option>
+                        <option value="Extraperitoneal">Extraperitoneal</option>
+                        <option value="Intraperitoneal">Intraperitoneal</option>
+                      </select>
+                    </div>
 
-          {/* Step 3: KT Related Info */}
-          {step === 3 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <ClipboardList className="w-6 h-6" />
-                  Transplantation Details
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Transplant surgery information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="ktDate" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Date of Transplantation
-                    </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200 dark:border-slate-600"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.ktDate ? formatDateToDDMMYYYY(form.ktDate) : 'Select date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={isoStringToDate(form.ktDate)}
-                          onSelect={(date) => {
-                            if (date) {
-                              handleChange("ktDate", toLocalISO(date));
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="sideOfKT"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Side of Transplant
+                      </Label>
+                      <select
+                        id="sideOfKT"
+                        className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        value={form.sideOfKT}
+                        onChange={(e) =>
+                          handleChange("sideOfKT", e.target.value)
+                        }
+                      >
+                        <option value="">Select side</option>
+                        <option value="Right">Right</option>
+                        <option value="Left">Left</option>
+                      </select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 4: Infection Screen */}
+            {step === 4 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Shield className="w-6 h-6" />
+                    Infection Screen
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    CMV / EBV / TB / Viral serology and overall infection risk
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        CMV Status
+                      </Label>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Donor
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="cmvDonorPositive"
+                                checked={form.cmvDonor === "+ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange("cmvDonor", checked ? "+ve" : "")
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="cmvDonorPositive"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Positive
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="cmvDonorNegative"
+                                checked={form.cmvDonor === "-ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange("cmvDonor", checked ? "-ve" : "")
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="cmvDonorNegative"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Negative
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Recipient
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="cmvRecipientPositive"
+                                checked={form.cmvRecipient === "+ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange(
+                                    "cmvRecipient",
+                                    checked ? "+ve" : ""
+                                  )
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="cmvRecipientPositive"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Positive
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="cmvRecipientNegative"
+                                checked={form.cmvRecipient === "-ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange(
+                                    "cmvRecipient",
+                                    checked ? "-ve" : ""
+                                  )
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="cmvRecipientNegative"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Negative
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold text-gray-700">
+                            Risk Category
+                          </Label>
+                          <select
+                            value={form.cmvRiskCategory}
+                            onChange={(e) =>
+                              handleChange("cmvRiskCategory", e.target.value)
                             }
-                          }}
-                          disabled={(date) => date > new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="numberOfKT" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Transplant Number
-                    </Label>
-                    <select 
-                      id="numberOfKT"
-                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      value={form.numberOfKT} 
-                      onChange={e => handleChange("numberOfKT", e.target.value)}
-                    >
-                      <option value="">Select number</option>
-                      <option value="1">1st Transplant</option>
-                      <option value="2">2nd Transplant</option>
-                      <option value="3">3rd Transplant</option>
-                    </select>
-                  </div>
-                </div>
+                            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg"
+                          >
+                            <option value="">Select risk</option>
+                            <option value="Low">Low</option>
+                            <option value="Average">Average</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="ktUnit" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Transplant Unit
-                    </Label>
-                    <select 
-                      id="ktUnit"
-                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      value={form.ktUnit} 
-                      onChange={e => handleChange("ktUnit", e.target.value)}
-                    >
-                      <option value="">Select unit</option>
-                      <option value="NHK">NHK</option>
-                      <option value="THP">THP</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    {form.ktUnit === "Other" && (
-                      <div className="mt-3">
-                        <Label htmlFor="wardNumber" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                          Ward Number
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        EBV Status
+                      </Label>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Donor
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="ebvDonorPositive"
+                                checked={form.ebvDonor === "+ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange("ebvDonor", checked ? "+ve" : "")
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="ebvDonorPositive"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Positive
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="ebvDonorNegative"
+                                checked={form.ebvDonor === "-ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange("ebvDonor", checked ? "-ve" : "")
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="ebvDonorNegative"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Negative
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Recipient
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="ebvRecipientPositive"
+                                checked={form.ebvRecipient === "+ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange(
+                                    "ebvRecipient",
+                                    checked ? "+ve" : ""
+                                  )
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="ebvRecipientPositive"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Positive
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="ebvRecipientNegative"
+                                checked={form.ebvRecipient === "-ve"}
+                                onCheckedChange={(checked) =>
+                                  handleChange(
+                                    "ebvRecipient",
+                                    checked ? "-ve" : ""
+                                  )
+                                }
+                                className="border-2 border-blue-300 dark:border-blue-700"
+                              />
+                              <Label
+                                htmlFor="ebvRecipientNegative"
+                                className="text-sm text-gray-700 cursor-pointer"
+                              >
+                                Negative
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold text-gray-700">
+                            Risk Category
+                          </Label>
+                          <select
+                            value={form.ebvRiskCategory}
+                            onChange={(e) =>
+                              handleChange("ebvRiskCategory", e.target.value)
+                            }
+                            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg"
+                          >
+                            <option value="">Select risk</option>
+                            <option value="Low">Low</option>
+                            <option value="Average">Average</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Other Infection Screen
+                      </Label>
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-sm">TB - Mantoux</Label>
+                          <select
+                            value={form.tbMantoux}
+                            onChange={(e) =>
+                              handleChange("tbMantoux", e.target.value)
+                            }
+                            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg"
+                          >
+                            <option value="">Select</option>
+                            <option value="positive">Positive</option>
+                            <option value="negative">Negative</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-sm">HIV Ab</Label>
+                          <Input
+                            id="hivAb"
+                            value={form.hivAb}
+                            onChange={(e) =>
+                              handleChange("hivAb", e.target.value)
+                            }
+                            className="h-10 border-2 border-gray-200 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">HepBsAg</Label>
+                          <Input
+                            id="hepBsAg"
+                            value={form.hepBsAg}
+                            onChange={(e) =>
+                              handleChange("hepBsAg", e.target.value)
+                            }
+                            className="h-10 border-2 border-gray-200 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Hep C Ab</Label>
+                          <Input
+                            id="hepCAb"
+                            value={form.hepCAb}
+                            onChange={(e) =>
+                              handleChange("hepCAb", e.target.value)
+                            }
+                            className="h-10 border-2 border-gray-200 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">
+                            Infection Risk Category
+                          </Label>
+                          <select
+                            value={form.infectionRiskCategory}
+                            onChange={(e) =>
+                              handleChange(
+                                "infectionRiskCategory",
+                                e.target.value
+                              )
+                            }
+                            className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg"
+                          >
+                            <option value="">Select overall risk</option>
+                            <option value="Low">Low</option>
+                            <option value="Average">Average</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {step === 5 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Shield className="w-6 h-6" />
+                    Immunological Details
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Blood group, cross match, HLA typing, and immunological risk
+                    assessment
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  {/* Blood Group Section */}
+                  <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
+                    <h3 className="text-lg font-semibold text-blue-900">
+                      Blood Group
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label
+                          htmlFor="bloodGroupDonor"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Donor Blood Group
                         </Label>
                         <Input
-                          id="wardNumber"
-                          value={form.wardNumber}
-                          onChange={e => handleChange("wardNumber", e.target.value)}
+                          id="bloodGroupDonor"
+                          value={
+                            form.immunologicalDetails?.bloodGroupDonor || ""
+                          }
+                          onChange={(e) =>
+                            handleImmunoField("bloodGroupDonor", e.target.value)
+                          }
+                          placeholder="e.g. A+, O-"
                           className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
                         />
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="ktSurgeon" className="text-sm font-semibold text-gray-700">
-                      Transplant Surgeon
-                    </Label>
-                    <Input
-                      id="ktSurgeon"
-                      value={form.ktSurgeon}
-                      onChange={e => handleChange("ktSurgeon", e.target.value)}
-                      placeholder="Enter surgeon name"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="ktType" className="text-sm font-semibold text-gray-700">
-                      Type of Transplant
-                    </Label>
-                    <select 
-                      id="ktType"
-                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      value={form.ktType} 
-                      onChange={e => handleChange("ktType", e.target.value)}
-                    >
-                      <option value="">Select type</option>
-                      <option value="Live related">Live related</option>
-                      <option value="Live unrelated">Live unrelated</option>
-                      <option value="DDKT">Deceased Donor</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="donorRelationship" className="text-sm font-semibold text-gray-700">
-                      Donor Relationship
-                    </Label>
-                    <Input
-                      id="donorRelationship"
-                      value={form.donorRelationship}
-                      onChange={e => handleChange("donorRelationship", e.target.value)}
-                      placeholder="e.g. Mother, Father, etc."
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="peritonealPosition" className="text-sm font-semibold text-gray-700">
-                      Peritoneal Position
-                    </Label>
-                    <select 
-                      id="peritonealPosition"
-                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      value={form.peritonealPosition} 
-                      onChange={e => handleChange("peritonealPosition", e.target.value)}
-                    >
-                      <option value="">Select position</option>
-                      <option value="Extraperitoneal">Extraperitoneal</option>
-                      <option value="Intraperitoneal">Intraperitoneal</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="sideOfKT" className="text-sm font-semibold text-gray-700">
-                      Side of Transplant
-                    </Label>
-                    <select 
-                      id="sideOfKT"
-                      className="w-full h-12 px-4 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                      value={form.sideOfKT} 
-                      onChange={e => handleChange("sideOfKT", e.target.value)}
-                    >
-                      <option value="">Select side</option>
-                      <option value="Right">Right</option>
-                      <option value="Left">Left</option>
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 4: Infection Screen */}
-          {step === 4 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Shield className="w-6 h-6" />
-                  Infection Screen
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  CMV / EBV / TB / Viral serology and overall infection risk
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">CMV Status</Label>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <span className="text-sm font-medium text-gray-700">Donor</span>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="cmvDonorPositive" 
-                              checked={form.cmvDonor === "+ve"}
-                              onCheckedChange={(checked) => handleChange("cmvDonor", checked ? "+ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="cmvDonorPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="cmvDonorNegative" 
-                              checked={form.cmvDonor === "-ve"}
-                              onCheckedChange={(checked) => handleChange("cmvDonor", checked ? "-ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="cmvDonorNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-sm font-medium text-gray-700">Recipient</span>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="cmvRecipientPositive" 
-                              checked={form.cmvRecipient === "+ve"}
-                              onCheckedChange={(checked) => handleChange("cmvRecipient", checked ? "+ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="cmvRecipientPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="cmvRecipientNegative" 
-                              checked={form.cmvRecipient === "-ve"}
-                              onCheckedChange={(checked) => handleChange("cmvRecipient", checked ? "-ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="cmvRecipientNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-gray-700">Risk Category</Label>
-                        <select value={form.cmvRiskCategory} onChange={e => handleChange("cmvRiskCategory", e.target.value)} className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg">
-                          <option value="">Select risk</option>
-                          <option value="Low">Low</option>
-                          <option value="Average">Average</option>
-                          <option value="High">High</option>
-                        </select>
+                      <div className="space-y-3">
+                        <Label
+                          htmlFor="bloodGroupRecipient"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Recipient Blood Group
+                        </Label>
+                        <Input
+                          id="bloodGroupRecipient"
+                          value={
+                            form.immunologicalDetails?.bloodGroupRecipient || ""
+                          }
+                          onChange={(e) =>
+                            handleImmunoField(
+                              "bloodGroupRecipient",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. B+, AB-"
+                          className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        />
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">EBV Status</Label>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <span className="text-sm font-medium text-gray-700">Donor</span>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="ebvDonorPositive" 
-                              checked={form.ebvDonor === "+ve"}
-                              onCheckedChange={(checked) => handleChange("ebvDonor", checked ? "+ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="ebvDonorPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="ebvDonorNegative" 
-                              checked={form.ebvDonor === "-ve"}
-                              onCheckedChange={(checked) => handleChange("ebvDonor", checked ? "-ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="ebvDonorNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-sm font-medium text-gray-700">Recipient</span>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="ebvRecipientPositive" 
-                              checked={form.ebvRecipient === "+ve"}
-                              onCheckedChange={(checked) => handleChange("ebvRecipient", checked ? "+ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="ebvRecipientPositive" className="text-sm text-gray-700 cursor-pointer">Positive</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="ebvRecipientNegative" 
-                              checked={form.ebvRecipient === "-ve"}
-                              onCheckedChange={(checked) => handleChange("ebvRecipient", checked ? "-ve" : "")}
-                              className="border-2 border-blue-300 dark:border-blue-700"
-                            />
-                            <Label htmlFor="ebvRecipientNegative" className="text-sm text-gray-700 cursor-pointer">Negative</Label>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-gray-700">Risk Category</Label>
-                        <select value={form.ebvRiskCategory} onChange={e => handleChange("ebvRiskCategory", e.target.value)} className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg">
-                          <option value="">Select risk</option>
-                          <option value="Low">Low</option>
-                          <option value="Average">Average</option>
-                          <option value="High">High</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">Other Infection Screen</Label>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-sm">TB - Mantoux</Label>
-                        <select value={form.tbMantoux} onChange={e => handleChange("tbMantoux", e.target.value)} className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg">
-                          <option value="">Select</option>
-                          <option value="positive">Positive</option>
-                          <option value="negative">Negative</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label className="text-sm">HIV Ab</Label>
-                        <Input id="hivAb" value={form.hivAb} onChange={e => handleChange("hivAb", e.target.value)} className="h-10 border-2 border-gray-200 rounded-lg" />
-                      </div>
-                      <div>
-                        <Label className="text-sm">HepBsAg</Label>
-                        <Input id="hepBsAg" value={form.hepBsAg} onChange={e => handleChange("hepBsAg", e.target.value)} className="h-10 border-2 border-gray-200 rounded-lg" />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Hep C Ab</Label>
-                        <Input id="hepCAb" value={form.hepCAb} onChange={e => handleChange("hepCAb", e.target.value)} className="h-10 border-2 border-gray-200 rounded-lg" />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-semibold text-gray-700">Infection Risk Category</Label>
-                        <select value={form.infectionRiskCategory} onChange={e => handleChange("infectionRiskCategory", e.target.value)} className="w-full h-10 px-3 border-2 border-gray-200 rounded-lg">
-                          <option value="">Select overall risk</option>
-                          <option value="Low">Low</option>
-                          <option value="Average">Average</option>
-                          <option value="High">High</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-                      {step === 5 && (
-                      <Card className="shadow-lg border-0 bg-white">
-                        <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                          <CardTitle className="flex items-center gap-3 text-xl">
-                            <Shield className="w-6 h-6" />
-                            Immunological Details
-                          </CardTitle>
-                          <CardDescription className="text-blue-100 dark:text-blue-200">
-                            Blood group, cross match, HLA typing, and immunological risk
-                            assessment
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-8 space-y-8">
-                          {/* Blood Group Section */}
-                          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
-                            <h3 className="text-lg font-semibold text-blue-900">Blood Group</h3>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                              <div className="space-y-3">
-                                <Label htmlFor="bloodGroupDonor" className="text-sm font-semibold text-gray-700">Donor Blood Group</Label>
-                                <Input
-                                  id="bloodGroupDonor"
-                                  value={form.immunologicalDetails?.bloodGroupDonor || ""}
-                                  onChange={e => handleImmunoField('bloodGroupDonor', e.target.value)}
-                                  placeholder="e.g. A+, O-"
-                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                                />
-                              </div>
-                              <div className="space-y-3">
-                                <Label htmlFor="bloodGroupRecipient" className="text-sm font-semibold text-gray-700">Recipient Blood Group</Label>
-                                <Input
-                                  id="bloodGroupRecipient"
-                                  value={form.immunologicalDetails?.bloodGroupRecipient || ""}
-                                  onChange={e => handleImmunoField('bloodGroupRecipient', e.target.value)}
-                                  placeholder="e.g. B+, AB-"
-                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* HLA Typing Section */}
-                          <div className="bg-white p-6 rounded-lg border-2 border-blue-200 space-y-6">
-                            <h3 className="text-lg font-semibold text-blue-900">HLA Typing</h3>
-                            <div className="overflow-x-auto">
-                              <table className="w-full border-collapse bg-white rounded-lg shadow-sm">
-                                <thead>
-                                  <tr className="bg-blue-600 text-white">
-                                    <th className="border border-blue-300 p-4 text-left font-semibold">Type</th>
-                                    <th className="border border-blue-300 p-4 text-center font-semibold">HLA-A</th>
-                                    <th className="border border-blue-300 p-4 text-center font-semibold">HLA-B</th>
-                                    <th className="border border-blue-300 p-4 text-center font-semibold">HLA-C</th>
-                                    <th className="border border-blue-300 p-4 text-center font-semibold">HLA-DR</th>
-                                    <th className="border border-blue-300 p-4 text-center font-semibold">HLA-DP</th>
-                                    <th className="border border-blue-300 p-4 text-center font-semibold">HLA-DQ</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                    <tr className="bg-blue-50">
-                                      <td className="border border-gray-200 p-4 font-semibold text-blue-900">Donor</td>
-                                      {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
-                                        <td key={key} className="border border-gray-200 p-2">
-                                          <Input
-                                            value={form.immunologicalDetails?.hlaTyping?.donor?.[key] || ""}
-                                            onChange={(e) => handleHlaChange('donor', key, e.target.value)}
-                                            placeholder={String(key).replace('hla','')}
-                                            className="h-10 border-gray-300 focus:border-blue-500 text-center"
-                                          />
-                                        </td>
-                                      ))}
-                                    </tr>
-
-                                    <tr className="bg-white">
-                                      <td className="border border-gray-200 p-4 font-semibold text-gray-900">Recipient</td>
-                                      {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
-                                        <td key={key} className="border border-gray-200 p-2">
-                                          <Input
-                                            value={form.immunologicalDetails?.hlaTyping?.recipient?.[key] || ""}
-                                            onChange={(e) => handleHlaChange('recipient', key, e.target.value)}
-                                            placeholder={String(key).replace('hla','')}
-                                            className="h-10 border-gray-300 focus:border-blue-500 text-center"
-                                          />
-                                        </td>
-                                      ))}
-                                    </tr>
-
-                                    <tr className="bg-blue-50">
-                                      <td className="border border-gray-200 p-4 font-semibold text-blue-900">Conclusion</td>
-                                      {(['hlaA','hlaB','hlaC','hlaDR','hlaDP','hlaDQ'] as (keyof import('../types/transplant').HLA)[]).map((key) => (
-                                        <td key={key} className="border border-gray-200 p-2">
-                                          <Input
-                                            value={form.immunologicalDetails?.hlaTyping?.conclusion?.[key] || ""}
-                                            onChange={(e) => handleHlaChange('conclusion', key, e.target.value)}
-                                            placeholder={String(key).replace('hla','')}
-                                            className="h-10 border-gray-300 focus:border-blue-500 text-center"
-                                          />
-                                        </td>
-                                      ))}
-                                    </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-
-                          {/* PRA Section */}
-                          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
-                            <h3 className="text-lg font-semibold text-blue-900">PRA (Panel Reactive Antibodies)</h3>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                              <div className="space-y-3">
-                                <Label htmlFor="praPre" className="text-sm font-semibold text-gray-700">Pre (%)</Label>
-                                <Input
-                                  id="praPre"
-                                  value={form.immunologicalDetails?.praPre || ""}
-                                  onChange={e => handleImmunoField('praPre', e.target.value)}
-                                  placeholder="Pre PRA percentage"
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                                />
-                              </div>
-                              <div className="space-y-3">
-                                <Label htmlFor="praPost" className="text-sm font-semibold text-gray-700">Post (%)</Label>
-                                <Input
-                                  id="praPost"
-                                  value={form.immunologicalDetails?.praPost || ""}
-                                  onChange={e => handleImmunoField('praPost', e.target.value)}
-                                  placeholder="Post PRA percentage"
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* DSA and Immunological Risk */}
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                              <Label htmlFor="dsa" className="text-sm font-semibold text-gray-700">DSA (Donor Specific Antibodies)</Label>
-                              <Input id="dsa" value={form.immunologicalDetails?.dsa || ""} onChange={e => handleImmunoField('dsa', e.target.value)} placeholder="DSA details" className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg" />
-                            </div>
-                            <div className="space-y-3">
-                                <Label htmlFor="immunologicalRisk" className="text-sm font-semibold text-gray-700">Immunological Risk</Label>
-                                <RadioGroup
-                                  value={form.immunologicalDetails?.immunologicalRisk || ""}
-                                  onValueChange={(value) => handleImmunoField('immunologicalRisk', value)}
-                                  className="flex gap-6"
-                                >
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="low" id="kt-low" />
-                                    <Label htmlFor="kt-low" className="text-sm text-gray-700 cursor-pointer">
-                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Low</span>
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="average" id="kt-average" />
-                                    <Label htmlFor="kt-average" className="text-sm text-gray-700 cursor-pointer">
-                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Average</span>
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="high" id="kt-high" />
-                                    <Label htmlFor="kt-high" className="text-sm text-gray-700 cursor-pointer">
-                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">High</span>
-                                    </Label>
-                                  </div>
-                                </RadioGroup>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      )}
-
-          {/* Step 6: Immunosuppression */}
-          {step === 6 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Pill className="w-6 h-6" />
-                  Immunosuppression Therapy
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Immunosuppressive therapy details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">Pre KT</Label>
-                    <select value={form.preKT} onChange={e => handleChange("preKT", e.target.value)} className="w-full h-12 px-3 border-2 border-gray-200 rounded-lg">
-                      <option value="">Select</option>
-                      <option value="TPE">TPE</option>
-                      <option value="IVIG">IVIG</option>
-                      <option value="None">None</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">Induction Therapy</Label>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" id="indBasilix" className="accent-blue-600 border-2 border-blue-300" checked={Array.isArray(form.inductionTherapy) ? form.inductionTherapy.includes('Basiliximab') : false} onChange={e => toggleInduction('Basiliximab', e.target.checked)} />
-                        <Label htmlFor="indBasilix" className="text-gray-700">Basiliximab</Label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" id="indATG" className="accent-blue-600 border-2 border-blue-300" checked={Array.isArray(form.inductionTherapy) ? form.inductionTherapy.includes('ATG') : false} onChange={e => toggleInduction('ATG', e.target.checked)} />
-                        <Label htmlFor="indATG" className="text-gray-700">ATG</Label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input type="checkbox" id="indMethyl" className="accent-blue-600 border-2 border-blue-300" checked={Array.isArray(form.inductionTherapy) ? form.inductionTherapy.includes('Methylprednisolone') : false} onChange={e => toggleInduction('Methylprednisolone', e.target.checked)} />
-                        <Label htmlFor="indMethyl" className="text-gray-700">Methylprednisolone</Label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <Label className="text-sm font-semibold text-gray-700">Maintenance</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                    <div className="flex items-center space-x-3">
-                      <input id="maintPred" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenancePred} onChange={e => setForm(prev => ({...prev, maintenancePred: e.target.checked}))} />
-                      <Label htmlFor="maintPred" className="text-gray-700">Pred</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <input id="maintMMF" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenanceMMF} onChange={e => setForm(prev => ({...prev, maintenanceMMF: e.target.checked}))} />
-                      <Label htmlFor="maintMMF" className="text-gray-700">MMF</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <input id="maintTac" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenanceTac} onChange={e => setForm(prev => ({...prev, maintenanceTac: e.target.checked}))} />
-                      <Label htmlFor="maintTac" className="text-gray-700">Tac</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <input id="maintEve" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.maintenanceEverolimus} onChange={e => setForm(prev => ({...prev, maintenanceEverolimus: e.target.checked}))} />
-                      <Label htmlFor="maintEve" className="text-gray-700">Everolimus</Label>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <Label className="text-sm font-semibold text-gray-700">Other (specify)</Label>
-                    <Input value={form.maintenanceOtherText || form.maintenanceOther} onChange={e => setForm(prev => ({...prev, maintenanceOtherText: e.target.value, maintenanceOther: e.target.value}))} placeholder="Other maintenance therapy" className="h-12 border-2 border-gray-200 rounded-lg" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 7: Prophylaxis */}
-          {step === 7 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Pill className="w-6 h-6" />
-                  Prophylaxis
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Preventive medication and treatment
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Checkbox id="cotrimoxazole" checked={!!form.cotrimoxazoleYes} onCheckedChange={(checked) => setForm(prev => ({ ...prev, cotrimoxazoleYes: !!checked }))} className="border-2 border-blue-300" />
-                        <Label htmlFor="cotrimoxazole" className="text-gray-700 font-medium">Cotrimoxazole</Label>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Input id="cotriDuration" value={form.cotriDuration} onChange={e => handleChange("cotriDuration", e.target.value)} placeholder="Duration (e.g., 6 months)" className="h-10 border-2 border-gray-200 rounded-lg" />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-10 px-3 border-2 border-gray-200"
-                            >
-                              <CalendarIcon className="h-4 w-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={isoStringToDate(form.cotriStopped)}
-                              onSelect={(date) => {
-                                if (date) {
-                                  handleChange("cotriStopped", toLocalISO(date));
-                                }
-                              }}
-                              disabled={(date) => date > new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Checkbox id="valganciclovir" checked={!!form.valganciclovirYes} onCheckedChange={(checked) => setForm(prev => ({ ...prev, valganciclovirYes: !!checked }))} className="border-2 border-blue-300" />
-                        <Label htmlFor="valganciclovir" className="text-gray-700 font-medium">Valganciclovir</Label>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Input id="valganDuration" value={form.valganDuration} onChange={e => handleChange("valganDuration", e.target.value)} placeholder="Duration" className="h-10 border-2 border-gray-200 rounded-lg" />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-10 px-3 border-2 border-gray-200"
-                            >
-                              <CalendarIcon className="h-4 w-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={isoStringToDate(form.valganStopped)}
-                              onSelect={(date) => {
-                                if (date) {
-                                  handleChange("valganStopped", toLocalISO(date));
-                                }
-                              }}
-                              disabled={(date) => date > new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700">Vaccination</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="flex items-center space-x-3">
-                      <input id="vCOVID" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationCOVID} onChange={e => setForm(prev => ({...prev, vaccinationCOVID: e.target.checked}))} />
-                      <Label htmlFor="vCOVID" className="text-gray-700">COVID</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <input id="vInfluenza" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationInfluenza} onChange={e => setForm(prev => ({...prev, vaccinationInfluenza: e.target.checked}))} />
-                      <Label htmlFor="vInfluenza" className="text-gray-700">Influenza</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <input id="vPneumo" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationPneumococcal} onChange={e => setForm(prev => ({...prev, vaccinationPneumococcal: e.target.checked}))} />
-                      <Label htmlFor="vPneumo" className="text-gray-700">Pneumococcal</Label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <input id="vVaricella" type="checkbox" className="accent-blue-600 border-2 border-blue-300" checked={!!form.vaccinationVaricella} onChange={e => setForm(prev => ({...prev, vaccinationVaricella: e.target.checked}))} />
-                      <Label htmlFor="vVaricella" className="text-gray-700">Varicella</Label>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 8: Pre-op */}
-          {step === 8 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Activity className="w-6 h-6" />
-                  Pre-Operative Details
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Pre-surgical assessment and preparation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-3">
-                  <Label htmlFor="preOpStatus" className="text-sm font-semibold text-gray-700">
-                    Pre-operative Status
-                  </Label>
-                  <Textarea
-                    id="preOpStatus"
-                    value={form.preOpStatus}
-                    onChange={e => handleChange("preOpStatus", e.target.value)}
-                    placeholder="Pre-operative status"
-                    rows={3}
-                    className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                  />
-                </div>
-                
-                <div className="space-y-3">
-                  <Label htmlFor="preOpPreparation" className="text-sm font-semibold text-gray-700">
-                    Pre-operative Preparation
-                  </Label>
-                  <Textarea
-                    id="preOpPreparation"
-                    value={form.preOpPreparation}
-                    onChange={e => handleChange("preOpPreparation", e.target.value)}
-                    placeholder="Pre-operative preparation"
-                    rows={3}
-                    className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                  />
-                </div>
-                
-                <div className="space-y-3">
-                  <Label htmlFor="surgicalNotes" className="text-sm font-semibold text-gray-700">
-                    Surgical Notes
-                  </Label>
-                  <Textarea
-                    id="surgicalNotes"
-                    value={form.surgicalNotes}
-                    onChange={e => handleChange("surgicalNotes", e.target.value)}
-                    placeholder="Surgical notes"
-                    rows={4}
-                    className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 9: Immediate Post KT */}
-          {step === 9 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <FileText className="w-6 h-6" />
-                  Immediate Post-Transplant Details
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Within the first week after transplantation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="preKTCreatinine" className="text-sm font-semibold text-gray-700">
-                      Pre-transplant Creatinine
-                    </Label>
-                    <Input
-                      id="preKTCreatinine"
-                      value={form.preKTCreatinine}
-                      onChange={e => handleChange("preKTCreatinine", e.target.value)}
-                      placeholder="Pre-transplant creatinine"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="postKTCreatinine" className="text-sm font-semibold text-gray-700">
-                      Post-transplant Creatinine at Discharge
-                    </Label>
-                    <Input
-                      id="postKTCreatinine"
-                      value={form.postKTCreatinine}
-                      onChange={e => handleChange("postKTCreatinine", e.target.value)}
-                      placeholder="Post-transplant creatinine"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox id="delayedGraft" checked={!!form.delayedGraftYes} onCheckedChange={(checked) => setForm(prev => ({ ...prev, delayedGraftYes: !!checked }))} className="border-2 border-blue-300" />
-                      <Label htmlFor="delayedGraft" className="text-sm font-semibold text-gray-700">Delayed Graft Function</Label>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox id="postKTDialysis" checked={!!form.postKTDialysisYes} onCheckedChange={(checked) => setForm(prev => ({ ...prev, postKTDialysisYes: !!checked }))} className="border-2 border-blue-300" />
-                      <Label htmlFor="postKTDialysis" className="text-sm font-semibold text-gray-700">Post-transplant Dialysis Required</Label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox id="acuteRejection" checked={!!form.acuteRejectionYes} onCheckedChange={(checked) => setForm(prev => ({ ...prev, acuteRejectionYes: !!checked }))} className="border-2 border-blue-300" />
-                      <Label htmlFor="acuteRejection" className="text-sm font-semibold text-gray-700">Acute Rejection</Label>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="acuteRejectionDetails" className="text-sm font-semibold text-gray-700">
-                      Acute Rejection Details
-                    </Label>
-                    <Input
-                      id="acuteRejectionDetails"
-                      value={form.acuteRejectionDetails}
-                      onChange={e => handleChange("acuteRejectionDetails", e.target.value)}
-                      placeholder="Acute rejection details"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="otherComplications" className="text-sm font-semibold text-gray-700">
-                    Other Complications
-                  </Label>
-                  <Textarea
-                    id="otherComplications"
-                    value={form.otherComplications}
-                    onChange={e => handleChange("otherComplications", e.target.value)}
-                    placeholder="Other complications"
-                    rows={3}
-                    className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 10: Surgery Complications */}
-          {step === 10 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <FileText className="w-6 h-6" />
-                  Surgery Complications
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  List any post-transplant surgical complications
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="postKTComp1" className="text-sm font-semibold text-gray-700">
-                      Complication 1
-                    </Label>
-                    <Input
-                      id="postKTComp1"
-                      value={form.postKTComp1}
-                      onChange={e => handleChange("postKTComp1", e.target.value)}
-                      placeholder="First complication"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="postKTComp2" className="text-sm font-semibold text-gray-700">
-                      Complication 2
-                    </Label>
-                    <Input
-                      id="postKTComp2"
-                      value={form.postKTComp2}
-                      onChange={e => handleChange("postKTComp2", e.target.value)}
-                      placeholder="Second complication"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="postKTComp3" className="text-sm font-semibold text-gray-700">
-                      Complication 3
-                    </Label>
-                    <Input
-                      id="postKTComp3"
-                      value={form.postKTComp3}
-                      onChange={e => handleChange("postKTComp3", e.target.value)}
-                      placeholder="Third complication"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="postKTComp4" className="text-sm font-semibold text-gray-700">
-                      Complication 4
-                    </Label>
-                    <Input
-                      id="postKTComp4"
-                      value={form.postKTComp4}
-                      onChange={e => handleChange("postKTComp4", e.target.value)}
-                      placeholder="Fourth complication"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="postKTComp5" className="text-sm font-semibold text-gray-700">
-                      Complication 5
-                    </Label>
-                    <Input
-                      id="postKTComp5"
-                      value={form.postKTComp5}
-                      onChange={e => handleChange("postKTComp5", e.target.value)}
-                      placeholder="Fifth complication"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <Label htmlFor="postKTComp6" className="text-sm font-semibold text-gray-700">
-                      Complication 6
-                    </Label>
-                    <Input
-                      id="postKTComp6"
-                      value={form.postKTComp6}
-                      onChange={e => handleChange("postKTComp6", e.target.value)}
-                      placeholder="Sixth complication"
-                      className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 11: Medication */}
-          {step === 11 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <Pill className="w-6 h-6" />
-                  Current Medications
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Current medication regimen
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-gray-700">Current Medications</Label>
-                  <div className="overflow-x-auto">
-                    <table className="w-full table-auto border-collapse">
-                      <thead>
-                        <tr className="text-left">
-                          <th className="p-2 border-b">Medication</th>
-                          <th className="p-2 border-b">Dosage / Strength</th>
-                          <th className="p-2 border-b">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {form.medications && form.medications.map((med, idx) => (
-                          <tr key={idx} className="align-top">
-                            <td className="p-2 border-b">
-                              <Input value={med.name} onChange={e => setForm(prev => {
-                                const meds = [...(prev.medications || [])];
-                                meds[idx] = { ...meds[idx], name: e.target.value };
-                                return { ...prev, medications: meds };
-                              })} placeholder="Medication name" className="h-10" />
-                            </td>
-                            <td className="p-2 border-b">
-                              <Input value={med.dosage} onChange={e => setForm(prev => {
-                                const meds = [...(prev.medications || [])];
-                                meds[idx] = { ...meds[idx], dosage: e.target.value };
-                                return { ...prev, medications: meds };
-                              })} placeholder="Dosage / e.g. 5 mg twice daily" className="h-10" />
-                            </td>
-                            <td className="p-2 border-b">
-                              <div className="flex gap-2">
-                                <Button type="button" variant="outline" size="sm" onClick={() => setForm(prev => ({
-                                  ...prev,
-                                  medications: [...(prev.medications || []), { name: "", dosage: "" }]
-                                }))}>Add</Button>
-                                <Button type="button" variant="ghost" size="sm" onClick={() => setForm(prev => {
-                                  const meds = [...(prev.medications || [])];
-                                  meds.splice(idx, 1);
-                                  return { ...prev, medications: meds };
-                                })}>Remove</Button>
-                              </div>
-                            </td>
+                  {/* HLA Typing Section */}
+                  <div className="bg-white p-6 rounded-lg border-2 border-blue-200 space-y-6">
+                    <h3 className="text-lg font-semibold text-blue-900">
+                      HLA Typing
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse bg-white rounded-lg shadow-sm">
+                        <thead>
+                          <tr className="bg-blue-600 text-white">
+                            <th className="border border-blue-300 p-4 text-left font-semibold">
+                              Type
+                            </th>
+                            <th className="border border-blue-300 p-4 text-center font-semibold">
+                              HLA-A
+                            </th>
+                            <th className="border border-blue-300 p-4 text-center font-semibold">
+                              HLA-B
+                            </th>
+                            <th className="border border-blue-300 p-4 text-center font-semibold">
+                              HLA-C
+                            </th>
+                            <th className="border border-blue-300 p-4 text-center font-semibold">
+                              HLA-DR
+                            </th>
+                            <th className="border border-blue-300 p-4 text-center font-semibold">
+                              HLA-DP
+                            </th>
+                            <th className="border border-blue-300 p-4 text-center font-semibold">
+                              HLA-DQ
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          <tr className="bg-blue-50">
+                            <td className="border border-gray-200 p-4 font-semibold text-blue-900">
+                              Donor
+                            </td>
+                            {(
+                              [
+                                "hlaA",
+                                "hlaB",
+                                "hlaC",
+                                "hlaDR",
+                                "hlaDP",
+                                "hlaDQ",
+                              ] as (keyof import("../types/transplant").HLA)[]
+                            ).map((key) => (
+                              <td
+                                key={key}
+                                className="border border-gray-200 p-2"
+                              >
+                                <Input
+                                  value={
+                                    form.immunologicalDetails?.hlaTyping
+                                      ?.donor?.[key] || ""
+                                  }
+                                  onChange={(e) =>
+                                    handleHlaChange(
+                                      "donor",
+                                      key,
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder={String(key).replace("hla", "")}
+                                  className="h-10 border-gray-300 focus:border-blue-500 text-center"
+                                />
+                              </td>
+                            ))}
+                          </tr>
+
+                          <tr className="bg-white">
+                            <td className="border border-gray-200 p-4 font-semibold text-gray-900">
+                              Recipient
+                            </td>
+                            {(
+                              [
+                                "hlaA",
+                                "hlaB",
+                                "hlaC",
+                                "hlaDR",
+                                "hlaDP",
+                                "hlaDQ",
+                              ] as (keyof import("../types/transplant").HLA)[]
+                            ).map((key) => (
+                              <td
+                                key={key}
+                                className="border border-gray-200 p-2"
+                              >
+                                <Input
+                                  value={
+                                    form.immunologicalDetails?.hlaTyping
+                                      ?.recipient?.[key] || ""
+                                  }
+                                  onChange={(e) =>
+                                    handleHlaChange(
+                                      "recipient",
+                                      key,
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder={String(key).replace("hla", "")}
+                                  className="h-10 border-gray-300 focus:border-blue-500 text-center"
+                                />
+                              </td>
+                            ))}
+                          </tr>
+
+                          <tr className="bg-blue-50">
+                            <td className="border border-gray-200 p-4 font-semibold text-blue-900">
+                              Conclusion
+                            </td>
+                            {(
+                              [
+                                "hlaA",
+                                "hlaB",
+                                "hlaC",
+                                "hlaDR",
+                                "hlaDP",
+                                "hlaDQ",
+                              ] as (keyof import("../types/transplant").HLA)[]
+                            ).map((key) => (
+                              <td
+                                key={key}
+                                className="border border-gray-200 p-2"
+                              >
+                                <Input
+                                  value={
+                                    form.immunologicalDetails?.hlaTyping
+                                      ?.conclusion?.[key] || ""
+                                  }
+                                  onChange={(e) =>
+                                    handleHlaChange(
+                                      "conclusion",
+                                      key,
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder={String(key).replace("hla", "")}
+                                  className="h-10 border-gray-300 focus:border-blue-500 text-center"
+                                />
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* PRA Section */}
+                  <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
+                    <h3 className="text-lg font-semibold text-blue-900">
+                      PRA (Panel Reactive Antibodies)
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label
+                          htmlFor="praPre"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Pre (%)
+                        </Label>
+                        <Input
+                          id="praPre"
+                          value={form.immunologicalDetails?.praPre || ""}
+                          onChange={(e) =>
+                            handleImmunoField("praPre", e.target.value)
+                          }
+                          placeholder="Pre PRA percentage"
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <Label
+                          htmlFor="praPost"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Post (%)
+                        </Label>
+                        <Input
+                          id="praPost"
+                          value={form.immunologicalDetails?.praPost || ""}
+                          onChange={(e) =>
+                            handleImmunoField("praPost", e.target.value)
+                          }
+                          placeholder="Post PRA percentage"
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DSA and Immunological Risk */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="dsa"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        DSA (Donor Specific Antibodies)
+                      </Label>
+                      <Input
+                        id="dsa"
+                        value={form.immunologicalDetails?.dsa || ""}
+                        onChange={(e) =>
+                          handleImmunoField("dsa", e.target.value)
+                        }
+                        placeholder="DSA details"
+                        className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="immunologicalRisk"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Immunological Risk
+                      </Label>
+                      <RadioGroup
+                        value={
+                          form.immunologicalDetails?.immunologicalRisk || ""
+                        }
+                        onValueChange={(value) =>
+                          handleImmunoField("immunologicalRisk", value)
+                        }
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="low" id="kt-low" />
+                          <Label
+                            htmlFor="kt-low"
+                            className="text-sm text-gray-700 cursor-pointer"
+                          >
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Low
+                            </span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="average" id="kt-average" />
+                          <Label
+                            htmlFor="kt-average"
+                            className="text-sm text-gray-700 cursor-pointer"
+                          >
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Average
+                            </span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="high" id="kt-high" />
+                          <Label
+                            htmlFor="kt-high"
+                            className="text-sm text-gray-700 cursor-pointer"
+                          >
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              High
+                            </span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 6: Immunosuppression */}
+            {step === 6 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Pill className="w-6 h-6" />
+                    Immunosuppression Therapy
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Immunosuppressive therapy details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Pre KT
+                      </Label>
+                      <select
+                        value={form.preKT}
+                        onChange={(e) => handleChange("preKT", e.target.value)}
+                        className="w-full h-12 px-3 border-2 border-gray-200 rounded-lg"
+                      >
+                        <option value="">Select</option>
+                        <option value="TPE">TPE</option>
+                        <option value="IVIG">IVIG</option>
+                        <option value="None">None</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Induction Therapy
+                      </Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="indBasilix"
+                            className="accent-blue-600 border-2 border-blue-300"
+                            checked={
+                              Array.isArray(form.inductionTherapy)
+                                ? form.inductionTherapy.includes("Basiliximab")
+                                : false
+                            }
+                            onChange={(e) =>
+                              toggleInduction("Basiliximab", e.target.checked)
+                            }
+                          />
+                          <Label htmlFor="indBasilix" className="text-gray-700">
+                            Basiliximab
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="indATG"
+                            className="accent-blue-600 border-2 border-blue-300"
+                            checked={
+                              Array.isArray(form.inductionTherapy)
+                                ? form.inductionTherapy.includes("ATG")
+                                : false
+                            }
+                            onChange={(e) =>
+                              toggleInduction("ATG", e.target.checked)
+                            }
+                          />
+                          <Label htmlFor="indATG" className="text-gray-700">
+                            ATG
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="indMethyl"
+                            className="accent-blue-600 border-2 border-blue-300"
+                            checked={
+                              Array.isArray(form.inductionTherapy)
+                                ? form.inductionTherapy.includes(
+                                    "Methylprednisolone"
+                                  )
+                                : false
+                            }
+                            onChange={(e) =>
+                              toggleInduction(
+                                "Methylprednisolone",
+                                e.target.checked
+                              )
+                            }
+                          />
+                          <Label htmlFor="indMethyl" className="text-gray-700">
+                            Methylprednisolone
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Maintenance
+                    </Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="maintPred"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.maintenancePred}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              maintenancePred: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="maintPred" className="text-gray-700">
+                          Pred
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="maintMMF"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.maintenanceMMF}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              maintenanceMMF: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="maintMMF" className="text-gray-700">
+                          MMF
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="maintTac"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.maintenanceTac}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              maintenanceTac: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="maintTac" className="text-gray-700">
+                          Tac
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="maintEve"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.maintenanceEverolimus}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              maintenanceEverolimus: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="maintEve" className="text-gray-700">
+                          Everolimus
+                        </Label>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Other (specify)
+                      </Label>
+                      <Input
+                        value={
+                          form.maintenanceOtherText || form.maintenanceOther
+                        }
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            maintenanceOtherText: e.target.value,
+                            maintenanceOther: e.target.value,
+                          }))
+                        }
+                        placeholder="Other maintenance therapy"
+                        className="h-12 border-2 border-gray-200 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 7: Prophylaxis */}
+            {step === 7 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Pill className="w-6 h-6" />
+                    Prophylaxis
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Preventive medication and treatment
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="cotrimoxazole"
+                            checked={!!form.cotrimoxazoleYes}
+                            onCheckedChange={(checked) =>
+                              setForm((prev) => ({
+                                ...prev,
+                                cotrimoxazoleYes: !!checked,
+                              }))
+                            }
+                            className="border-2 border-blue-300"
+                          />
+                          <Label
+                            htmlFor="cotrimoxazole"
+                            className="text-gray-700 font-medium"
+                          >
+                            Cotrimoxazole
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Input
+                            id="cotriDuration"
+                            value={form.cotriDuration}
+                            onChange={(e) =>
+                              handleChange("cotriDuration", e.target.value)
+                            }
+                            placeholder="Duration (e.g., 6 months)"
+                            className="h-10 border-2 border-gray-200 rounded-lg"
+                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-10 px-3 border-2 border-gray-200"
+                              >
+                                <CalendarIcon className="h-4 w-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={isoStringToDate(form.cotriStopped)}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    handleChange(
+                                      "cotriStopped",
+                                      toLocalISO(date)
+                                    );
+                                  }
+                                }}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="valganciclovir"
+                            checked={!!form.valganciclovirYes}
+                            onCheckedChange={(checked) =>
+                              setForm((prev) => ({
+                                ...prev,
+                                valganciclovirYes: !!checked,
+                              }))
+                            }
+                            className="border-2 border-blue-300"
+                          />
+                          <Label
+                            htmlFor="valganciclovir"
+                            className="text-gray-700 font-medium"
+                          >
+                            Valganciclovir
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Input
+                            id="valganDuration"
+                            value={form.valganDuration}
+                            onChange={(e) =>
+                              handleChange("valganDuration", e.target.value)
+                            }
+                            placeholder="Duration"
+                            className="h-10 border-2 border-gray-200 rounded-lg"
+                          />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-10 px-3 border-2 border-gray-200"
+                              >
+                                <CalendarIcon className="h-4 w-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={isoStringToDate(form.valganStopped)}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    handleChange(
+                                      "valganStopped",
+                                      toLocalISO(date)
+                                    );
+                                  }
+                                }}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Vaccination
+                    </Label>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="vCOVID"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.vaccinationCOVID}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              vaccinationCOVID: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="vCOVID" className="text-gray-700">
+                          COVID
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="vInfluenza"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.vaccinationInfluenza}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              vaccinationInfluenza: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="vInfluenza" className="text-gray-700">
+                          Influenza
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="vPneumo"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.vaccinationPneumococcal}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              vaccinationPneumococcal: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="vPneumo" className="text-gray-700">
+                          Pneumococcal
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          id="vVaricella"
+                          type="checkbox"
+                          className="accent-blue-600 border-2 border-blue-300"
+                          checked={!!form.vaccinationVaricella}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              vaccinationVaricella: e.target.checked,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="vVaricella" className="text-gray-700">
+                          Varicella
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 8: Pre-op */}
+            {step === 8 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Activity className="w-6 h-6" />
+                    Pre-Operative Details
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Pre-surgical assessment and preparation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="preOpStatus"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      Pre-operative Status
+                    </Label>
+                    <Textarea
+                      id="preOpStatus"
+                      value={form.preOpStatus}
+                      onChange={(e) =>
+                        handleChange("preOpStatus", e.target.value)
+                      }
+                      placeholder="Pre-operative status"
+                      rows={3}
+                      className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="preOpPreparation"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      Pre-operative Preparation
+                    </Label>
+                    <Textarea
+                      id="preOpPreparation"
+                      value={form.preOpPreparation}
+                      onChange={(e) =>
+                        handleChange("preOpPreparation", e.target.value)
+                      }
+                      placeholder="Pre-operative preparation"
+                      rows={3}
+                      className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="surgicalNotes"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      Surgical Notes
+                    </Label>
+                    <Textarea
+                      id="surgicalNotes"
+                      value={form.surgicalNotes}
+                      onChange={(e) =>
+                        handleChange("surgicalNotes", e.target.value)
+                      }
+                      placeholder="Surgical notes"
+                      rows={4}
+                      className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 9: Immediate Post KT */}
+            {step === 9 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <FileText className="w-6 h-6" />
+                    Immediate Post-Transplant Details
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Within the first week after transplantation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="preKTCreatinine"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Pre-transplant Creatinine
+                      </Label>
+                      <Input
+                        id="preKTCreatinine"
+                        value={form.preKTCreatinine}
+                        onChange={(e) =>
+                          handleChange("preKTCreatinine", e.target.value)
+                        }
+                        placeholder="Pre-transplant creatinine"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="postKTCreatinine"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Post-transplant Creatinine at Discharge
+                      </Label>
+                      <Input
+                        id="postKTCreatinine"
+                        value={form.postKTCreatinine}
+                        onChange={(e) =>
+                          handleChange("postKTCreatinine", e.target.value)
+                        }
+                        placeholder="Post-transplant creatinine"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="delayedGraft"
+                          checked={!!form.delayedGraftYes}
+                          onCheckedChange={(checked) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              delayedGraftYes: !!checked,
+                            }))
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label
+                          htmlFor="delayedGraft"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Delayed Graft Function
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="postKTDialysis"
+                          checked={!!form.postKTDialysisYes}
+                          onCheckedChange={(checked) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              postKTDialysisYes: !!checked,
+                            }))
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label
+                          htmlFor="postKTDialysis"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Post-transplant Dialysis Required
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="acuteRejection"
+                          checked={!!form.acuteRejectionYes}
+                          onCheckedChange={(checked) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              acuteRejectionYes: !!checked,
+                            }))
+                          }
+                          className="border-2 border-blue-300"
+                        />
+                        <Label
+                          htmlFor="acuteRejection"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Acute Rejection
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="acuteRejectionDetails"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Acute Rejection Details
+                      </Label>
+                      <Input
+                        id="acuteRejectionDetails"
+                        value={form.acuteRejectionDetails}
+                        onChange={(e) =>
+                          handleChange("acuteRejectionDetails", e.target.value)
+                        }
+                        placeholder="Acute rejection details"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="otherComplications"
+                      className="text-sm font-semibold text-gray-700"
+                    >
+                      Other Complications
+                    </Label>
+                    <Textarea
+                      id="otherComplications"
+                      value={form.otherComplications}
+                      onChange={(e) =>
+                        handleChange("otherComplications", e.target.value)
+                      }
+                      placeholder="Other complications"
+                      rows={3}
+                      className="border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 10: Surgery Complications */}
+            {step === 10 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <FileText className="w-6 h-6" />
+                    Surgery Complications
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    List any post-transplant surgical complications
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="postKTComp1"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Complication 1
+                      </Label>
+                      <Input
+                        id="postKTComp1"
+                        value={form.postKTComp1}
+                        onChange={(e) =>
+                          handleChange("postKTComp1", e.target.value)
+                        }
+                        placeholder="First complication"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="postKTComp2"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Complication 2
+                      </Label>
+                      <Input
+                        id="postKTComp2"
+                        value={form.postKTComp2}
+                        onChange={(e) =>
+                          handleChange("postKTComp2", e.target.value)
+                        }
+                        placeholder="Second complication"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="postKTComp3"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Complication 3
+                      </Label>
+                      <Input
+                        id="postKTComp3"
+                        value={form.postKTComp3}
+                        onChange={(e) =>
+                          handleChange("postKTComp3", e.target.value)
+                        }
+                        placeholder="Third complication"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="postKTComp4"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Complication 4
+                      </Label>
+                      <Input
+                        id="postKTComp4"
+                        value={form.postKTComp4}
+                        onChange={(e) =>
+                          handleChange("postKTComp4", e.target.value)
+                        }
+                        placeholder="Fourth complication"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="postKTComp5"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Complication 5
+                      </Label>
+                      <Input
+                        id="postKTComp5"
+                        value={form.postKTComp5}
+                        onChange={(e) =>
+                          handleChange("postKTComp5", e.target.value)
+                        }
+                        placeholder="Fifth complication"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="postKTComp6"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Complication 6
+                      </Label>
+                      <Input
+                        id="postKTComp6"
+                        value={form.postKTComp6}
+                        onChange={(e) =>
+                          handleChange("postKTComp6", e.target.value)
+                        }
+                        placeholder="Sixth complication"
+                        className="h-12 border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 11: Medication */}
+            {step === 11 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <Pill className="w-6 h-6" />
+                    Current Medications
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Current medication regimen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Current Medications
+                    </Label>
+                    <div className="overflow-x-auto">
+                      <table className="w-full table-auto border-collapse">
+                        <thead>
+                          <tr className="text-left">
+                            <th className="p-2 border-b">Medication</th>
+                            <th className="p-2 border-b">Dosage / Strength</th>
+                            <th className="p-2 border-b">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {form.medications &&
+                            form.medications.map((med, idx) => (
+                              <tr key={idx} className="align-top">
+                                <td className="p-2 border-b">
+                                  <Input
+                                    value={med.name}
+                                    onChange={(e) =>
+                                      setForm((prev) => {
+                                        const meds = [
+                                          ...(prev.medications || []),
+                                        ];
+                                        meds[idx] = {
+                                          ...meds[idx],
+                                          name: e.target.value,
+                                        };
+                                        return { ...prev, medications: meds };
+                                      })
+                                    }
+                                    placeholder="Medication name"
+                                    className="h-10"
+                                  />
+                                </td>
+                                <td className="p-2 border-b">
+                                  <Input
+                                    value={med.dosage}
+                                    onChange={(e) =>
+                                      setForm((prev) => {
+                                        const meds = [
+                                          ...(prev.medications || []),
+                                        ];
+                                        meds[idx] = {
+                                          ...meds[idx],
+                                          dosage: e.target.value,
+                                        };
+                                        return { ...prev, medications: meds };
+                                      })
+                                    }
+                                    placeholder="Dosage / e.g. 5 mg twice daily"
+                                    className="h-10"
+                                  />
+                                </td>
+                                <td className="p-2 border-b">
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          medications: [
+                                            ...(prev.medications || []),
+                                            { name: "", dosage: "" },
+                                          ],
+                                        }))
+                                      }
+                                    >
+                                      Add
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setForm((prev) => {
+                                          const meds = [
+                                            ...(prev.medications || []),
+                                          ];
+                                          meds.splice(idx, 1);
+                                          return { ...prev, medications: meds };
+                                        })
+                                      }
+                                    >
+                                      Remove
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div>
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            medications: [
+                              ...(prev.medications || []),
+                              { name: "", dosage: "" },
+                            ],
+                          }))
+                        }
+                        className="mt-3"
+                      >
+                        Add Medication
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 12: Confirmation */}
+            {step === 12 && (
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <UserCheck className="w-6 h-6" />
+                    Final Confirmation
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 dark:text-blue-200">
+                    Review and confirm all assessment details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 space-y-8">
+                  <div className="space-y-3">
+                    <Label
+                      htmlFor="filledBy"
+                      className="text-sm font-semibold text-gray-700 flex items-center"
+                    >
+                      Assessment Completed By{" "}
+                      <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input
+                      id="filledBy"
+                      value={form.filledBy}
+                      onChange={(e) => handleChange("filledBy", e.target.value)}
+                      placeholder="Enter your name or staff ID"
+                      className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                      required
+                    />
+                  </div>
+
+                  <div className="bg-white p-4 rounded-lg border border-blue-200 space-y-3">
+                    <h4 className="font-semibold text-gray-800 mb-2">
+                      Consent and Confirmation
+                    </h4>
+                    <div className="space-y-2">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <Checkbox
+                          id="kt-confirm-accurate"
+                          checked={ktConfirmAccurate}
+                          onCheckedChange={(checked: boolean) =>
+                            setKtConfirmAccurate(!!checked)
+                          }
+                          className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        />
+                        <span className="text-sm text-slate-700 leading-relaxed">
+                          I confirm that all information provided in this
+                          surgery assessment is accurate and complete to the
+                          best of my knowledge.
+                        </span>
+                      </label>
+
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <Checkbox
+                          id="kt-consent-processing"
+                          checked={ktConsentProcessing}
+                          onCheckedChange={(checked: boolean) =>
+                            setKtConsentProcessing(!!checked)
+                          }
+                          className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        />
+                        <span className="text-sm text-slate-700 leading-relaxed">
+                          I consent to the processing of this information for
+                          clinical care, transplant evaluation and quality
+                          improvement purposes.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recommendations removed per request */}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between items-center pt-8 pb-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={step === 0}
+                className="px-8 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+
+              <div className="flex gap-4">
+                {step < FORM_STEPS.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                  >
+                    Next Step
+                    <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center gap-2"
+                    disabled={!form.filledBy || isSubmitting}
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSubmitting ? "Saving..." : "Save All Details"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </form>
+          {/* Details Dialog for saved surgery or current form */}
+          <Dialog
+            open={viewDetails}
+            onOpenChange={(open) => {
+              if (!open) setViewDetails(false);
+            }}
+          >
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">
+                  KT Surgery Details
+                </DialogTitle>
+                <DialogDescription className="text-sm">
+                  {(savedRecord || form)?.ktDate || ""}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <Label className="text-muted-foreground text-xs sm:text-sm">
+                      Patient
+                    </Label>
+                    <p className="font-medium text-sm sm:text-base">
+                      {(savedRecord || form)?.name || "—"}
+                    </p>
                   </div>
                   <div>
-                    <Button type="button" onClick={() => setForm(prev => ({ ...prev, medications: [...(prev.medications || []), { name: "", dosage: "" }] }))} className="mt-3">Add Medication</Button>
+                    <Label className="text-muted-foreground text-xs sm:text-sm">
+                      Date of KT
+                    </Label>
+                    <p className="font-medium text-sm sm:text-base">
+                      {(savedRecord || form)?.ktDate || "—"}
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 12: Confirmation */}
-          {step === 12 && (
-            <Card className="shadow-lg border-0 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <UserCheck className="w-6 h-6" />
-                  Final Confirmation
-                </CardTitle>
-                <CardDescription className="text-blue-100 dark:text-blue-200">
-                  Review and confirm all assessment details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="space-y-3">
-                  <Label htmlFor="filledBy" className="text-sm font-semibold text-gray-700 flex items-center">
-                    Assessment Completed By <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <Input
-                    id="filledBy"
-                    value={form.filledBy}
-                    onChange={e => handleChange("filledBy", e.target.value)}
-                    placeholder="Enter your name or staff ID"
-                    className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
-                    required
-                  />
-                </div>
-                
-                <div className="bg-white p-4 rounded-lg border border-blue-200 space-y-3">
-                  <h4 className="font-semibold text-gray-800 mb-2">Consent and Confirmation</h4>
-                  <div className="space-y-2">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <Checkbox
-                        id="kt-confirm-accurate"
-                        checked={ktConfirmAccurate}
-                        onCheckedChange={(checked: boolean) => setKtConfirmAccurate(!!checked)}
-                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <span className="text-sm text-slate-700 leading-relaxed">
-                        I confirm that all information provided in this surgery assessment is accurate and complete to the best of my knowledge.
-                      </span>
-                    </label>
-
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <Checkbox
-                        id="kt-consent-processing"
-                        checked={ktConsentProcessing}
-                        onCheckedChange={(checked: boolean) => setKtConsentProcessing(!!checked)}
-                        className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                      />
-                      <span className="text-sm text-slate-700 leading-relaxed">
-                        I consent to the processing of this information for clinical care, transplant evaluation and quality improvement purposes.
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Recommendations removed per request */}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between items-center pt-8 pb-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={prevStep}
-              disabled={step === 0}
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
-            </Button>
-
-            <div className="flex gap-4">
-              {step < FORM_STEPS.length - 1 ? (
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                >
-                  Next Step
-                  <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-                </Button>
-              ) : (
-                <Button 
-                  type="submit" 
-                  className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center gap-2"
-                  disabled={!form.filledBy || isSubmitting}
-                >
-                  <Save className="w-4 h-4" />
-                  {isSubmitting ? "Saving..." : "Save All Details"}
-                </Button>
-              )}
-            </div>
-          </div>
-        </form>
-        {/* Details Dialog for saved surgery or current form */}
-        <Dialog open={viewDetails} onOpenChange={(open) => { if (!open) setViewDetails(false); }}>
-          <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-lg sm:text-xl">KT Surgery Details</DialogTitle>
-              <DialogDescription className="text-sm">{(savedRecord || form)?.ktDate || ''}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <Label className="text-muted-foreground text-xs sm:text-sm">Patient</Label>
-                  <p className="font-medium text-sm sm:text-base">{(savedRecord || form)?.name || '—'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs sm:text-sm">Date of KT</Label>
-                  <p className="font-medium text-sm sm:text-base">{(savedRecord || form)?.ktDate || '—'}</p>
-                </div>
+                <div>{renderPayload(savedRecord || form)}</div>
               </div>
-              <div>
-                {renderPayload(savedRecord || form)}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-    </div>
     </div>
   );
 };

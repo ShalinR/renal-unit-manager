@@ -1,15 +1,44 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Printer, TrendingUp, X, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { usePatientContext } from '@/context/PatientContext';
-import { useToast } from '@/hooks/use-toast';
-import { getHemodialysisRecordsByPatientId } from '@/services/hemodialysisApi';
-import { formatDateToDDMMYYYY, toLocalISO } from '@/lib/dateUtils';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { isoStringToDate } from '@/lib/dateUtils';
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  ArrowLeft,
+  Printer,
+  TrendingUp,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Calendar as CalendarIcon,
+} from "lucide-react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { usePatientContext } from "@/context/PatientContext";
+import { useToast } from "@/hooks/use-toast";
+import { getHemodialysisRecordsByPatientId } from "@/services/hemodialysisApi";
+import { formatDateToDDMMYYYY, toLocalISO } from "@/lib/dateUtils";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { isoStringToDate } from "@/lib/dateUtils";
 
 interface HDSummaryProps {
   onBack: () => void;
@@ -22,8 +51,8 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [chartsExpanded, setChartsExpanded] = useState(false);
 
   // Load HD records for patient
@@ -39,16 +68,20 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
       setRecords(data || []);
       if (data?.length > 0) {
         const latest = new Date(data[data.length - 1].hemoDialysisSessionDate);
-        setEndDate(latest.toISOString().split('T')[0]);
+        setEndDate(latest.toISOString().split("T")[0]);
         const thirtyDaysAgo = new Date(latest);
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
+        setStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
         setSelectedRecord(data[0]);
         prepareChartData(data);
       }
     } catch (err) {
-      console.error('Failed to load records', err);
-      toast({ title: 'Error', description: 'Failed to load treatment records', variant: 'destructive' });
+      console.error("Failed to load records", err);
+      toast({
+        title: "Error",
+        description: "Failed to load treatment records",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -57,7 +90,7 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
   // Filter records by date range
   const filteredRecords = useMemo(() => {
     if (!startDate || !endDate) return records;
-    return records.filter(r => {
+    return records.filter((r) => {
       const recordDate = r.hemoDialysisSessionDate;
       return recordDate >= startDate && recordDate <= endDate;
     });
@@ -65,7 +98,11 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
 
   const prepareChartData = (data: any[]) => {
     // Sort by date and prepare chart data
-    const sorted = [...data].sort((a, b) => new Date(a.hemoDialysisSessionDate || 0).getTime() - new Date(b.hemoDialysisSessionDate || 0).getTime());
+    const sorted = [...data].sort(
+      (a, b) =>
+        new Date(a.hemoDialysisSessionDate || 0).getTime() -
+        new Date(b.hemoDialysisSessionDate || 0).getTime()
+    );
     const chartData = sorted.map((record, idx) => {
       // Derive per-session averages from 4 hourly mini sessions
       let arterialAvg: number | undefined;
@@ -74,21 +111,34 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
       if (record.session?.hourlyRecords?.length) {
         const arterialVals = record.session.hourlyRecords
           .map((hr: any) => hr.arterialPressureMmHg ?? hr.arterialPressure)
-          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+          .filter((v: any) => typeof v === "number" && !isNaN(v));
         const venousVals = record.session.hourlyRecords
           .map((hr: any) => hr.venousPressureMmHg ?? hr.venousPressure)
-          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+          .filter((v: any) => typeof v === "number" && !isNaN(v));
         const flowVals = record.session.hourlyRecords
           .map((hr: any) => hr.bloodFlowRateMlPerMin ?? hr.bloodFlowRate)
-          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+          .filter((v: any) => typeof v === "number" && !isNaN(v));
         if (arterialVals.length > 0) {
-          arterialAvg = parseFloat((arterialVals.reduce((a: number,b: number)=>a+b,0) / 4).toFixed(1));
+          arterialAvg = parseFloat(
+            (
+              arterialVals.reduce((a: number, b: number) => a + b, 0) / 4
+            ).toFixed(1)
+          );
         }
         if (venousVals.length > 0) {
-          venousAvg = parseFloat((venousVals.reduce((a: number,b: number)=>a+b,0) / 4).toFixed(1));
+          venousAvg = parseFloat(
+            (venousVals.reduce((a: number, b: number) => a + b, 0) / 4).toFixed(
+              1
+            )
+          );
         }
         if (flowVals.length > 0) {
-          flowAvg = parseFloat((flowVals.reduce((a: number,b: number)=>a+b,0) / flowVals.length).toFixed(1));
+          flowAvg = parseFloat(
+            (
+              flowVals.reduce((a: number, b: number) => a + b, 0) /
+              flowVals.length
+            ).toFixed(1)
+          );
         }
       }
       // Fallback to root-level if no hourly data
@@ -101,8 +151,12 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
       // Fallback flow (no root-level defined currently; keep undefined if absent)
 
       return {
-        date: record.hemoDialysisSessionDate ? formatDateToDDMMYYYY(record.hemoDialysisSessionDate) : `Session ${idx + 1}`,
-        bloodPressure: record.bloodPressure ? parseFloat(record.bloodPressure.split('/')[0]) : 0,
+        date: record.hemoDialysisSessionDate
+          ? formatDateToDDMMYYYY(record.hemoDialysisSessionDate)
+          : `Session ${idx + 1}`,
+        bloodPressure: record.bloodPressure
+          ? parseFloat(record.bloodPressure.split("/")[0])
+          : 0,
         arterialPressure: arterialAvg ?? 0,
         venousPressure: venousAvg ?? 0,
         bloodFlowRate: flowAvg ?? 0,
@@ -115,8 +169,8 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
   // Listen for new HD records added elsewhere (e.g., HDSessionForm) to refresh analytics
   useEffect(() => {
     const handler = () => loadRecords();
-    window.addEventListener('hd-record-added', handler);
-    return () => window.removeEventListener('hd-record-added', handler);
+    window.addEventListener("hd-record-added", handler);
+    return () => window.removeEventListener("hd-record-added", handler);
   }, []);
 
   const calculateStatistics = (data: any[]) => {
@@ -125,15 +179,17 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
     // Blood pressure (systolic/diastolic) unchanged logic
     const systolics: number[] = [];
     const diastolics: number[] = [];
-    data.forEach(r => {
+    data.forEach((r) => {
       if (r.bloodPressure && /\d+\/\d+/.test(r.bloodPressure)) {
-        const [sysStr, diaStr] = r.bloodPressure.split('/');
+        const [sysStr, diaStr] = r.bloodPressure.split("/");
         const sys = parseFloat(sysStr);
         const dia = parseFloat(diaStr);
         if (sys) systolics.push(sys);
         if (dia) diastolics.push(dia);
       } else if (r.session?.hourlyRecords?.length) {
-        const firstWithBP = r.session.hourlyRecords.find((hr: any) => hr.systolic && hr.diastolic);
+        const firstWithBP = r.session.hourlyRecords.find(
+          (hr: any) => hr.systolic && hr.diastolic
+        );
         if (firstWithBP) {
           systolics.push(firstWithBP.systolic);
           diastolics.push(firstWithBP.diastolic);
@@ -145,39 +201,55 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
     const perSessionArterial: number[] = [];
     const perSessionVenous: number[] = [];
     const perSessionFlow: number[] = [];
-    data.forEach(r => {
+    data.forEach((r) => {
       if (r.session?.hourlyRecords?.length) {
         const arterialVals = r.session.hourlyRecords
           .map((hr: any) => hr.arterialPressureMmHg ?? hr.arterialPressure)
-          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+          .filter((v: any) => typeof v === "number" && !isNaN(v));
         const venousVals = r.session.hourlyRecords
           .map((hr: any) => hr.venousPressureMmHg ?? hr.venousPressure)
-          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+          .filter((v: any) => typeof v === "number" && !isNaN(v));
         const flowVals = r.session.hourlyRecords
           .map((hr: any) => hr.bloodFlowRateMlPerMin ?? hr.bloodFlowRate)
-          .filter((v: any) => typeof v === 'number' && !isNaN(v));
+          .filter((v: any) => typeof v === "number" && !isNaN(v));
         if (arterialVals.length === 4) {
-          perSessionArterial.push(arterialVals.reduce((a:number,b:number)=>a+b,0)/4);
+          perSessionArterial.push(
+            arterialVals.reduce((a: number, b: number) => a + b, 0) / 4
+          );
         } else if (arterialVals.length > 0) {
           // partial data: average available values
-          perSessionArterial.push(arterialVals.reduce((a:number,b:number)=>a+b,0)/arterialVals.length);
+          perSessionArterial.push(
+            arterialVals.reduce((a: number, b: number) => a + b, 0) /
+              arterialVals.length
+          );
         }
         if (venousVals.length === 4) {
-          perSessionVenous.push(venousVals.reduce((a:number,b:number)=>a+b,0)/4);
+          perSessionVenous.push(
+            venousVals.reduce((a: number, b: number) => a + b, 0) / 4
+          );
         } else if (venousVals.length > 0) {
-          perSessionVenous.push(venousVals.reduce((a:number,b:number)=>a+b,0)/venousVals.length);
+          perSessionVenous.push(
+            venousVals.reduce((a: number, b: number) => a + b, 0) /
+              venousVals.length
+          );
         }
         if (flowVals.length > 0) {
-          perSessionFlow.push(flowVals.reduce((a:number,b:number)=>a+b,0)/flowVals.length);
+          perSessionFlow.push(
+            flowVals.reduce((a: number, b: number) => a + b, 0) /
+              flowVals.length
+          );
         }
       } else {
         // Fallback to root-level if no hourly detail
-        if (r.arterialPressure) perSessionArterial.push(parseFloat(r.arterialPressure));
-        if (r.venousPressure) perSessionVenous.push(parseFloat(r.venousPressure));
+        if (r.arterialPressure)
+          perSessionArterial.push(parseFloat(r.arterialPressure));
+        if (r.venousPressure)
+          perSessionVenous.push(parseFloat(r.venousPressure));
       }
     });
 
-    const avg = (arr: number[]) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : undefined;
+    const avg = (arr: number[]) =>
+      arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : undefined;
     const avgSys = avg(systolics);
     const avgDia = avg(diastolics);
     const avgArt = avg(perSessionArterial);
@@ -186,21 +258,26 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
 
     return {
       totalSessions: data.length,
-      avgBloodPressure: avgSys && avgDia ? `${avgSys.toFixed(0)}/${avgDia.toFixed(0)}` : 'N/A',
-      avgArterialPressure: avgArt !== undefined ? avgArt.toFixed(1) : 'N/A',
-      avgVenousPressure: avgVen !== undefined ? avgVen.toFixed(1) : 'N/A',
-      avgBloodFlowRate: avgFlow !== undefined ? avgFlow.toFixed(1) : 'N/A',
+      avgBloodPressure:
+        avgSys && avgDia ? `${avgSys.toFixed(0)}/${avgDia.toFixed(0)}` : "N/A",
+      avgArterialPressure: avgArt !== undefined ? avgArt.toFixed(1) : "N/A",
+      avgVenousPressure: avgVen !== undefined ? avgVen.toFixed(1) : "N/A",
+      avgBloodFlowRate: avgFlow !== undefined ? avgFlow.toFixed(1) : "N/A",
     };
   };
 
   const generateFullReport = () => {
     if (filteredRecords.length === 0) {
-      toast({ title: 'No data', description: 'No sessions in selected date range', variant: 'destructive' });
+      toast({
+        title: "No data",
+        description: "No sessions in selected date range",
+        variant: "destructive",
+      });
       return;
     }
-    const printWindow = window.open('', '', 'width=900,height=700');
+    const printWindow = window.open("", "", "width=900,height=700");
     if (!printWindow) return;
-    
+
     const stats = calculateStatistics(filteredRecords);
     const reportHTML = `
       <!DOCTYPE html>
@@ -238,17 +315,17 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
             <p>Full Session Report</p>
           </div>
           
-          <div class="date-range">Report Period: ${startDate || 'N/A'} to ${endDate || 'N/A'} | Generated: ${formatDateToDDMMYYYY(new Date().toISOString())} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+          <div class="date-range">Report Period: ${startDate || "N/A"} to ${endDate || "N/A"} | Generated: ${formatDateToDDMMYYYY(new Date().toISOString())} ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</div>
           
           <div class="section">
             <h2>Patient Information</h2>
             <div class="patient-info">
-              <div><label>Full Name</label><span>${patient?.name || 'N/A'}</span></div>
-              <div><label>PHN</label><span>${patient?.phn || 'N/A'}</span></div>
-              <div><label>Age</label><span>${patient?.age || 'N/A'}</span></div>
-              <div><label>Gender</label><span>${(patient?.gender || 'N/A').charAt(0).toUpperCase() + (patient?.gender || 'N/A').slice(1)}</span></div>
-              <div><label>Contact</label><span>${patient?.contact || 'N/A'}</span></div>
-              <div><label>Address</label><span>${patient?.address || 'N/A'}</span></div>
+              <div><label>Full Name</label><span>${patient?.name || "N/A"}</span></div>
+              <div><label>PHN</label><span>${patient?.phn || "N/A"}</span></div>
+              <div><label>Age</label><span>${patient?.age || "N/A"}</span></div>
+              <div><label>Gender</label><span>${(patient?.gender || "N/A").charAt(0).toUpperCase() + (patient?.gender || "N/A").slice(1)}</span></div>
+              <div><label>Contact</label><span>${patient?.contact || "N/A"}</span></div>
+              <div><label>Address</label><span>${patient?.address || "N/A"}</span></div>
             </div>
           </div>
 
@@ -288,16 +365,20 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                 </tr>
               </thead>
               <tbody>
-                ${filteredRecords.map(r => `
+                ${filteredRecords
+                  .map(
+                    (r) => `
                   <tr>
-                    <td>${r.hemoDialysisSessionDate || 'N/A'}</td>
-                    <td>${r.bloodPressure || 'N/A'}</td>
-                    <td>${r.arterialPressure || 'N/A'}</td>
-                    <td>${r.venousPressure || 'N/A'}</td>
-                    <td>${r.sessionTime || 'N/A'}</td>
-                    <td>${(r.otherNotes || 'N/A').substring(0, 30)}</td>
+                    <td>${r.hemoDialysisSessionDate || "N/A"}</td>
+                    <td>${r.bloodPressure || "N/A"}</td>
+                    <td>${r.arterialPressure || "N/A"}</td>
+                    <td>${r.venousPressure || "N/A"}</td>
+                    <td>${r.sessionTime || "N/A"}</td>
+                    <td>${(r.otherNotes || "N/A").substring(0, 30)}</td>
                   </tr>
-                `).join('')}
+                `
+                  )
+                  .join("")}
               </tbody>
             </table>
           </div>
@@ -319,7 +400,10 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
 
   const getSelectedRecord = () => {
     if (!selectedRecord) return null;
-    return filteredRecords.find(r => r.id === selectedRecord) || filteredRecords.find(r => r.hemoDialysisSessionDate === selectedRecord);
+    return (
+      filteredRecords.find((r) => r.id === selectedRecord) ||
+      filteredRecords.find((r) => r.hemoDialysisSessionDate === selectedRecord)
+    );
   };
 
   if (!patient?.phn) {
@@ -330,10 +414,16 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
             <CardTitle className="text-2xl">Treatment Summary</CardTitle>
           </CardHeader>
           <CardContent className="p-8">
-            <p className="text-gray-600">Please select a patient to view their treatment summary.</p>
+            <p className="text-gray-600">
+              Please select a patient to view their treatment summary.
+            </p>
           </CardContent>
         </Card>
-        <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="flex items-center gap-2"
+        >
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
       </div>
@@ -349,14 +439,21 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
             <div>
               <CardTitle className="text-2xl">Treatment Summary</CardTitle>
               <CardDescription className="text-blue-100">
-                Comprehensive hemodialysis history and analytics for {patient.name}
+                Comprehensive hemodialysis history and analytics for{" "}
+                {patient.name}
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button onClick={generateFullReport} className="bg-white text-blue-600 hover:bg-gray-100">
+              <Button
+                onClick={generateFullReport}
+                className="bg-white text-blue-600 hover:bg-gray-100"
+              >
                 <Printer className="w-4 h-4 mr-2" /> Generate Report
               </Button>
-              <Button onClick={onBack} className="bg-white text-blue-600 hover:bg-blue-50 border border-blue-200">
+              <Button
+                onClick={onBack}
+                className="bg-white text-blue-600 hover:bg-blue-50 border border-blue-200"
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
             </div>
@@ -372,7 +469,9 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className="text-sm font-semibold text-gray-600">Start Date</label>
+              <label className="text-sm font-semibold text-gray-600">
+                Start Date
+              </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -380,7 +479,9 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                     className="w-full mt-2 justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? formatDateToDDMMYYYY(startDate) : 'Select date'}
+                    {startDate
+                      ? formatDateToDDMMYYYY(startDate)
+                      : "Select date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -399,7 +500,9 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
               </Popover>
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-600">End Date</label>
+              <label className="text-sm font-semibold text-gray-600">
+                End Date
+              </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -407,13 +510,13 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                     className="w-full mt-2 justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? formatDateToDDMMYYYY(endDate) : 'Select date'}
+                    {endDate ? formatDateToDDMMYYYY(endDate) : "Select date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={isoStringToDate(endDate || '')}
+                    selected={isoStringToDate(endDate || "")}
                     onSelect={(date) => {
                       if (date) {
                         setEndDate(toLocalISO(date));
@@ -426,11 +529,20 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
               </Popover>
             </div>
             <div className="flex items-end">
-              <Button onClick={() => { setStartDate(''); setEndDate(''); }} className="w-full bg-gray-500 hover:bg-gray-600">Reset</Button>
+              <Button
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="w-full bg-gray-500 hover:bg-gray-600"
+              >
+                Reset
+              </Button>
             </div>
             <div className="flex items-end">
               <div className="text-sm text-gray-600 font-semibold">
-                Sessions in range: <span className="text-blue-600">{filteredRecords.length}</span>
+                Sessions in range:{" "}
+                <span className="text-blue-600">{filteredRecords.length}</span>
               </div>
             </div>
           </div>
@@ -444,7 +556,9 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
       ) : records.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-gray-600">No treatment records found for this patient.</p>
+            <p className="text-gray-600">
+              No treatment records found for this patient.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -480,31 +594,43 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card className="border-l-4 border-l-blue-600">
               <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-blue-600">{stats.totalSessions}</div>
+                <div className="text-3xl font-bold text-blue-600">
+                  {stats.totalSessions}
+                </div>
                 <p className="text-sm text-gray-600">Total Sessions</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-red-500">
               <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-red-500">{stats.avgBloodPressure}</div>
-                <p className="text-sm text-gray-600">Avg Blood Pressure (S/D)</p>
+                <div className="text-3xl font-bold text-red-500">
+                  {stats.avgBloodPressure}
+                </div>
+                <p className="text-sm text-gray-600">
+                  Avg Blood Pressure (S/D)
+                </p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-green-500">
               <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-green-500">{stats.avgArterialPressure} mmHg</div>
+                <div className="text-3xl font-bold text-green-500">
+                  {stats.avgArterialPressure} mmHg
+                </div>
                 <p className="text-sm text-gray-600">Avg Arterial Pressure</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-purple-500">
               <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-purple-500">{stats.avgVenousPressure} mmHg</div>
+                <div className="text-3xl font-bold text-purple-500">
+                  {stats.avgVenousPressure} mmHg
+                </div>
                 <p className="text-sm text-gray-600">Avg Venous Pressure</p>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-yellow-500">
               <CardContent className="pt-6">
-                <div className="text-3xl font-bold text-yellow-500">{stats.avgBloodFlowRate} mL/min</div>
+                <div className="text-3xl font-bold text-yellow-500">
+                  {stats.avgBloodFlowRate} mL/min
+                </div>
                 <p className="text-sm text-gray-600">Avg Blood Flow Rate</p>
               </CardContent>
             </Card>
@@ -538,7 +664,9 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                   {/* Blood Pressure Trend */}
                   <Card>
                     <CardHeader className="bg-gray-50">
-                      <CardTitle className="text-sm">Blood Pressure Trend</CardTitle>
+                      <CardTitle className="text-sm">
+                        Blood Pressure Trend
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
                       <ResponsiveContainer width="100%" height={350}>
@@ -564,7 +692,9 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                   {/* Arterial vs Venous Pressure */}
                   <Card>
                     <CardHeader className="bg-gray-50">
-                      <CardTitle className="text-sm">Pressure Comparison</CardTitle>
+                      <CardTitle className="text-sm">
+                        Pressure Comparison
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
                       <ResponsiveContainer width="100%" height={350}>
@@ -602,10 +732,11 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-
                 </div>
               ) : (
-                <div className="text-sm text-gray-500 italic">Charts collapsed. Click Expand to view treatment analytics.</div>
+                <div className="text-sm text-gray-500 italic">
+                  Charts collapsed. Click Expand to view treatment analytics.
+                </div>
               )}
             </CardContent>
           </Card>
@@ -634,35 +765,53 @@ const HDSummary: React.FC<HDSummaryProps> = ({ onBack }) => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="border-l-4 border-blue-500 pl-3">
                     <p className="text-xs text-gray-500">Session Date</p>
-                    <p className="font-semibold">{getSelectedRecord()?.sessionDate}</p>
+                    <p className="font-semibold">
+                      {getSelectedRecord()?.sessionDate}
+                    </p>
                   </div>
                   <div className="border-l-4 border-red-500 pl-3">
-                    <p className="text-xs text-gray-500">Blood Pressure (Pre)</p>
-                    <p className="font-semibold">{getSelectedRecord()?.bloodPressure || 'N/A'} mmHg</p>
+                    <p className="text-xs text-gray-500">
+                      Blood Pressure (Pre)
+                    </p>
+                    <p className="font-semibold">
+                      {getSelectedRecord()?.bloodPressure || "N/A"} mmHg
+                    </p>
                   </div>
                   <div className="border-l-4 border-green-500 pl-3">
                     <p className="text-xs text-gray-500">Arterial Pressure</p>
-                    <p className="font-semibold">{getSelectedRecord()?.arterialPressure || 'N/A'} mmHg</p>
+                    <p className="font-semibold">
+                      {getSelectedRecord()?.arterialPressure || "N/A"} mmHg
+                    </p>
                   </div>
                   <div className="border-l-4 border-purple-500 pl-3">
                     <p className="text-xs text-gray-500">Venous Pressure</p>
-                    <p className="font-semibold">{getSelectedRecord()?.venousPressure || 'N/A'} mmHg</p>
+                    <p className="font-semibold">
+                      {getSelectedRecord()?.venousPressure || "N/A"} mmHg
+                    </p>
                   </div>
                   <div className="border-l-4 border-indigo-500 pl-3">
                     <p className="text-xs text-gray-500">Sodium Removed</p>
-                    <p className="font-semibold">{getSelectedRecord()?.sodiumRemoved || 'N/A'} mEq</p>
+                    <p className="font-semibold">
+                      {getSelectedRecord()?.sodiumRemoved || "N/A"} mEq
+                    </p>
                   </div>
                   <div className="border-l-4 border-cyan-500 pl-3">
                     <p className="text-xs text-gray-500">Weight Removed</p>
-                    <p className="font-semibold">{getSelectedRecord()?.weightRemoved || 'N/A'} kg</p>
+                    <p className="font-semibold">
+                      {getSelectedRecord()?.weightRemoved || "N/A"} kg
+                    </p>
                   </div>
                   <div className="border-l-4 border-teal-500 pl-3">
                     <p className="text-xs text-gray-500">Nephrologist</p>
-                    <p className="font-semibold">{getSelectedRecord()?.nephrologist}</p>
+                    <p className="font-semibold">
+                      {getSelectedRecord()?.nephrologist}
+                    </p>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-500">Select a session to view details.</p>
+                <p className="text-gray-500">
+                  Select a session to view details.
+                </p>
               )}
             </CardContent>
           </Card>

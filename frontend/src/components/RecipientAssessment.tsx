@@ -12,7 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Heart,
@@ -33,7 +37,11 @@ import {
   Eye,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
+import {
+  formatDateToDDMMYYYY,
+  isoStringToDate,
+  toLocalISO,
+} from "@/lib/dateUtils";
 import RecipientSummaryOverlay from "@/components/RecipientSummaryOverlay";
 import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
@@ -109,10 +117,50 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     const rrt = form.rrtDetails || {};
     const transfusionHistory = form.transfusionHistory || [];
     const immuno = form.immunologicalDetails || {};
-    const html = `<!doctype html><html><head><meta charset='utf-8'><title>Recipient Report</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:28px;color:#111} h1{font-size:22px;margin:0 0 18px} h2{font-size:16px;margin:22px 0 8px} .kv{display:grid;grid-template-columns:180px 1fr;gap:6px 16px;font-size:12px} .kv div.label{font-weight:600} table{border-collapse:collapse;width:100%;margin-top:8px;font-size:12px} th,td{border:1px solid #ddd;padding:6px;text-align:left} th{background:#f0f4ff} .section{margin-bottom:18px} .footer{margin-top:32px;font-size:11px;color:#555;text-align:center}</style></head><body><h1>Recipient Assessment Report</h1><h2>Basic Information</h2><div class='kv'>${['name','phn','age','gender'].map(k=>`<div class='label'>${k}</div><div>${form[k]??'—'}</div>`).join('')}</div><h2>Donor Details</h2><div class='kv'>${['donorName','donorPhn','donorBloodGroup','relationToRecipient','relationType'].map(k=>`<div class='label'>${k}</div><div>${form[k]??'—'}</div>`).join('')}</div><h2>Comorbidities</h2><div class='kv'>${Object.entries(comorbidities).map(([k,v])=>`<div class='label'>${k}</div><div>${typeof v==='boolean'?(v?'Yes':'No'):(v||'—')}</div>`).join('')}</div><h2>RRT Details</h2><div class='kv'>${Object.entries(rrt).map(([k,v])=>`<div class='label'>${k}</div><div>${typeof v==='boolean'?(v?'Yes':'No'):(v||'—')}</div>`).join('')}</div>${transfusionHistory.length?`<h2>Transfusion History</h2><table><thead><tr><th>Date</th><th>Indication</th><th>Volume</th></tr></thead><tbody>${transfusionHistory.map((t:any)=>`<tr><td>${t.date||'—'}</td><td>${t.indication||'—'}</td><td>${t.volume||'—'}</td></tr>`).join('')}</tbody></table>`:''}<h2>Immunological Details</h2><div class='kv'>${(()=>{const c=[]; if(immuno.bloodGroup){Object.entries(immuno.bloodGroup).forEach(([k,v])=>c.push(`<div class='label'>bloodGroup.${k}</div><div>${v||'—'}</div>`));} if(immuno.crossMatch){Object.entries(immuno.crossMatch).forEach(([k,v])=>c.push(`<div class='label'>crossMatch.${k}</div><div>${v||'—'}</div>`));} ['praPre','praPost','dsa','immunologicalRisk'].forEach(k=>{if(immuno[k]) c.push(`<div class='label'>${k}</div><div>${immuno[k]||'—'}</div>`);}); return c.join('');})()}</div><div class='footer'>Generated ${new Date().toLocaleString()} | Renal Unit Manager</div><script>window.onload=()=>window.print()</script></body></html>`;
-    const w = window.open('', '_blank');
-    if(!w){ alert('Popup blocked'); return; }
-    w.document.open(); w.document.write(html); w.document.close();
+    const html = `<!doctype html><html><head><meta charset='utf-8'><title>Recipient Report</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:28px;color:#111} h1{font-size:22px;margin:0 0 18px} h2{font-size:16px;margin:22px 0 8px} .kv{display:grid;grid-template-columns:180px 1fr;gap:6px 16px;font-size:12px} .kv div.label{font-weight:600} table{border-collapse:collapse;width:100%;margin-top:8px;font-size:12px} th,td{border:1px solid #ddd;padding:6px;text-align:left} th{background:#f0f4ff} .section{margin-bottom:18px} .footer{margin-top:32px;font-size:11px;color:#555;text-align:center}</style></head><body><h1>Recipient Assessment Report</h1><h2>Basic Information</h2><div class='kv'>${["name", "phn", "age", "gender"].map((k) => `<div class='label'>${k}</div><div>${form[k] ?? "—"}</div>`).join("")}</div><h2>Donor Details</h2><div class='kv'>${["donorName", "donorPhn", "donorBloodGroup", "relationToRecipient", "relationType"].map((k) => `<div class='label'>${k}</div><div>${form[k] ?? "—"}</div>`).join("")}</div><h2>Comorbidities</h2><div class='kv'>${Object.entries(
+      comorbidities
+    )
+      .map(
+        ([k, v]) =>
+          `<div class='label'>${k}</div><div>${typeof v === "boolean" ? (v ? "Yes" : "No") : v || "—"}</div>`
+      )
+      .join("")}</div><h2>RRT Details</h2><div class='kv'>${Object.entries(rrt)
+      .map(
+        ([k, v]) =>
+          `<div class='label'>${k}</div><div>${typeof v === "boolean" ? (v ? "Yes" : "No") : v || "—"}</div>`
+      )
+      .join(
+        ""
+      )}</div>${transfusionHistory.length ? `<h2>Transfusion History</h2><table><thead><tr><th>Date</th><th>Indication</th><th>Volume</th></tr></thead><tbody>${transfusionHistory.map((t: any) => `<tr><td>${t.date || "—"}</td><td>${t.indication || "—"}</td><td>${t.volume || "—"}</td></tr>`).join("")}</tbody></table>` : ""}<h2>Immunological Details</h2><div class='kv'>${(() => {
+      const c = [];
+      if (immuno.bloodGroup) {
+        Object.entries(immuno.bloodGroup).forEach(([k, v]) =>
+          c.push(
+            `<div class='label'>bloodGroup.${k}</div><div>${v || "—"}</div>`
+          )
+        );
+      }
+      if (immuno.crossMatch) {
+        Object.entries(immuno.crossMatch).forEach(([k, v]) =>
+          c.push(
+            `<div class='label'>crossMatch.${k}</div><div>${v || "—"}</div>`
+          )
+        );
+      }
+      ["praPre", "praPost", "dsa", "immunologicalRisk"].forEach((k) => {
+        if (immuno[k])
+          c.push(`<div class='label'>${k}</div><div>${immuno[k] || "—"}</div>`);
+      });
+      return c.join("");
+    })()}</div><div class='footer'>Generated ${new Date().toLocaleString()} | Renal Unit Manager</div><script>window.onload=()=>window.print()</script></body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("Popup blocked");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
   }, [recipientForm]);
 
   // Build recipient summary sections
@@ -128,23 +176,28 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     handleRecipientFormChange("donorPhn", donor.patientPhn || ""); // ✅ FIXED
     handleRecipientFormChange("donorName", donor.name || "Unknown Donor"); // ✅ FIXED
     handleRecipientFormChange("donorBloodGroup", donor.bloodGroup || "");
-    
+
     // ✅ Auto-populate donor's relationship information from current donor data
     if (donor.relationToRecipient) {
-      handleRecipientFormChange("relationToRecipient", donor.relationToRecipient);
+      handleRecipientFormChange(
+        "relationToRecipient",
+        donor.relationToRecipient
+      );
     }
     if (donor.relationType) {
       handleRecipientFormChange("relationType", donor.relationType);
     }
-    
+
     setDonorSearchResults(donor);
 
     // Immediately update donor's relationship fields in DonorContext so
     // the donor form (and DonorAssessmentTabs) reflects the selected
     // relationship without waiting for the full recipient save.
     try {
-      const updatedRelationToRecipient = recipientForm.relationToRecipient || donor.relationToRecipient || "";
-      const updatedRelationType = recipientForm.relationType || donor.relationType || "";
+      const updatedRelationToRecipient =
+        recipientForm.relationToRecipient || donor.relationToRecipient || "";
+      const updatedRelationType =
+        recipientForm.relationType || donor.relationType || "";
 
       updateDonor(donor.id, {
         ...donor,
@@ -154,18 +207,32 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         assignedRecipientPhn: donor.assignedRecipientPhn || "",
         assignedRecipientName: donor.assignedRecipientName || "",
       });
-      console.log("🔄 Donor relationship updated in context for donor:", donor.id);
+      console.log(
+        "🔄 Donor relationship updated in context for donor:",
+        donor.id
+      );
 
       // Persist assignment immediately on select (user requested "Persist on select")
       if (patient?.phn) {
         try {
-          console.log(`🔗 Persisting donor ${donor.id} assignment to recipient ${patient.phn}`);
-          await assignDonorToRecipient(donor.id, patient.phn, patient?.name || "");
+          console.log(
+            `🔗 Persisting donor ${donor.id} assignment to recipient ${patient.phn}`
+          );
+          await assignDonorToRecipient(
+            donor.id,
+            patient.phn,
+            patient?.name || ""
+          );
           // Refresh donor list from backend to ensure latest state
           await fetchAllDonors();
-          console.log(`✅ Donor ${donor.id} persisted as assigned to ${patient.phn}`);
+          console.log(
+            `✅ Donor ${donor.id} persisted as assigned to ${patient.phn}`
+          );
         } catch (assignErr) {
-          console.error("❌ Failed to persist donor assignment on select:", assignErr);
+          console.error(
+            "❌ Failed to persist donor assignment on select:",
+            assignErr
+          );
         }
       }
     } catch (err) {
@@ -435,16 +502,25 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     // Debug visibility: ensure patient object is arriving
     // and try to set the phn input value directly as a fallback.
     try {
-       
       console.log("RecipientAssessment: patient selected:", patient);
-      const phnInput = document.getElementById("phn") as HTMLInputElement | null;
+      const phnInput = document.getElementById(
+        "phn"
+      ) as HTMLInputElement | null;
       if (phnInput) {
         phnInput.value = patient.phn || "";
       }
     } catch (e) {
       // ignore
     }
-  }, [patient?.phn, patient?.name, patient?.age, patient?.gender, patient?.dateOfBirth, patient?.contact, patient?.email]);
+  }, [
+    patient?.phn,
+    patient?.name,
+    patient?.age,
+    patient?.gender,
+    patient?.dateOfBirth,
+    patient?.contact,
+    patient?.email,
+  ]);
 
   // When entering the confirmation step, re-run validation for step 6
   useEffect(() => {
@@ -453,99 +529,99 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     }
   }, [step, recipientForm]);
 
+  const searchDonorByPhn = async () => {
+    if (!donorSearchPhn.trim()) {
+      alert("Please enter a donor's PHN to search");
+      return;
+    }
 
-const searchDonorByPhn = async () => {
-  if (!donorSearchPhn.trim()) {
-    alert("Please enter a donor's PHN to search");
-    return;
-  }
+    setSearchingDonor(true);
+    setErrors((prev) => ({ ...prev, donorSearch: "" }));
 
-  setSearchingDonor(true);
-  setErrors((prev) => ({ ...prev, donorSearch: "" }));
+    try {
+      console.log("🔍 Searching for donor with PHN:", donorSearchPhn);
 
-  try {
-    console.log("🔍 Searching for donor with PHN:", donorSearchPhn);
+      // ✅ CORRECT: Search for donor by THEIR OWN PHN
+      const response = await fetch(
+        `http://localhost:8081/api/donor-assessment/patient/${donorSearchPhn}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    // ✅ CORRECT: Search for donor by THEIR OWN PHN
-    const response = await fetch(
-      `http://localhost:8081/api/donor-assessment/patient/${donorSearchPhn}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      if (!response.ok) {
+        if (response.status === 404) {
+          setErrors((prev) => ({
+            ...prev,
+            donorSearch:
+              "No donor found with this PHN. Please check the PHN and try again.",
+          }));
+          setDonorSearchResults(null);
+          return;
+        }
+        throw new Error("Failed to search donor");
       }
-    );
 
-    if (!response.ok) {
-      if (response.status === 404) {
+      const donorAssessments = await response.json();
+      console.log("📋 Donor search results:", donorAssessments);
+
+      if (donorAssessments && donorAssessments.length > 0) {
+        const donorData = donorAssessments[0];
+
+        // ✅ Transform to match your Donor type
+        const donor: Donor = {
+          id: donorData.id?.toString(),
+          name: donorData.name,
+          patientPhn: donorData.patientPhn, // Donor's PHN
+          bloodGroup: `${donorData.immunologicalDetails?.bloodGroup?.d || ""}${donorData.immunologicalDetails?.bloodGroup?.r || ""}`,
+          age: donorData.age,
+          gender: donorData.gender,
+          dateOfBirth: donorData.dateOfBirth,
+          occupation: donorData.occupation,
+          address: donorData.address,
+          nicNo: donorData.nicNo,
+          contactDetails: donorData.contactDetails,
+          emailAddress: donorData.emailAddress,
+          relationType: donorData.relationType,
+          relationToRecipient: donorData.relationToRecipient,
+          status: donorData.status || "available",
+          assignedRecipientPhn: donorData.assignedRecipientPhn,
+          assignedRecipientName: donorData.assignedRecipientName,
+          comorbidities: donorData.comorbidities,
+          examination: donorData.examination,
+          immunologicalDetails: donorData.immunologicalDetails,
+        };
+
+        setDonorSearchResults(donor);
+
+        // Auto-populate donor information
+        handleRecipientFormChange("donorId", donor.id);
+        handleRecipientFormChange("donorPhn", donor.patientPhn); // Donor's PHN
+        handleRecipientFormChange("donorName", donor.name);
+        handleRecipientFormChange("donorBloodGroup", donor.bloodGroup);
+
+        setDonorSearchPhn("");
+      } else {
         setErrors((prev) => ({
           ...prev,
-          donorSearch: "No donor found with this PHN. Please check the PHN and try again.",
+          donorSearch: "No donor assessment found with this PHN.",
         }));
         setDonorSearchResults(null);
-        return;
       }
-      throw new Error('Failed to search donor');
-    }
-
-    const donorAssessments = await response.json();
-    console.log("📋 Donor search results:", donorAssessments);
-
-    if (donorAssessments && donorAssessments.length > 0) {
-      const donorData = donorAssessments[0];
-      
-      // ✅ Transform to match your Donor type
-       const donor: Donor = {
-        id: donorData.id?.toString(),
-        name: donorData.name,
-        patientPhn: donorData.patientPhn, // Donor's PHN
-        bloodGroup: `${donorData.immunologicalDetails?.bloodGroup?.d || ''}${donorData.immunologicalDetails?.bloodGroup?.r || ''}`,
-        age: donorData.age,
-        gender: donorData.gender,
-        dateOfBirth: donorData.dateOfBirth,
-        occupation: donorData.occupation,
-        address: donorData.address,
-        nicNo: donorData.nicNo,
-        contactDetails: donorData.contactDetails,
-        emailAddress: donorData.emailAddress,
-        relationType: donorData.relationType,
-        relationToRecipient: donorData.relationToRecipient,
-        status: donorData.status || 'available',
-        assignedRecipientPhn: donorData.assignedRecipientPhn,
-        assignedRecipientName: donorData.assignedRecipientName,
-        comorbidities: donorData.comorbidities,
-        examination: donorData.examination,
-        immunologicalDetails: donorData.immunologicalDetails,
-      };
-
-      setDonorSearchResults(donor);
-
-      // Auto-populate donor information
-      handleRecipientFormChange("donorId", donor.id);
-      handleRecipientFormChange("donorPhn", donor.patientPhn); // Donor's PHN
-      handleRecipientFormChange("donorName", donor.name);
-      handleRecipientFormChange("donorBloodGroup", donor.bloodGroup);
-
-      setDonorSearchPhn("");
-    } else {
+    } catch (error) {
+      console.error("❌ Error searching donor:", error);
       setErrors((prev) => ({
         ...prev,
-        donorSearch: "No donor assessment found with this PHN.",
+        donorSearch: "Failed to search for donor. Please try again.",
       }));
       setDonorSearchResults(null);
+    } finally {
+      setSearchingDonor(false);
     }
-  } catch (error) {
-    console.error("❌ Error searching donor:", error);
-    setErrors((prev) => ({
-      ...prev,
-      donorSearch: "Failed to search for donor. Please try again.",
-    }));
-    setDonorSearchResults(null);
-  } finally {
-    setSearchingDonor(false);
-  }
-};
+  };
   // Clear donor selection
   const clearDonorSelection = () => {
     setDonorSearchPhn("");
@@ -642,7 +718,7 @@ const searchDonorByPhn = async () => {
     // Validate current step synchronously using the form parameter
     const newErrors: Record<string, string> = {};
     const currentForm = recipientForm;
-    
+
     // Validate step 6 (confirmation step for submission)
     if (!currentForm.name.trim()) {
       newErrors.confirmation =
@@ -712,7 +788,9 @@ const searchDonorByPhn = async () => {
           try {
             console.log("🔄 Updating donor relationship information...");
             // Find the donor to update
-            const donorToUpdate = donors.find(d => d.id === savedAssessment.donorId);
+            const donorToUpdate = donors.find(
+              (d) => d.id === savedAssessment.donorId
+            );
             if (donorToUpdate) {
               updateDonor(savedAssessment.donorId, {
                 ...donorToUpdate,
@@ -1117,7 +1195,10 @@ const searchDonorByPhn = async () => {
                 const isCompleted = step > idx;
 
                 return (
-                  <div key={formStep.label} className="flex items-center flex-1">
+                  <div
+                    key={formStep.label}
+                    className="flex items-center flex-1"
+                  >
                     <button
                       type="button"
                       onClick={() => {
@@ -1128,19 +1209,25 @@ const searchDonorByPhn = async () => {
                       <div
                         className={`flex items-center justify-center w-10 h-10 rounded-full z-10 transition-colors ${
                           isActive
-                            ? 'bg-blue-600 text-white'
+                            ? "bg-blue-600 text-white"
                             : isCompleted
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-200 text-gray-600'
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-200 text-gray-600"
                         }`}
                       >
                         <Icon className="w-5 h-5" />
                       </div>
-                      <span className={`mt-2 text-xs ${isActive ? 'text-blue-700' : isCompleted ? 'text-blue-600' : 'text-gray-400'}`}>{formStep.label}</span>
+                      <span
+                        className={`mt-2 text-xs ${isActive ? "text-blue-700" : isCompleted ? "text-blue-600" : "text-gray-400"}`}
+                      >
+                        {formStep.label}
+                      </span>
                     </button>
 
                     {idx < FORM_STEPS.length - 1 && (
-                      <div className={`h-1 flex-1 ml-3 mr-3 ${step > idx ? 'bg-blue-500' : 'bg-gray-200'} rounded`}></div>
+                      <div
+                        className={`h-1 flex-1 ml-3 mr-3 ${step > idx ? "bg-blue-500" : "bg-gray-200"} rounded`}
+                      ></div>
                     )}
                   </div>
                 );
@@ -1333,7 +1420,9 @@ const searchDonorByPhn = async () => {
                           className={`h-12 w-full justify-start text-left font-normal border-2 ${errors.dateOfBirth ? "border-red-500" : "border-gray-200"}`}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {recipientForm.dateOfBirth ? formatDateToDDMMYYYY(recipientForm.dateOfBirth) : 'Select date'}
+                          {recipientForm.dateOfBirth
+                            ? formatDateToDDMMYYYY(recipientForm.dateOfBirth)
+                            : "Select date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -1342,7 +1431,10 @@ const searchDonorByPhn = async () => {
                           selected={isoStringToDate(recipientForm.dateOfBirth)}
                           onSelect={(date) => {
                             if (date) {
-                              handleNestedChange("dateOfBirth", toLocalISO(date));
+                              handleNestedChange(
+                                "dateOfBirth",
+                                toLocalISO(date)
+                              );
                             }
                           }}
                           disabled={(date) => date > new Date()}
@@ -1633,13 +1725,17 @@ const searchDonorByPhn = async () => {
                           htmlFor="relationType"
                           className="text-sm font-semibold text-gray-700"
                         >
-                          Relationship Type <span className="text-red-500">*</span>
+                          Relationship Type{" "}
+                          <span className="text-red-500">*</span>
                         </Label>
                         <select
                           id="relationType"
                           value={recipientForm.relationType || ""}
                           onChange={(e) =>
-                            handleRecipientFormChange("relationType", e.target.value)
+                            handleRecipientFormChange(
+                              "relationType",
+                              e.target.value
+                            )
                           }
                           className={`w-full h-10 px-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors.relationType
@@ -1653,7 +1749,9 @@ const searchDonorByPhn = async () => {
                           <option value="altruistic">Altruistic</option>
                         </select>
                         {errors.relationType && (
-                          <p className="text-red-500 text-sm">{errors.relationType}</p>
+                          <p className="text-red-500 text-sm">
+                            {errors.relationType}
+                          </p>
                         )}
                       </div>
 
@@ -1664,7 +1762,8 @@ const searchDonorByPhn = async () => {
                             htmlFor="relationToRecipient"
                             className="text-sm font-semibold text-gray-700"
                           >
-                            Specific Relation <span className="text-red-500">*</span>
+                            Specific Relation{" "}
+                            <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id="relationToRecipient"
@@ -2128,16 +2227,25 @@ const searchDonorByPhn = async () => {
                             className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {recipientForm.rrtDetails?.startingDate ? formatDateToDDMMYYYY(recipientForm.rrtDetails.startingDate) : 'Select date'}
+                            {recipientForm.rrtDetails?.startingDate
+                              ? formatDateToDDMMYYYY(
+                                  recipientForm.rrtDetails.startingDate
+                                )
+                              : "Select date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={isoStringToDate(recipientForm.rrtDetails?.startingDate)}
+                            selected={isoStringToDate(
+                              recipientForm.rrtDetails?.startingDate
+                            )}
                             onSelect={(date) => {
                               if (date) {
-                                handleNestedChange("rrtDetails.startingDate", toLocalISO(date));
+                                handleNestedChange(
+                                  "rrtDetails.startingDate",
+                                  toLocalISO(date)
+                                );
                               }
                             }}
                             disabled={(date) => date > new Date()}
@@ -2297,16 +2405,25 @@ const searchDonorByPhn = async () => {
                                     className="w-full justify-start text-left font-normal text-xs"
                                   >
                                     <CalendarIcon className="mr-1 h-3 w-3" />
-                                    {row.date ? formatDateToDDMMYYYY(row.date) : 'Select'}
+                                    {row.date
+                                      ? formatDateToDDMMYYYY(row.date)
+                                      : "Select"}
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
+                                <PopoverContent
+                                  className="w-auto p-0"
+                                  align="start"
+                                >
                                   <Calendar
                                     mode="single"
                                     selected={isoStringToDate(row.date)}
                                     onSelect={(date) => {
                                       if (date) {
-                                        handleTransfusionChange(idx, "date", toLocalISO(date));
+                                        handleTransfusionChange(
+                                          idx,
+                                          "date",
+                                          toLocalISO(date)
+                                        );
                                       }
                                     }}
                                     disabled={(date) => date > new Date()}
@@ -2676,28 +2793,52 @@ const searchDonorByPhn = async () => {
                       Immunological Risk
                     </Label>
                     <RadioGroup
-                      value={recipientForm.immunologicalDetails?.immunologicalRisk || ""}
+                      value={
+                        recipientForm.immunologicalDetails?.immunologicalRisk ||
+                        ""
+                      }
                       onValueChange={(value) =>
-                        handleNestedChange("immunologicalDetails.immunologicalRisk", value)
+                        handleNestedChange(
+                          "immunologicalDetails.immunologicalRisk",
+                          value
+                        )
                       }
                       className="flex gap-6"
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="low" id="recipient-low" />
-                        <Label htmlFor="recipient-low" className="text-sm text-gray-700 cursor-pointer">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Low</span>
+                        <Label
+                          htmlFor="recipient-low"
+                          className="text-sm text-gray-700 cursor-pointer"
+                        >
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Low
+                          </span>
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="average" id="recipient-average" />
-                        <Label htmlFor="recipient-average" className="text-sm text-gray-700 cursor-pointer">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Average</span>
+                        <RadioGroupItem
+                          value="average"
+                          id="recipient-average"
+                        />
+                        <Label
+                          htmlFor="recipient-average"
+                          className="text-sm text-gray-700 cursor-pointer"
+                        >
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Average
+                          </span>
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="high" id="recipient-high" />
-                        <Label htmlFor="recipient-high" className="text-sm text-gray-700 cursor-pointer">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">High</span>
+                        <Label
+                          htmlFor="recipient-high"
+                          className="text-sm text-gray-700 cursor-pointer"
+                        >
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            High
+                          </span>
                         </Label>
                       </div>
                     </RadioGroup>
@@ -2722,10 +2863,20 @@ const searchDonorByPhn = async () => {
               <CardContent className="p-8 space-y-8">
                 {/* Quick Summary Actions */}
                 <div className="flex flex-wrap gap-3">
-                  <Button variant="outline" size="sm" onClick={() => setShowRecipientSummary(true)} className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRecipientSummary(true)}
+                    className="flex items-center gap-2"
+                  >
                     <Eye className="w-4 h-4" /> View Updated Summary
                   </Button>
-                  <Button variant="outline" size="sm" onClick={generateRecipientReport} className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={generateRecipientReport}
+                    className="flex items-center gap-2"
+                  >
                     <FileText className="w-4 h-4" /> Print Recipient Report
                   </Button>
                 </div>
@@ -2739,12 +2890,16 @@ const searchDonorByPhn = async () => {
                   <div className="space-y-4">
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold text-gray-700">
-                        Completed By (Staff Name) <span className="text-red-500 ml-1">*</span>
+                        Completed By (Staff Name){" "}
+                        <span className="text-red-500 ml-1">*</span>
                       </Label>
                       <Input
                         value={recipientForm.completedBy?.staffName || ""}
                         onChange={(e) =>
-                          handleNestedChange("completedBy.staffName", e.target.value)
+                          handleNestedChange(
+                            "completedBy.staffName",
+                            e.target.value
+                          )
                         }
                         placeholder="Staff full name"
                         className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
@@ -2762,16 +2917,29 @@ const searchDonorByPhn = async () => {
                             className="h-12 w-full justify-start text-left font-normal border-2 border-gray-200"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {recipientForm.completedBy?.completionDate ? formatDateToDDMMYYYY(recipientForm.completedBy.completionDate) : formatDateToDDMMYYYY(new Date().toISOString().split("T")[0])}
+                            {recipientForm.completedBy?.completionDate
+                              ? formatDateToDDMMYYYY(
+                                  recipientForm.completedBy.completionDate
+                                )
+                              : formatDateToDDMMYYYY(
+                                  new Date().toISOString().split("T")[0]
+                                )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={isoStringToDate(recipientForm.completedBy?.completionDate) || new Date()}
+                            selected={
+                              isoStringToDate(
+                                recipientForm.completedBy?.completionDate
+                              ) || new Date()
+                            }
                             onSelect={(date) => {
                               if (date) {
-                                handleNestedChange("completedBy.completionDate", toLocalISO(date));
+                                handleNestedChange(
+                                  "completedBy.completionDate",
+                                  toLocalISO(date)
+                                );
                               }
                             }}
                             disabled={(date) => date > new Date()}
@@ -2795,9 +2963,9 @@ const searchDonorByPhn = async () => {
                         required
                       />
                       <span className="text-sm text-slate-700 leading-relaxed">
-                        I confirm that all information provided is accurate to the
-                        best of my knowledge and understand the importance of
-                        providing truthful medical information.
+                        I confirm that all information provided is accurate to
+                        the best of my knowledge and understand the importance
+                        of providing truthful medical information.
                       </span>
                     </label>
                     <label className="flex items-start gap-3 cursor-pointer">
@@ -2807,8 +2975,8 @@ const searchDonorByPhn = async () => {
                       />
                       <span className="text-sm text-slate-700 leading-relaxed">
                         I consent to the processing of this information for
-                        assessment purposes and understand that this data will be
-                        used for medical evaluation and treatment planning.
+                        assessment purposes and understand that this data will
+                        be used for medical evaluation and treatment planning.
                       </span>
                     </label>
                   </div>

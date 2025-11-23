@@ -61,7 +61,7 @@ const GlobalSearch: React.FC = () => {
           placeholder="Search patient by PHN..."
           className="h-10 border-2 border-gray-200 focus:border-blue-500 pr-10"
           onKeyPress={(e) => {
-            if (e.key === 'Enter') {
+            if (e.key === "Enter") {
               e.preventDefault();
               handleSearch();
             }
@@ -74,7 +74,7 @@ const GlobalSearch: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       <Button
         type="button"
         onClick={handleSearch}
@@ -93,7 +93,7 @@ const GlobalSearch: React.FC = () => {
           </>
         )}
       </Button>
-      
+
       {/* Patient Found Indicator */}
       {patient?.phn && (
         <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">

@@ -13,7 +13,14 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, UserPlus, Users, Scissors, ClipboardList, FileText } from "lucide-react";
+import {
+  Stethoscope,
+  UserPlus,
+  Users,
+  Scissors,
+  ClipboardList,
+  FileText,
+} from "lucide-react";
 import DonorAssessment from "../components/DonorAssessment";
 import RecipientAssessment from "../components/RecipientAssessment";
 import FollowUpForm from "../components/FollowUp";
@@ -652,7 +659,6 @@ const KidneyTransplant = () => {
             Follow Up Management
           </h2>
 
-          
           <FollowUpForm setActiveView={setActiveView} />
         </div>
       )}
@@ -676,19 +682,23 @@ const KidneyTransplant = () => {
           <div className="max-w-7xl mx-auto px-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                  {
-                    icon: UserPlus,
-                    title: "Donor Assessment",
-                    view: "donor-assessment",
-                  },
-                  {
-                    icon: Users,
-                    title: "Recipient Assessment",
-                    view: "recipient-assessment",
-                  },
-                  { icon: Scissors, title: "Kidney Transplant Surgery", view: "kt" },
-                  { icon: ClipboardList, title: "Follow Up", view: "follow-up" },
-                ].map((item) => (
+                {
+                  icon: UserPlus,
+                  title: "Donor Assessment",
+                  view: "donor-assessment",
+                },
+                {
+                  icon: Users,
+                  title: "Recipient Assessment",
+                  view: "recipient-assessment",
+                },
+                {
+                  icon: Scissors,
+                  title: "Kidney Transplant Surgery",
+                  view: "kt",
+                },
+                { icon: ClipboardList, title: "Follow Up", view: "follow-up" },
+              ].map((item) => (
                 <Card
                   key={item.title}
                   className="shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col justify-between items-center text-center w-full h-full"

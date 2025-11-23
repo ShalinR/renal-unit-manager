@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { AlertCircle, Eye, Trash2, Plus } from 'lucide-react';
-import { usePatientContext } from '@/context/PatientContext';
-import { getHemodialysisRecordsByPatientId, deleteHemodialysisRecord } from '@/services/hemodialysisApi';
-import { useToast } from '@/hooks/use-toast';
-import { HemodialysisForm } from './HDSessionForm';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { AlertCircle, Eye, Trash2, Plus } from "lucide-react";
+import { usePatientContext } from "@/context/PatientContext";
+import {
+  getHemodialysisRecordsByPatientId,
+  deleteHemodialysisRecord,
+} from "@/services/hemodialysisApi";
+import { useToast } from "@/hooks/use-toast";
+import { HemodialysisForm } from "./HDSessionForm";
 
 interface HDSessionListProps {
   onSelectSession: (form: HemodialysisForm) => void;
@@ -20,12 +23,15 @@ interface SavedSession {
   filledBy?: string;
 }
 
-const HDSessionList: React.FC<HDSessionListProps> = ({ onSelectSession, onCreateNew }) => {
+const HDSessionList: React.FC<HDSessionListProps> = ({
+  onSelectSession,
+  onCreateNew,
+}) => {
   const { patient, globalPatient } = usePatientContext();
   const { toast } = useToast();
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState("");
 
   const currentPatient = patient || globalPatient;
 
@@ -35,14 +41,16 @@ const HDSessionList: React.FC<HDSessionListProps> = ({ onSelectSession, onCreate
     const loadSessions = async () => {
       setLoading(true);
       try {
-        const records = await getHemodialysisRecordsByPatientId(currentPatient.phn);
+        const records = await getHemodialysisRecordsByPatientId(
+          currentPatient.phn
+        );
         setSessions(records as SavedSession[]);
       } catch (error) {
-        console.error('Failed to load sessions:', error);
+        console.error("Failed to load sessions:", error);
         toast({
-          title: 'Error',
-          description: 'Failed to load saved sessions.',
-          variant: 'destructive',
+          title: "Error",
+          description: "Failed to load saved sessions.",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -53,22 +61,22 @@ const HDSessionList: React.FC<HDSessionListProps> = ({ onSelectSession, onCreate
   }, [currentPatient?.phn, toast]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this session?')) return;
+    if (!confirm("Are you sure you want to delete this session?")) return;
 
     try {
       await deleteHemodialysisRecord(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
       toast({
-        title: 'Deleted',
-        description: 'Session deleted successfully.',
-        variant: 'default',
+        title: "Deleted",
+        description: "Session deleted successfully.",
+        variant: "default",
       });
     } catch (error) {
-      console.error('Failed to delete session:', error);
+      console.error("Failed to delete session:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete session.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to delete session.",
+        variant: "destructive",
       });
     }
   };
@@ -77,9 +85,9 @@ const HDSessionList: React.FC<HDSessionListProps> = ({ onSelectSession, onCreate
     // Parse the saved data back into form shape
     // For now, show a placeholder — data is in session_json as a Map
     toast({
-      title: 'Session Data',
+      title: "Session Data",
       description: `Loaded session from ${session.hemoDialysisSessionDate}. Full data is in database.`,
-      variant: 'default',
+      variant: "default",
     });
     // TODO: Fetch full record details and convert to form shape
   };
@@ -124,10 +132,14 @@ const HDSessionList: React.FC<HDSessionListProps> = ({ onSelectSession, onCreate
         />
 
         {loading ? (
-          <p className="text-center text-sm text-gray-500 py-8">Loading sessions...</p>
+          <p className="text-center text-sm text-gray-500 py-8">
+            Loading sessions...
+          </p>
         ) : filteredSessions.length === 0 ? (
           <p className="text-center text-sm text-gray-500 py-8">
-            {sessions.length === 0 ? 'No sessions saved yet.' : 'No sessions match the filter.'}
+            {sessions.length === 0
+              ? "No sessions saved yet."
+              : "No sessions match the filter."}
           </p>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -138,10 +150,12 @@ const HDSessionList: React.FC<HDSessionListProps> = ({ onSelectSession, onCreate
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">
-                    {session.hemoDialysisSessionDate || 'No date'}
+                    {session.hemoDialysisSessionDate || "No date"}
                   </p>
                   <p className="text-xs text-gray-600">
-                    {session.filledBy ? `Filled by: ${session.filledBy}` : 'No staff info'}
+                    {session.filledBy
+                      ? `Filled by: ${session.filledBy}`
+                      : "No staff info"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 ml-4">

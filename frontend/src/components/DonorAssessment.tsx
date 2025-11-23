@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -14,7 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Heart,
@@ -26,12 +30,11 @@ import {
   Users,
   ClipboardList,
   User,
-  FileText,
   Stethoscope,
   Shield,
   TestTube,
   CheckCircle,
-  ChevronRight,
+  
   Eye,
   UserPlus,
   ArrowRight,
@@ -41,7 +44,11 @@ import {
   Trash2,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from "@/lib/dateUtils";
+import {
+  formatDateToDDMMYYYY,
+  isoStringToDate,
+  toLocalISO,
+} from "@/lib/dateUtils";
 import { DonorDetailsModal } from "./DonorDetailsModal";
 import { usePatientContext } from "@/context/PatientContext";
 import { useDonorContext } from "@/context/DonorContext";
@@ -111,7 +118,8 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
   } = useDonorContext();
 
   const { user } = useAuth();
-  const isAdmin = !!user && !!user.role && user.role.toLowerCase().includes("admin");
+  const isAdmin =
+    !!user && !!user.role && user.role.toLowerCase().includes("admin");
   // Single source of truth for form data
   const [formData, setFormData] = useState<DonorAssessmentForm>({
     name: "",
@@ -241,7 +249,6 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
     },
   });
 
-
   // Search patient by PHN using your Spring Boot API
   const searchPatientByPhn = useCallback(async () => {
     if (!searchPhn.trim()) {
@@ -318,7 +325,6 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
   }, []);
 
   // Helper function to convert Donor to DonorAssessmentForm
-  // Fixed convertDonorToFormData function
   const convertDonorToFormData = useCallback(
     (donor: Donor): DonorAssessmentForm => {
       return {
@@ -678,49 +684,49 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!formData.name || !formData.nicNo) {
-    alert(
-      "Please fill in at least the donor's name and NIC number, or search for an existing patient first."
-    );
-    return;
-  }
+    if (!formData.name || !formData.nicNo) {
+      alert(
+        "Please fill in at least the donor's name and NIC number, or search for an existing patient first."
+      );
+      return;
+    }
 
-  const requiredFields = [
-    { field: formData.name, name: "Full Name" },
-    { field: formData.age, name: "Age" },
-    { field: formData.gender, name: "Gender" },
-    { field: formData.nicNo, name: "NIC Number" },
-    { field: formData.contactDetails, name: "Contact Details" },
-  ];
+    const requiredFields = [
+      { field: formData.name, name: "Full Name" },
+      { field: formData.age, name: "Age" },
+      { field: formData.gender, name: "Gender" },
+      { field: formData.nicNo, name: "NIC Number" },
+      { field: formData.contactDetails, name: "Contact Details" },
+    ];
 
-  const missingFields = requiredFields.filter((item) => !item.field);
-  if (missingFields.length > 0) {
-    const fieldNames = missingFields.map((item) => item.name).join(", ");
-    alert(`Please fill in the following required fields: ${fieldNames}`);
-    return;
-  }
+    const missingFields = requiredFields.filter((item) => !item.field);
+    if (missingFields.length > 0) {
+      const fieldNames = missingFields.map((item) => item.name).join(", ");
+      alert(`Please fill in the following required fields: ${fieldNames}`);
+      return;
+    }
 
-  setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  try {
-    const patientPhn = searchedPatient?.phn || formData.nicNo;
-    await addDonor(formData, patientPhn);
+    try {
+      const patientPhn = searchedPatient?.phn || formData.nicNo;
+      await addDonor(formData, patientPhn);
 
-    alert(
-      "Donor registration submitted successfully! The donor is now available for selection."
-    );
-    setCurrentStep(0);
-    setCurrentView("list");
-    clearSearch();
-  } catch (err) {
-    console.error("Failed to submit donor:", err);
-    alert("Failed to submit donor. Please try again.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      alert(
+        "Donor registration submitted successfully! The donor is now available for selection."
+      );
+      setCurrentStep(0);
+      setCurrentView("list");
+      clearSearch();
+    } catch (err) {
+      console.error("Failed to submit donor:", err);
+      alert("Failed to submit donor. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const CheckboxField = useCallback(
     ({
@@ -867,226 +873,247 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
   const renderAvailableDonors = () => {
     // Show all donors (both assigned and unassigned)
     const allDonors = donors && Array.isArray(donors) ? donors : [];
-    const availableDonorsCount = allDonors.filter((d) => !d.status || d.status !== "assigned").length;
+    const availableDonorsCount = allDonors.filter(
+      (d) => !d.status || d.status !== "assigned"
+    ).length;
 
     return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-800 mb-1">
-            All Donors ({allDonors.length})
-          </h2>
-          <p className="text-slate-600">
-            View all registered donors and their assignment status ({availableDonorsCount} available)
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Input
-            placeholder="Search donors by name, PHN, blood group or relation"
-            value={donorFilter}
-            onChange={(e) => setDonorFilter(e.target.value)}
-            className="h-10 w-80"
-          />
-          <Button
-          onClick={() => setCurrentView("form")}
-          className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-          disabled={isLoading}
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          {isLoading ? "Loading..." : "Add New Donor"}
-        </Button>
-        </div>
-      </div>
-
-      {error && (
-        <Card className="border border-red-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-red-700">
-              <AlertCircle className="w-5 h-5" />
-              <span>Error loading donors: {error}</span>
-            </div>
-            <Button
-              onClick={() => fetchAllDonors()}
-              variant="outline"
-              size="sm"
-              className="mt-2"
-            >
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {isLoading ? (
-        <Card className="border border-slate-200 shadow-sm">
-          <CardContent className="p-8 text-center">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
-              Loading Donors
-            </h3>
-            <p className="text-slate-600">Fetching donor data from server...</p>
-          </CardContent>
-        </Card>
-      ) : allDonors.length === 0 ? (
-        <Card className="border border-slate-200 shadow-sm">
-          <CardContent className="p-8 text-center">
-            <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
-              No Donors Registered
-            </h3>
-            <p className="text-slate-600 mb-4">
-              Get started by registering your first donor. Registered donors
-              will appear here and be available for recipient matching.
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-800 mb-1">
+              All Donors ({allDonors.length})
+            </h2>
+            <p className="text-slate-600">
+              View all registered donors and their assignment status (
+              {availableDonorsCount} available)
             </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Input
+              placeholder="Search donors by name, PHN, blood group or relation"
+              value={donorFilter}
+              onChange={(e) => setDonorFilter(e.target.value)}
+              className="h-10 w-80"
+            />
             <Button
               onClick={() => setCurrentView("form")}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+              disabled={isLoading}
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              Register First Donor
+              {isLoading ? "Loading..." : "Add New Donor"}
             </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border border-slate-200 shadow-sm">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">
-                      Donor
-                    </th>
+          </div>
+        </div>
+
+        {error && (
+          <Card className="border border-red-200 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5" />
+                <span>Error loading donors: {error}</span>
+              </div>
+              <Button
+                onClick={() => fetchAllDonors()}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {isLoading ? (
+          <Card className="border border-slate-200 shadow-sm">
+            <CardContent className="p-8 text-center">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">
+                Loading Donors
+              </h3>
+              <p className="text-slate-600">
+                Fetching donor data from server...
+              </p>
+            </CardContent>
+          </Card>
+        ) : allDonors.length === 0 ? (
+          <Card className="border border-slate-200 shadow-sm">
+            <CardContent className="p-8 text-center">
+              <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">
+                No Donors Registered
+              </h3>
+              <p className="text-slate-600 mb-4">
+                Get started by registering your first donor. Registered donors
+                will appear here and be available for recipient matching.
+              </p>
+              <Button
+                onClick={() => setCurrentView("form")}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Register First Donor
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border border-slate-200 shadow-sm">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="text-left py-4 px-6 font-medium text-slate-700">
+                        Donor
+                      </th>
                       <th className="text-left py-4 px-6 font-medium text-slate-700">
                         PHN
                       </th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">
-                      Blood Type
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">
-                      Age
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">
-                      Relation
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">
-                      Status
-                    </th>
-                    <th className="text-left py-4 px-6 font-medium text-slate-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(allDonors
-                    .filter((d) => {
-                      const q = donorFilter.trim().toLowerCase();
-                      if (!q) return true;
-                      return (
-                        (d.name || "").toLowerCase().includes(q) ||
-                        (d.patientPhn || "").toLowerCase().includes(q) ||
-                        (d.bloodGroup || "").toLowerCase().includes(q) ||
-                        (d.relationToRecipient || "").toLowerCase().includes(q)
-                      );
-                    })
-                    .map((donor) => (
-                    <tr
-                      key={donor.id}
-                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="py-4 px-6">
-                        <div className="font-medium text-slate-900">
-                          {donor.name}
-                        </div>
-                        <div className="text-sm text-slate-500">
-                          {donor.gender}
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-slate-600">
-                        {donor.patientPhn || 'N/A'}
-                      </td>
-                      <td className="py-4 px-6 text-slate-600">
-                        <span className="font-medium">{donor.bloodGroup}</span>
-                      </td>
-                      <td className="py-4 px-6 text-slate-600">
-                        {donor.age} years
-                      </td>
-                      <td className="py-4 px-6 text-slate-600">
-                        {donor.relationToRecipient || "N/A"}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            donor.status === "assigned"
-                              ? "bg-blue-100 text-blue-800"
-                              : donor.status === "evaluating"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : donor.status === "rejected"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {donor.status
-                            ? donor.status.charAt(0).toUpperCase() +
-                              donor.status.slice(1)
-                            : "Available"}
-                        </span>
-                        {donor.assignedRecipientName && (
-                          <div className="text-xs text-slate-600 mt-1">
-                            Assigned to: {donor.assignedRecipientName}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-slate-600 border-slate-300 hover:bg-slate-50"
-                            onClick={() => {
-                              setSelectedDonor(convertDonorToFormData(donor));
-                              setShowDonorModal(true);
-                            }}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            View Details
-                          </Button>
-                          {isAdmin && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 border-red-200 hover:bg-red-50"
-                              onClick={async () => {
-                                if (!confirm(`Delete donor ${donor.name}? This cannot be undone.`)) return;
-                                try {
-                                  // If donor is currently assigned, unassign first
-                                  if (donor.status === 'assigned') {
-                                    await unassignDonor(donor.id);
-                                  }
-                                  await removeDonor(donor.id);
-                                  // Optionally refresh list
-                                  await fetchAllDonors();
-                                } catch (err) {
-                                  console.error('Failed to delete donor:', err);
-                                  alert('Failed to delete donor. See console for details.');
-                                }
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Delete
-                            </Button>
-                          )}
-                        </div>
-                      </td>
+                      <th className="text-left py-4 px-6 font-medium text-slate-700">
+                        Blood Type
+                      </th>
+                      <th className="text-left py-4 px-6 font-medium text-slate-700">
+                        Age
+                      </th>
+                      <th className="text-left py-4 px-6 font-medium text-slate-700">
+                        Relation
+                      </th>
+                      <th className="text-left py-4 px-6 font-medium text-slate-700">
+                        Status
+                      </th>
+                      <th className="text-left py-4 px-6 font-medium text-slate-700">
+                        Actions
+                      </th>
                     </tr>
-                  )))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+                  </thead>
+                  <tbody>
+                    {allDonors
+                      .filter((d) => {
+                        const q = donorFilter.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          (d.name || "").toLowerCase().includes(q) ||
+                          (d.patientPhn || "").toLowerCase().includes(q) ||
+                          (d.bloodGroup || "").toLowerCase().includes(q) ||
+                          (d.relationToRecipient || "")
+                            .toLowerCase()
+                            .includes(q)
+                        );
+                      })
+                      .map((donor) => (
+                        <tr
+                          key={donor.id}
+                          className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                        >
+                          <td className="py-4 px-6">
+                            <div className="font-medium text-slate-900">
+                              {donor.name}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              {donor.gender}
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            {donor.patientPhn || "N/A"}
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            <span className="font-medium">
+                              {donor.bloodGroup}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            {donor.age} years
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            {donor.relationToRecipient || "N/A"}
+                          </td>
+                          <td className="py-4 px-6">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                donor.status === "assigned"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : donor.status === "evaluating"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : donor.status === "rejected"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-green-100 text-green-800"
+                              }`}
+                            >
+                              {donor.status
+                                ? donor.status.charAt(0).toUpperCase() +
+                                  donor.status.slice(1)
+                                : "Available"}
+                            </span>
+                            {donor.assignedRecipientName && (
+                              <div className="text-xs text-slate-600 mt-1">
+                                Assigned to: {donor.assignedRecipientName}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-slate-600 border-slate-300 hover:bg-slate-50"
+                                onClick={() => {
+                                  setSelectedDonor(
+                                    convertDonorToFormData(donor)
+                                  );
+                                  setShowDonorModal(true);
+                                }}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                View Details
+                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                  onClick={async () => {
+                                    if (
+                                      !confirm(
+                                        `Delete donor ${donor.name}? This cannot be undone.`
+                                      )
+                                    )
+                                      return;
+                                    try {
+                                      // If donor is currently assigned, unassign first
+                                      if (donor.status === "assigned") {
+                                        await unassignDonor(donor.id);
+                                      }
+                                      await removeDonor(donor.id);
+                                      // Optionally refresh list
+                                      await fetchAllDonors();
+                                    } catch (err) {
+                                      console.error(
+                                        "Failed to delete donor:",
+                                        err
+                                      );
+                                      alert(
+                                        "Failed to delete donor. See console for details."
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  Delete
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     );
   };
 
@@ -1171,7 +1198,9 @@ const DonorAssessment: React.FC<DonorAssessmentProps> = ({
                       className="w-full justify-start text-left font-normal border-slate-300"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.dateOfBirth ? formatDateToDDMMYYYY(formData.dateOfBirth) : 'Select date'}
+                      {formData.dateOfBirth
+                        ? formatDateToDDMMYYYY(formData.dateOfBirth)
+                        : "Select date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">

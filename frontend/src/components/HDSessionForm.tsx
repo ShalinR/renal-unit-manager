@@ -1,18 +1,22 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import TimePicker from '@/components/ui/TimePicker';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import TimePicker from "@/components/ui/TimePicker";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   ArrowLeft,
   ArrowRight,
@@ -29,12 +33,21 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar as CalendarIcon,
-} from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { formatDateToDDMMYYYY, isoStringToDate, toLocalISO } from '@/lib/dateUtils';
-import { usePatientContext } from '@/context/PatientContext';
-import { createHemodialysisRecord, getHemodialysisRecordsByPatientId, deleteHemodialysisRecord, getHemodialysisRecordById } from '@/services/hemodialysisApi';
-import { useToast } from '@/hooks/use-toast';
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  formatDateToDDMMYYYY,
+  isoStringToDate,
+  toLocalISO,
+} from "@/lib/dateUtils";
+import { usePatientContext } from "@/context/PatientContext";
+import {
+  createHemodialysisRecord,
+  getHemodialysisRecordsByPatientId,
+  deleteHemodialysisRecord,
+  getHemodialysisRecordById,
+} from "@/services/hemodialysisApi";
+import { useToast } from "@/hooks/use-toast";
 
 export interface PersonalInfo {
   name: string;
@@ -122,12 +135,12 @@ export interface HemodialysisForm {
 }
 
 const FORM_STEPS = [
-  { label: 'Personal Info', icon: User },
-  { label: 'HD Prescription', icon: Pill },
-  { label: 'Vascular Access', icon: Activity },
-  { label: 'Dialysis Session', icon: ClipboardList },
-  { label: 'Other Notes', icon: FileText },
-  { label: 'Confirmation', icon: CheckCircle },
+  { label: "Personal Info", icon: User },
+  { label: "HD Prescription", icon: Pill },
+  { label: "Vascular Access", icon: Activity },
+  { label: "Dialysis Session", icon: ClipboardList },
+  { label: "Other Notes", icon: FileText },
+  { label: "Confirmation", icon: CheckCircle },
 ];
 
 interface HDSessionFormProps {
@@ -143,7 +156,11 @@ const ErrorMessage = ({ message }: { message: string }) => (
   </div>
 );
 
-const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) => {
+const HDSessionForm: React.FC<HDSessionFormProps> = ({
+  form,
+  setForm,
+  onBack,
+}) => {
   const [step, setStep] = useState(0);
   const [hourIndex, setHourIndex] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -156,7 +173,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
   const { patient, globalPatient } = usePatientContext();
   const { toast } = useToast();
   const currentPhn = (patient || globalPatient)?.phn;
-  const STORAGE_KEY = currentPhn ? `hemodialysis-draft-${currentPhn}` : 'hemodialysis-draft';
+  const STORAGE_KEY = currentPhn
+    ? `hemodialysis-draft-${currentPhn}`
+    : "hemodialysis-draft";
   const totalSteps = FORM_STEPS.length;
 
   const currentPatient = patient || globalPatient;
@@ -169,8 +188,8 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         ...prev,
         personal: {
           ...prev.personal,
-          name: p.name || '',
-          phn: p.phn || '',
+          name: p.name || "",
+          phn: p.phn || "",
           age: p.age ? String(p.age) : prev.personal.age,
           gender: p.gender || prev.personal.gender,
         },
@@ -184,14 +203,16 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
       const loadSessions = async () => {
         setLoadingSessions(true);
         try {
-          const records = await getHemodialysisRecordsByPatientId(currentPatient.phn);
+          const records = await getHemodialysisRecordsByPatientId(
+            currentPatient.phn
+          );
           setSavedSessions(records || []);
         } catch (error) {
-          console.error('Failed to load sessions:', error);
+          console.error("Failed to load sessions:", error);
           toast({
-            title: 'Error',
-            description: 'Failed to load saved sessions.',
-            variant: 'destructive',
+            title: "Error",
+            description: "Failed to load saved sessions.",
+            variant: "destructive",
           });
         } finally {
           setLoadingSessions(false);
@@ -210,7 +231,8 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         // parsed may be a payload shape from previous save; attempt to map to form shape
         const loadedForm: HemodialysisForm = {
           personal: parsed.personal || form.personal,
-          prescription: parsed.prescription || parsed.prescription || form.prescription,
+          prescription:
+            parsed.prescription || parsed.prescription || form.prescription,
           vascular: parsed.vascular || parsed.vascular || form.vascular,
           session: parsed.session || parsed.session || form.session,
           otherNotes: parsed.otherNotes || form.otherNotes,
@@ -221,7 +243,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         if (hasData) setForm(loadedForm);
       }
     } catch (e) {
-      console.error('Failed to load hemodialysis draft', e);
+      console.error("Failed to load hemodialysis draft", e);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [STORAGE_KEY]);
@@ -231,7 +253,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
     } catch (e) {
-      console.error('Failed to save hemodialysis draft', e);
+      console.error("Failed to save hemodialysis draft", e);
     }
   }, [form, STORAGE_KEY]);
 
@@ -246,7 +268,11 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         session: { ...prev.session, interDialyticWeightGainKg: gain },
       }));
     }
-  }, [form.prescription.dryWeightKg, form.session.preDialysisWeightKg, setForm]);
+  }, [
+    form.prescription.dryWeightKg,
+    form.session.preDialysisWeightKg,
+    setForm,
+  ]);
 
   // Auto-compute inter-dialytic weight gain for hourly records
   useEffect(() => {
@@ -255,7 +281,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
     const newRecords = hourlyRecords.map((record) => {
       const pre = record.preDialysisWeightKg ?? 0;
       const post = record.postDialysisWeightKg ?? 0;
-      
+
       if (pre && post) {
         const calculatedGain = parseFloat((pre - post).toFixed(2));
         if (calculatedGain !== record.interDialyticWeightGainKg) {
@@ -272,7 +298,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         session: { ...prev.session, hourlyRecords: newRecords },
       }));
     }
-  }, [form.session?.hourlyRecords?.map((r) => `${r.preDialysisWeightKg}-${r.postDialysisWeightKg}`).join('|'), setForm]);
+  }, [
+    form.session?.hourlyRecords
+      ?.map((r) => `${r.preDialysisWeightKg}-${r.postDialysisWeightKg}`)
+      .join("|"),
+    setForm,
+  ]);
 
   // Ensure hourlyRecords array exists when entering Dialysis Session step
   useEffect(() => {
@@ -281,7 +312,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
       if (!existing || existing.length !== 4) {
         const hours: HourlyRecord[] = [1, 2, 3, 4].map((n) => ({
           hourNumber: n,
-          time: '',
+          time: "",
           durationMinutes: undefined,
           systolic: undefined,
           diastolic: undefined,
@@ -300,10 +331,13 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
           preDialysisWeightKg: undefined,
           postDialysisWeightKg: undefined,
           interDialyticWeightGainKg: undefined,
-          notes: '',
+          notes: "",
           completed: false,
         }));
-        setForm((prev) => ({ ...prev, session: { ...prev.session, hourlyRecords: hours } }));
+        setForm((prev) => ({
+          ...prev,
+          session: { ...prev.session, hourlyRecords: hours },
+        }));
         setHourIndex(0);
       }
     }
@@ -314,19 +348,22 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
     [step, totalSteps]
   );
 
-  const handleChange = useCallback((path: string, value: any) => {
-    setForm((prev) => {
-      const clone: any = { ...prev };
-      const parts = path.split('.');
-      let cur = clone;
-      for (let i = 0; i < parts.length - 1; i++) {
-        cur[parts[i]] = cur[parts[i]] ?? {};
-        cur = cur[parts[i]];
-      }
-      cur[parts[parts.length - 1]] = value;
-      return clone as HemodialysisForm;
-    });
-  }, [setForm]);
+  const handleChange = useCallback(
+    (path: string, value: any) => {
+      setForm((prev) => {
+        const clone: any = { ...prev };
+        const parts = path.split(".");
+        let cur = clone;
+        for (let i = 0; i < parts.length - 1; i++) {
+          cur[parts[i]] = cur[parts[i]] ?? {};
+          cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = value;
+        return clone as HemodialysisForm;
+      });
+    },
+    [setForm]
+  );
 
   const validateStep = (s: number): string[] => {
     // Validation relaxed for early development stage: allow progressing without required fields.
@@ -343,13 +380,16 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
   /**
    * Validate that hourly session times are in chronological order (24-hour format)
    */
-  const validateHourlySessionTimes = (): { isValid: boolean; error?: string } => {
+  const validateHourlySessionTimes = (): {
+    isValid: boolean;
+    error?: string;
+  } => {
     const hourlyRecords = form.session?.hourlyRecords || [];
-    
+
     // Check if all hourly records have times set
-    const allTimesSet = hourlyRecords.every(record => record.time);
+    const allTimesSet = hourlyRecords.every((record) => record.time);
     if (hourlyRecords.length > 0 && !allTimesSet) {
-      return { isValid: false, error: 'All hourly session times must be set' };
+      return { isValid: false, error: "All hourly session times must be set" };
     }
 
     // Validate chronological order
@@ -360,13 +400,13 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
       if (!currentTime || !nextTime) continue;
 
       // Convert time strings (HH:MM) to comparable format
-      const currentMinutes = parseInt(currentTime.replace(':', ''));
-      const nextMinutes = parseInt(nextTime.replace(':', ''));
+      const currentMinutes = parseInt(currentTime.replace(":", ""));
+      const nextMinutes = parseInt(nextTime.replace(":", ""));
 
       if (currentMinutes >= nextMinutes) {
         return {
           isValid: false,
-          error: `Hour ${i + 1} time (${currentTime}) must be before Hour ${i + 2} time (${nextTime}). Times must be in chronological order.`
+          error: `Hour ${i + 1} time (${currentTime}) must be before Hour ${i + 2} time (${nextTime}). Times must be in chronological order.`,
         };
       }
     }
@@ -380,13 +420,17 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
   const loadSession = async (sessionId: number) => {
     try {
       const record = await getHemodialysisRecordById(sessionId);
-      console.log('Fetched record:', record); // DEBUG
+      console.log("Fetched record:", record); // DEBUG
       if (!record) {
-        toast({ title: 'Error', description: 'Session not found.', variant: 'destructive' });
+        toast({
+          title: "Error",
+          description: "Session not found.",
+          variant: "destructive",
+        });
         return;
       }
 
-      console.log('Vascular Access from API:', record.vascularAccess); // DEBUG
+      console.log("Vascular Access from API:", record.vascularAccess); // DEBUG
 
       // Parse saved data back into form shape
       const loadedForm: HemodialysisForm = {
@@ -394,38 +438,54 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         prescription: record.prescription || {},
         vascular: record.vascularAccess || {},
         session: {
-          date: record.hemoDialysisSessionDate || '',
+          date: record.hemoDialysisSessionDate || "",
           hourlyRecords: record.session?.hourlyRecords || [],
         },
-        otherNotes: record.otherNotes || '',
+        otherNotes: record.otherNotes || "",
         completedBy: {
-          staffName: record.filledBy || '',
-          staffRole: record.completedBy?.staffRole || '',
-          completionDate: record.completedBy?.completionDate || '',
+          staffName: record.filledBy || "",
+          staffRole: record.completedBy?.staffRole || "",
+          completionDate: record.completedBy?.completionDate || "",
         },
       };
 
-      console.log('Loaded form:', loadedForm); // DEBUG
+      console.log("Loaded form:", loadedForm); // DEBUG
       setForm(loadedForm);
       setShowSavedSessions(false);
       setStep(0);
-      toast({ title: 'Loaded', description: 'Session data loaded successfully.', variant: 'default' });
+      toast({
+        title: "Loaded",
+        description: "Session data loaded successfully.",
+        variant: "default",
+      });
     } catch (error) {
-      console.error('Failed to load session:', error);
-      toast({ title: 'Error', description: 'Failed to load session.', variant: 'destructive' });
+      console.error("Failed to load session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load session.",
+        variant: "destructive",
+      });
     }
   };
 
   const deleteSession = async (sessionId: number) => {
-    if (!confirm('Delete this session? This action cannot be undone.')) return;
+    if (!confirm("Delete this session? This action cannot be undone.")) return;
 
     try {
       await deleteHemodialysisRecord(sessionId);
       setSavedSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      toast({ title: 'Deleted', description: 'Session deleted successfully.', variant: 'default' });
+      toast({
+        title: "Deleted",
+        description: "Session deleted successfully.",
+        variant: "default",
+      });
     } catch (error) {
-      console.error('Failed to delete session:', error);
-      toast({ title: 'Error', description: 'Failed to delete session.', variant: 'destructive' });
+      console.error("Failed to delete session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete session.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -434,9 +494,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
     const timeValidation = validateHourlySessionTimes();
     if (!timeValidation.isValid) {
       toast({
-        title: 'Invalid Time Order',
-        description: timeValidation.error || 'Please check your hourly session times',
-        variant: 'destructive'
+        title: "Invalid Time Order",
+        description:
+          timeValidation.error || "Please check your hourly session times",
+        variant: "destructive",
       });
       setStep(2); // Navigate to Dialysis Session step
       return;
@@ -447,11 +508,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
     // Require both confirmation checkboxes before submitting
     if (!confirmAccurate || !consentProcessing) {
       toast({
-        title: 'Confirmation required',
-        description: 'Please tick both consent and confirmation checkboxes before submitting the form.',
-        variant: 'destructive',
+        title: "Confirmation required",
+        description:
+          "Please tick both consent and confirmation checkboxes before submitting the form.",
+        variant: "destructive",
       });
-      const confIdx = FORM_STEPS.findIndex(s => s.label === 'Confirmation');
+      const confIdx = FORM_STEPS.findIndex((s) => s.label === "Confirmation");
       if (confIdx >= 0) setStep(confIdx);
       return;
     }
@@ -461,8 +523,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
       // Prepare payload - map form fields to backend DTO field names
       // Derive blood pressure string from first hourly record if available (systolic/diastolic)
       const hourly = form.session?.hourlyRecords || [];
-      const firstWithBP = hourly.find(r => r.systolic && r.diastolic);
-      const bloodPressure = firstWithBP ? `${firstWithBP.systolic}/${firstWithBP.diastolic}` : undefined;
+      const firstWithBP = hourly.find((r) => r.systolic && r.diastolic);
+      const bloodPressure = firstWithBP
+        ? `${firstWithBP.systolic}/${firstWithBP.diastolic}`
+        : undefined;
 
       const payload = {
         patientId: form.personal.phn,
@@ -476,31 +540,48 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         completedBy: {
           staffName: form.completedBy?.staffName,
           staffRole: form.completedBy?.staffRole,
-          completionDate: form.completedBy?.completionDate || new Date().toISOString().split('T')[0],
+          completionDate:
+            form.completedBy?.completionDate ||
+            new Date().toISOString().split("T")[0],
         },
       };
 
       // Try saving to backend API (fallback to localStorage if unavailable)
       let saved = null;
       try {
-        const patientId = form.personal.phn || form.personal.phn === '' ? form.personal.phn : undefined;
-        if (!patientId) throw new Error('Patient PHN is missing');
+        const patientId =
+          form.personal.phn || form.personal.phn === ""
+            ? form.personal.phn
+            : undefined;
+        if (!patientId) throw new Error("Patient PHN is missing");
         saved = await createHemodialysisRecord(patientId!, payload);
-        toast({ title: 'Saved', description: 'Hemodialysis record submitted successfully', variant: 'default' });
+        toast({
+          title: "Saved",
+          description: "Hemodialysis record submitted successfully",
+          variant: "default",
+        });
         // Clear draft if present
         localStorage.removeItem(STORAGE_KEY);
         // Dispatch custom event so analytics (HDSummary) can refresh
-        window.dispatchEvent(new CustomEvent('hd-record-added'));
+        window.dispatchEvent(new CustomEvent("hd-record-added"));
         onBack();
       } catch (e) {
         // backend not available or error — save draft locally
-        console.warn('Backend save failed, saving draft locally', e);
+        console.warn("Backend save failed, saving draft locally", e);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-        toast({ title: 'Saved locally', description: 'No backend available — draft saved locally', variant: 'destructive' });
+        toast({
+          title: "Saved locally",
+          description: "No backend available — draft saved locally",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      toast({ title: 'Submission failed', description: 'Failed to submit form. Please try again.', variant: 'destructive' });
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Submission failed",
+        description: "Failed to submit form. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -518,7 +599,11 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {showSavedSessions ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              {showSavedSessions ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
               <h3 className="font-semibold text-green-900">Session History</h3>
             </div>
             <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
@@ -530,24 +615,34 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         {showSavedSessions && (
           <CardContent className="pt-0 pb-4 border-t border-green-200">
             {loadingSessions ? (
-              <p className="text-center text-sm text-gray-600 py-4">Loading sessions...</p>
+              <p className="text-center text-sm text-gray-600 py-4">
+                Loading sessions...
+              </p>
             ) : savedSessions.length === 0 ? (
-              <p className="text-center text-sm text-gray-600 py-4">No saved sessions yet.</p>
+              <p className="text-center text-sm text-gray-600 py-4">
+                No saved sessions yet.
+              </p>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {savedSessions.map((session) => (
-                  <div key={session.id} className="p-3 bg-white rounded-lg border border-green-100 hover:border-green-300">
+                  <div
+                    key={session.id}
+                    className="p-3 bg-white rounded-lg border border-green-100 hover:border-green-300"
+                  >
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm text-green-900">
-                          {session.hemoDialysisSessionDate || 'No date'}
+                          {session.hemoDialysisSessionDate || "No date"}
                         </p>
                         <p className="text-xs text-gray-600">
-                          {session.filledBy ? `Staff: ${session.filledBy}` : 'No staff info'}
+                          {session.filledBy
+                            ? `Staff: ${session.filledBy}`
+                            : "No staff info"}
                         </p>
                         {session.session?.hourlyRecords && (
                           <p className="text-xs text-green-700 mt-1">
-                            {session.session.hourlyRecords.length} hourly records
+                            {session.session.hourlyRecords.length} hourly
+                            records
                           </p>
                         )}
                       </div>
@@ -608,10 +703,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   <div
                     className={`flex items-center justify-center w-10 h-10 rounded-full z-10 transition-colors ${
                       isActive
-                        ? 'bg-blue-600 text-white'
+                        ? "bg-blue-600 text-white"
                         : isCompleted
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-gray-600"
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -619,10 +714,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   <span
                     className={`mt-2 text-xs ${
                       isActive
-                        ? 'text-blue-700'
+                        ? "text-blue-700"
                         : isCompleted
-                          ? 'text-blue-600'
-                          : 'text-gray-400'
+                          ? "text-blue-600"
+                          : "text-gray-400"
                     }`}
                   >
                     {formStep.label}
@@ -632,7 +727,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                 {idx < FORM_STEPS.length - 1 && (
                   <div
                     className={`h-1 flex-1 ml-3 mr-3 ${
-                      step > idx ? 'bg-blue-500' : 'bg-gray-200'
+                      step > idx ? "bg-blue-500" : "bg-gray-200"
                     } rounded`}
                   ></div>
                 )}
@@ -648,7 +743,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
           <CardTitle className="flex items-center gap-3 text-lg">
             {FORM_STEPS[step]?.icon &&
               React.createElement(FORM_STEPS[step].icon as any, {
-                className: 'w-6 h-6',
+                className: "w-6 h-6",
               })}
             {FORM_STEPS[step]?.label}
           </CardTitle>
@@ -657,7 +752,8 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
           {step === 0 && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                Use Global Search above to select a patient. Details will auto-populate.
+                Use Global Search above to select a patient. Details will
+                auto-populate.
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -671,11 +767,11 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     id="name"
                     value={form.personal.name}
                     onChange={(e) =>
-                      handleChange('personal.name', e.target.value)
+                      handleChange("personal.name", e.target.value)
                     }
                     placeholder="Enter full name"
                     className={`h-10 w-full border-2 ${
-                      errors.name ? 'border-red-500' : 'border-gray-200'
+                      errors.name ? "border-red-500" : "border-gray-200"
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full`}
                   />
                   {errors.name && <ErrorMessage message={errors.name} />}
@@ -686,18 +782,18 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     htmlFor="phn"
                     className="text-sm font-semibold text-gray-700 flex items-center"
                   >
-                    Personal Health Number (PHN){' '}
+                    Personal Health Number (PHN){" "}
                     <span className="text-red-500 ml-1">*</span>
                   </Label>
                   <Input
                     id="phn"
                     value={form.personal.phn}
                     onChange={(e) =>
-                      handleChange('personal.phn', e.target.value)
+                      handleChange("personal.phn", e.target.value)
                     }
                     placeholder="Enter PHN number"
                     className={`h-10 w-full border-2 ${
-                      errors.phn ? 'border-red-500' : 'border-gray-200'
+                      errors.phn ? "border-red-500" : "border-gray-200"
                     } focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md w-full`}
                   />
                   {errors.phn && <ErrorMessage message={errors.phn} />}
@@ -712,9 +808,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     id="age"
-                    value={form.personal.age || ''}
+                    value={form.personal.age || ""}
                     onChange={(e) =>
-                      handleChange('personal.age', e.target.value)
+                      handleChange("personal.age", e.target.value)
                     }
                     placeholder="Age"
                     className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md"
@@ -730,9 +826,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     id="gender"
-                    value={form.personal.gender || ''}
+                    value={form.personal.gender || ""}
                     onChange={(e) =>
-                      handleChange('personal.gender', e.target.value)
+                      handleChange("personal.gender", e.target.value)
                     }
                     placeholder="Gender"
                     className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md"
@@ -752,7 +848,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   <Input
                     value={form.prescription.access}
                     onChange={(e) =>
-                      handleChange('prescription.access', e.target.value)
+                      handleChange("prescription.access", e.target.value)
                     }
                     placeholder="e.g., Fistula, Graft, Catheter"
                     className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-md"
@@ -764,10 +860,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.durationMinutes ?? ''}
+                    value={form.prescription.durationMinutes ?? ""}
                     onChange={(e) =>
                       handleChange(
-                        'prescription.durationMinutes',
+                        "prescription.durationMinutes",
                         Number(e.target.value)
                       )
                     }
@@ -780,9 +876,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     Dialysis Profile
                   </Label>
                   <Input
-                    value={form.prescription.dialysisProfile || ''}
+                    value={form.prescription.dialysisProfile || ""}
                     onChange={(e) =>
-                      handleChange('prescription.dialysisProfile', e.target.value)
+                      handleChange(
+                        "prescription.dialysisProfile",
+                        e.target.value
+                      )
                     }
                     placeholder="e.g., Standard, Low-flux, High-flux"
                     className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
@@ -795,9 +894,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.sodium ?? ''}
+                    value={form.prescription.sodium ?? ""}
                     onChange={(e) =>
-                      handleChange('prescription.sodium', Number(e.target.value))
+                      handleChange(
+                        "prescription.sodium",
+                        Number(e.target.value)
+                      )
                     }
                     className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                   />
@@ -809,10 +911,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.bicarbonate ?? ''}
+                    value={form.prescription.bicarbonate ?? ""}
                     onChange={(e) =>
                       handleChange(
-                        'prescription.bicarbonate',
+                        "prescription.bicarbonate",
                         Number(e.target.value)
                       )
                     }
@@ -822,15 +924,15 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
 
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-gray-700">
-                    Blood Flow Rate (mL/min){' '}
+                    Blood Flow Rate (mL/min){" "}
                     <span className="text-red-500 ml-1">*</span>
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.bloodFlowRate ?? ''}
+                    value={form.prescription.bloodFlowRate ?? ""}
                     onChange={(e) =>
                       handleChange(
-                        'prescription.bloodFlowRate',
+                        "prescription.bloodFlowRate",
                         Number(e.target.value)
                       )
                     }
@@ -844,10 +946,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.dialysateFlowRate ?? ''}
+                    value={form.prescription.dialysateFlowRate ?? ""}
                     onChange={(e) =>
                       handleChange(
-                        'prescription.dialysateFlowRate',
+                        "prescription.dialysateFlowRate",
                         Number(e.target.value)
                       )
                     }
@@ -861,9 +963,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.temperature ?? ''}
+                    value={form.prescription.temperature ?? ""}
                     onChange={(e) =>
-                      handleChange('prescription.temperature', Number(e.target.value))
+                      handleChange(
+                        "prescription.temperature",
+                        Number(e.target.value)
+                      )
                     }
                     className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                   />
@@ -871,15 +976,14 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
 
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-gray-700">
-                    Dry Weight (kg){' '}
-                    <span className="text-red-500 ml-1">*</span>
+                    Dry Weight (kg) <span className="text-red-500 ml-1">*</span>
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.dryWeightKg ?? ''}
+                    value={form.prescription.dryWeightKg ?? ""}
                     onChange={(e) =>
                       handleChange(
-                        'prescription.dryWeightKg',
+                        "prescription.dryWeightKg",
                         Number(e.target.value)
                       )
                     }
@@ -893,10 +997,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </Label>
                   <Input
                     type="number"
-                    value={form.prescription.ultrafiltrationVolume ?? ''}
+                    value={form.prescription.ultrafiltrationVolume ?? ""}
                     onChange={(e) =>
                       handleChange(
-                        'prescription.ultrafiltrationVolume',
+                        "prescription.ultrafiltrationVolume",
                         Number(e.target.value)
                       )
                     }
@@ -909,9 +1013,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     Anticoagulation
                   </Label>
                   <Input
-                    value={form.prescription.anticoagulation || ''}
+                    value={form.prescription.anticoagulation || ""}
                     onChange={(e) =>
-                      handleChange('prescription.anticoagulation', e.target.value)
+                      handleChange(
+                        "prescription.anticoagulation",
+                        e.target.value
+                      )
                     }
                     placeholder="e.g., Heparin, Warfarin, None"
                     className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
@@ -923,9 +1030,12 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     Erythropoietin Dose
                   </Label>
                   <Input
-                    value={form.prescription.erythropoetinDose || ''}
+                    value={form.prescription.erythropoetinDose || ""}
                     onChange={(e) =>
-                      handleChange('prescription.erythropoetinDose', e.target.value)
+                      handleChange(
+                        "prescription.erythropoetinDose",
+                        e.target.value
+                      )
                     }
                     placeholder="e.g., 40 units/kg"
                     className="h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg"
@@ -938,9 +1048,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   Other Treatment
                 </Label>
                 <Textarea
-                  value={form.prescription.otherTreatment || ''}
+                  value={form.prescription.otherTreatment || ""}
                   onChange={(e) =>
-                    handleChange('prescription.otherTreatment', e.target.value)
+                    handleChange("prescription.otherTreatment", e.target.value)
                   }
                   placeholder="Any other treatments or notes"
                   rows={4}
@@ -960,7 +1070,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   <Input
                     value={form.vascular.access}
                     onChange={(e) =>
-                      handleChange('vascular.access', e.target.value)
+                      handleChange("vascular.access", e.target.value)
                     }
                     placeholder="e.g., AVF, AVG, Temporary Catheter"
                     className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-md"
@@ -978,7 +1088,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         className="w-full h-10 justify-start text-left font-normal border-2 border-gray-200"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {form.vascular.dateOfCreation ? formatDateToDDMMYYYY(form.vascular.dateOfCreation) : 'Select date'}
+                        {form.vascular.dateOfCreation
+                          ? formatDateToDDMMYYYY(form.vascular.dateOfCreation)
+                          : "Select date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -987,7 +1099,10 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         selected={isoStringToDate(form.vascular.dateOfCreation)}
                         onSelect={(date) => {
                           if (date) {
-                            handleChange('vascular.dateOfCreation', toLocalISO(date));
+                            handleChange(
+                              "vascular.dateOfCreation",
+                              toLocalISO(date)
+                            );
                           }
                         }}
                         disabled={(date) => date > new Date()}
@@ -1002,9 +1117,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     Created By
                   </Label>
                   <Input
-                    value={form.vascular.createdBy || ''}
+                    value={form.vascular.createdBy || ""}
                     onChange={(e) =>
-                      handleChange('vascular.createdBy', e.target.value)
+                      handleChange("vascular.createdBy", e.target.value)
                     }
                     placeholder="Name of surgeon/clinician"
                     className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-md"
@@ -1016,9 +1131,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     Complications
                   </Label>
                   <Input
-                    value={form.vascular.complications || ''}
+                    value={form.vascular.complications || ""}
                     onChange={(e) =>
-                      handleChange('vascular.complications', e.target.value)
+                      handleChange("vascular.complications", e.target.value)
                     }
                     placeholder="e.g., Infection, Thrombosis, Steal syndrome"
                     className="h-10 border-2 border-gray-200 focus:border-blue-500 rounded-md"
@@ -1042,7 +1157,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         className="w-full h-10 justify-start text-left font-normal border-2 border-gray-200"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {form.session.date ? formatDateToDDMMYYYY(form.session.date) : 'Select date'}
+                        {form.session.date
+                          ? formatDateToDDMMYYYY(form.session.date)
+                          : "Select date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1051,7 +1168,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         selected={isoStringToDate(form.session.date)}
                         onSelect={(date) => {
                           if (date) {
-                            handleChange('session.date', toLocalISO(date));
+                            handleChange("session.date", toLocalISO(date));
                           }
                         }}
                         disabled={(date) => date > new Date()}
@@ -1060,33 +1177,37 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                     </PopoverContent>
                   </Popover>
                 </div>
-
               </div>
               {/* Hourly records section */}
               <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-md font-semibold text-gray-900 mb-3">Hourly Records (4 × 1-hour observations)</h4>
+                <h4 className="text-md font-semibold text-gray-900 mb-3">
+                  Hourly Records (4 × 1-hour observations)
+                </h4>
                 <div className="flex gap-2 mb-3">
                   {(form.session.hourlyRecords || []).map((hr, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => setHourIndex(idx)}
-                      className={`px-3 py-1 rounded ${hourIndex === idx ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-3 py-1 rounded ${hourIndex === idx ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
                     >
                       Hour {hr.hourNumber}
                     </button>
                   ))}
                 </div>
 
-                  {(form.session.hourlyRecords || [])[hourIndex] && (
+                {(form.session.hourlyRecords || [])[hourIndex] && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="space-y-2">
                       <Label className="text-sm font-semibold text-gray-700">
-                        Time (24-hour format) <span className="text-red-500">*</span>
+                        Time (24-hour format){" "}
+                        <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative">
                         <TimePicker
-                          value={form.session.hourlyRecords?.[hourIndex]?.time || ''}
+                          value={
+                            form.session.hourlyRecords?.[hourIndex]?.time || ""
+                          }
                           onChange={(newTime) => {
                             const hours = form.session.hourlyRecords || [];
 
@@ -1095,9 +1216,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                               const prevTime = hours[hourIndex - 1]?.time;
                               if (prevTime && newTime <= prevTime) {
                                 toast({
-                                  title: 'Invalid Time',
+                                  title: "Invalid Time",
                                   description: `Hour ${hourIndex + 1} time must be after Hour ${hourIndex} time (${prevTime})`,
-                                  variant: 'destructive'
+                                  variant: "destructive",
                                 });
                                 return;
                               }
@@ -1107,149 +1228,267 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                               const nextTime = hours[hourIndex + 1]?.time;
                               if (nextTime && newTime >= nextTime) {
                                 toast({
-                                  title: 'Invalid Time',
+                                  title: "Invalid Time",
                                   description: `Hour ${hourIndex + 1} time must be before Hour ${hourIndex + 2} time (${nextTime})`,
-                                  variant: 'destructive'
+                                  variant: "destructive",
                                 });
                                 return;
                               }
                             }
 
-                            handleChange(`session.hourlyRecords.${hourIndex}.time`, newTime);
+                            handleChange(
+                              `session.hourlyRecords.${hourIndex}.time`,
+                              newTime
+                            );
                           }}
                           placeholder="Select time"
                         />
                         <span className="text-xs text-gray-500 mt-1 block">
-                          {hourIndex === 0 && 'First session start time'}
-                          {hourIndex === 1 && `Must be after Hour 1: ${form.session.hourlyRecords?.[0]?.time || 'Not set'}`}
-                          {hourIndex === 2 && `Must be after Hour 2: ${form.session.hourlyRecords?.[1]?.time || 'Not set'}`}
-                          {hourIndex === 3 && `Must be after Hour 3: ${form.session.hourlyRecords?.[2]?.time || 'Not set'}`}
+                          {hourIndex === 0 && "First session start time"}
+                          {hourIndex === 1 &&
+                            `Must be after Hour 1: ${form.session.hourlyRecords?.[0]?.time || "Not set"}`}
+                          {hourIndex === 2 &&
+                            `Must be after Hour 2: ${form.session.hourlyRecords?.[1]?.time || "Not set"}`}
+                          {hourIndex === 3 &&
+                            `Must be after Hour 3: ${form.session.hourlyRecords?.[2]?.time || "Not set"}`}
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Duration (min)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Duration (min)
+                      </Label>
                       <Input
                         type="number"
-                        value={form.session.hourlyRecords?.[hourIndex]?.durationMinutes ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.durationMinutes`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.durationMinutes ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.durationMinutes`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
-                     <div className="space-y-2">        </div>       
+                    <div className="space-y-2"> </div>
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Pre-Dialysis Weight (kg)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Pre-Dialysis Weight (kg)
+                      </Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={form.session.hourlyRecords?.[hourIndex]?.preDialysisWeightKg ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.preDialysisWeightKg`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.preDialysisWeightKg ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.preDialysisWeightKg`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Post-Dialysis Weight (kg)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Post-Dialysis Weight (kg)
+                      </Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={form.session.hourlyRecords?.[hourIndex]?.postDialysisWeightKg ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.postDialysisWeightKg`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.postDialysisWeightKg ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.postDialysisWeightKg`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Inter-Dialytic Weight Gain (kg)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Inter-Dialytic Weight Gain (kg)
+                      </Label>
                       <div className="relative">
                         <Input
                           type="number"
                           step="0.1"
-                          value={form.session.hourlyRecords?.[hourIndex]?.interDialyticWeightGainKg ?? ''}
+                          value={
+                            form.session.hourlyRecords?.[hourIndex]
+                              ?.interDialyticWeightGainKg ?? ""
+                          }
                           disabled
                           className="h-10 w-full border-2 border-gray-300 bg-gray-100 focus:border-gray-300 rounded-md text-gray-700"
                         />
-                        
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Pulse Rate (bpm)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Pulse Rate (bpm)
+                      </Label>
                       <Input
                         type="number"
-                        value={form.session.hourlyRecords?.[hourIndex]?.pulse ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.pulse`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]?.pulse ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.pulse`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">O₂ Saturation (%)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        O₂ Saturation (%)
+                      </Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={form.session.hourlyRecords?.[hourIndex]?.oxygenSaturationPercent ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.oxygenSaturationPercent`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.oxygenSaturationPercent ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.oxygenSaturationPercent`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Blood Flow Rate (mL/min)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Blood Flow Rate (mL/min)
+                      </Label>
                       <Input
                         type="number"
-                        value={form.session.hourlyRecords?.[hourIndex]?.bloodFlowRateMlPerMin ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.bloodFlowRateMlPerMin`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.bloodFlowRateMlPerMin ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.bloodFlowRateMlPerMin`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-full border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Arterial Pressure (mmHg)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Arterial Pressure (mmHg)
+                      </Label>
                       <Input
                         type="number"
-                        value={form.session.hourlyRecords?.[hourIndex]?.arterialPressureMmHg ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.arterialPressureMmHg`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.arterialPressureMmHg ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.arterialPressureMmHg`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-20 border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Venous Pressure (mmHg)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Venous Pressure (mmHg)
+                      </Label>
                       <Input
                         type="number"
-                        value={form.session.hourlyRecords?.[hourIndex]?.venousPressureMmHg ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.venousPressureMmHg`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.venousPressureMmHg ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.venousPressureMmHg`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-20 border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Transmembrane Pressure (mmHg)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Transmembrane Pressure (mmHg)
+                      </Label>
                       <Input
                         type="number"
-                        value={form.session.hourlyRecords?.[hourIndex]?.transmembranePressureMmHg ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.transmembranePressureMmHg`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.transmembranePressureMmHg ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.transmembranePressureMmHg`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-20 border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Ultrafiltration Volume (mL)</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Ultrafiltration Volume (mL)
+                      </Label>
                       <Input
                         type="number"
-                        value={form.session.hourlyRecords?.[hourIndex]?.ultrafiltrationVolumeMl ?? ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.ultrafiltrationVolumeMl`, Number(e.target.value))}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]
+                            ?.ultrafiltrationVolumeMl ?? ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.ultrafiltrationVolumeMl`,
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10 w-28 border-2 border-gray-200 focus:border-blue-500 rounded-md"
                       />
                     </div>
 
                     <div className="space-y-2 md:col-span-3">
-                      <Label className="text-sm font-semibold text-gray-700">Notes</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Notes
+                      </Label>
                       <Textarea
-                        value={form.session.hourlyRecords?.[hourIndex]?.notes || ''}
-                        onChange={(e) => handleChange(`session.hourlyRecords.${hourIndex}.notes`, e.target.value)}
+                        value={
+                          form.session.hourlyRecords?.[hourIndex]?.notes || ""
+                        }
+                        onChange={(e) =>
+                          handleChange(
+                            `session.hourlyRecords.${hourIndex}.notes`,
+                            e.target.value
+                          )
+                        }
                         rows={2}
                         className="w-full border-2 border-gray-200 focus:border-blue-500 rounded-md resize-none"
                       />
@@ -1257,8 +1496,6 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   </div>
                 )}
               </div>
-
-              
             </div>
           )}
 
@@ -1269,10 +1506,8 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   Additional Notes
                 </Label>
                 <Textarea
-                  value={form.otherNotes || ''}
-                  onChange={(e) =>
-                    handleChange('otherNotes', e.target.value)
-                  }
+                  value={form.otherNotes || ""}
+                  onChange={(e) => handleChange("otherNotes", e.target.value)}
                   placeholder="Enter any additional notes or observations"
                   rows={6}
                   className="border-2 border-gray-200 focus:border-blue-500 rounded-md resize-none"
@@ -1288,9 +1523,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
               </p>
 
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
-                <h3 className="font-semibold text-blue-900">
-                  Summary
-                </h3>
+                <h3 className="font-semibold text-blue-900">Summary</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Patient</p>
@@ -1307,13 +1540,13 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                   <div>
                     <p className="text-gray-600">Access</p>
                     <p className="font-semibold text-gray-900">
-                      {form.prescription.access || '-'}
+                      {form.prescription.access || "-"}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Session Date</p>
                     <p className="font-semibold text-gray-900">
-                      {form.session.date || '-'}
+                      {form.session.date || "-"}
                     </p>
                   </div>
                 </div>
@@ -1321,25 +1554,37 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
               {/* Confirmation / Staff sign-off */}
               <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-4">
                 <h3 className="font-semibold text-gray-900">Confirmation</h3>
-                <p className="text-sm text-gray-600">Enter staff details to complete and submit this record.</p>
+                <p className="text-sm text-gray-600">
+                  Enter staff details to complete and submit this record.
+                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">Completed By (Staff Name)</Label>
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Completed By (Staff Name)
+                    </Label>
                     <Input
-                      value={form.completedBy?.staffName || ''}
-                      onChange={(e) => handleChange('completedBy.staffName', e.target.value)}
+                      value={form.completedBy?.staffName || ""}
+                      onChange={(e) =>
+                        handleChange("completedBy.staffName", e.target.value)
+                      }
                       placeholder="Staff full name"
-                      className={`h-12 border-2 ${errors.staffName ? 'border-red-500' : 'border-gray-200'} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg`}
+                      className={`h-12 border-2 ${errors.staffName ? "border-red-500" : "border-gray-200"} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg`}
                     />
-                    {errors.staffName && <ErrorMessage message={errors.staffName} />}
+                    {errors.staffName && (
+                      <ErrorMessage message={errors.staffName} />
+                    )}
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">Staff Role</Label>
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Staff Role
+                    </Label>
                     <Input
-                      value={form.completedBy?.staffRole || ''}
-                      onChange={(e) => handleChange('completedBy.staffRole', e.target.value)}
+                      value={form.completedBy?.staffRole || ""}
+                      onChange={(e) =>
+                        handleChange("completedBy.staffRole", e.target.value)
+                      }
                       placeholder="e.g., Nurse, Nephrologist"
                       className="h-12 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg"
                     />
@@ -1348,7 +1593,9 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
 
                 {/* Consent checkboxes */}
                 <div className="bg-white p-4 rounded-md mt-3">
-                  <h4 className="font-semibold text-gray-800 mb-2">Consent and Confirmation</h4>
+                  <h4 className="font-semibold text-gray-800 mb-2">
+                    Consent and Confirmation
+                  </h4>
                   <div className="space-y-3">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <Checkbox
@@ -1357,12 +1604,13 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         onCheckedChange={(checked: boolean) => {
                           const v = !!checked;
                           setConfirmAccurate(v);
-                          handleChange('completedBy.confirmAccurate', v);
+                          handleChange("completedBy.confirmAccurate", v);
                         }}
                         className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
                       <span className="text-sm text-slate-700 leading-relaxed">
-                        I confirm that all information provided is accurate to the best of my knowledge.
+                        I confirm that all information provided is accurate to
+                        the best of my knowledge.
                       </span>
                     </label>
 
@@ -1373,12 +1621,13 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
                         onCheckedChange={(checked: boolean) => {
                           const v = !!checked;
                           setConsentProcessing(v);
-                          handleChange('completedBy.consentProcessing', v);
+                          handleChange("completedBy.consentProcessing", v);
                         }}
                         className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
                       <span className="text-sm text-slate-700 leading-relaxed">
-                        I consent to the processing of this information for clinical care and quality improvement purposes.
+                        I consent to the processing of this information for
+                        clinical care and quality improvement purposes.
                       </span>
                     </label>
                   </div>
@@ -1401,7 +1650,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({ form, setForm, onBack }) 
         ) : (
           <Button onClick={submit} disabled={isSubmitting}>
             <Save className="w-4 h-4 mr-2" />
-            {isSubmitting ? 'Submitting...' : 'Submit'}
+            {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         )}
       </div>

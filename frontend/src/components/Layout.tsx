@@ -78,7 +78,9 @@ const Layout = ({ children }: LayoutProps) => {
 
   const currentUser = {
     name: user?.fullName || user?.username || "User",
-    email: user?.username ? `${user.username}@hospital.com` : "user@hospital.com",
+    email: user?.username
+      ? `${user.username}@hospital.com`
+      : "user@hospital.com",
     role: user?.role || "USER",
     avatar: null,
   };
@@ -105,7 +107,8 @@ const Layout = ({ children }: LayoutProps) => {
       } catch (e) {
         // ignore errors for now
       } finally {
-        if (mounted) timer = window.setTimeout(fetchPending, 30000) as unknown as number;
+        if (mounted)
+          timer = window.setTimeout(fetchPending, 30000) as unknown as number;
       }
     };
 
@@ -159,7 +162,9 @@ const Layout = ({ children }: LayoutProps) => {
                           <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 dark:bg-blue-400 transition-all" />
                         )}
                         <item.icon className="h-5 w-5 text-blue-700 dark:text-blue-300" />
-                        <span className="text-black dark:text-slate-100">{item.title}</span>
+                        <span className="text-black dark:text-slate-100">
+                          {item.title}
+                        </span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -178,11 +183,13 @@ const Layout = ({ children }: LayoutProps) => {
                                 ${location.pathname === item.url ? "bg-blue-200 shadow-sm dark:bg-slate-800/60" : ""}
                               `}
                           >
-                              {location.pathname === item.url && (
-                                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 dark:bg-blue-400 transition-all" />
-                              )}
-                              <item.icon className="h-5 w-5 text-blue-700 dark:text-blue-300" />
-                              <span className="text-black dark:text-slate-100">{item.title}</span>
+                            {location.pathname === item.url && (
+                              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-blue-600 dark:bg-blue-400 transition-all" />
+                            )}
+                            <item.icon className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+                            <span className="text-black dark:text-slate-100">
+                              {item.title}
+                            </span>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       ))}
@@ -208,7 +215,8 @@ const Layout = ({ children }: LayoutProps) => {
                       ?.title || "Renal Unit Dashboard"}
                   </h1>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {currentUser.role} • {formatDateToDDMMYYYY(new Date().toISOString())}
+                    {currentUser.role} •{" "}
+                    {formatDateToDDMMYYYY(new Date().toISOString())}
                   </p>
                 </div>
               </div>
@@ -238,7 +246,7 @@ const Layout = ({ children }: LayoutProps) => {
                       variant="ghost"
                       size="icon"
                       className="rounded-full h-9 w-9 text-slate-600 hover:bg-slate-100 relative dark:text-slate-400 dark:hover:bg-slate-800"
-                      onClick={() => navigate('/admin/feedback')}
+                      onClick={() => navigate("/admin/feedback")}
                       aria-label="Open feedback management"
                     >
                       <Bell className="h-5 w-5" />
@@ -263,7 +271,9 @@ const Layout = ({ children }: LayoutProps) => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56 p-3">
                       <div className="text-sm text-slate-700 mb-2">Today</div>
-                      <div className="text-lg font-semibold text-slate-900 mb-3">{formatDateToDDMMYYYY(new Date().toISOString())}</div>
+                      <div className="text-lg font-semibold text-slate-900 mb-3">
+                        {formatDateToDDMMYYYY(new Date().toISOString())}
+                      </div>
                       {/* only show date; date picker removed per request */}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -297,7 +307,9 @@ const Layout = ({ children }: LayoutProps) => {
                       <DropdownMenuLabel className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={currentUser.avatar || undefined} />
+                            <AvatarImage
+                              src={currentUser.avatar || undefined}
+                            />
                             <AvatarFallback className="bg-gradient-to-r from-blue-500 to-teal-400 text-white font-medium">
                               {currentUser.name
                                 .split(" ")
@@ -322,11 +334,18 @@ const Layout = ({ children }: LayoutProps) => {
                       <div className="p-2">
                         <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors cursor-pointer">
                           <User className="mr-3 h-4 w-4 text-slate-500" />
-                          <span className="text-sm text-slate-700">Profile</span>
+                          <span className="text-sm text-slate-700">
+                            Profile
+                          </span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors cursor-pointer">
+                        <DropdownMenuItem
+                          onClick={() => setSettingsOpen(true)}
+                          className="rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
                           <Settings className="mr-3 h-4 w-4 text-slate-500" />
-                          <span className="text-sm text-slate-700">Settings</span>
+                          <span className="text-sm text-slate-700">
+                            Settings
+                          </span>
                         </DropdownMenuItem>
                       </div>
                       <DropdownMenuSeparator className="bg-slate-100" />
