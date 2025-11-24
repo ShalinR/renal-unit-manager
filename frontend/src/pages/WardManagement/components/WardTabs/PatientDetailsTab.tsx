@@ -9,10 +9,7 @@ interface PatientDetailsTabProps {
 
 const PatientDetailsTab: React.FC<PatientDetailsTabProps> = ({ patient, activeAdmission }) => {
 
-  console.log("PatientDetailsTab → patient:", patient);
-  console.log("PatientDetailsTab → patient phone:", patient.phone);
-  console.log("PatientDetailsTab → patient:", patient.phone);
-  console.log("PatientDetailsTab → activeAdmission:", activeAdmission);
+  console.debug("PatientDetailsTab opened (PHI redacted)");
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

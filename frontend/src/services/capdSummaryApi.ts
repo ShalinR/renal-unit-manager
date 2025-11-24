@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8081/api/hemodialysis';
+const API_BASE_URL = 'http://localhost:8081/api/capd-summary';
 
 const getHeaders = (): HeadersInit => {
   const headers: HeadersInit = {
@@ -21,7 +21,6 @@ const handleApiRequest = async <T>(
   try {
     const response = await fetch(url, {
       ...options,
-      credentials: 'include',
       headers: {
         ...getHeaders(),
         ...options.headers,
@@ -33,7 +32,7 @@ const handleApiRequest = async <T>(
 
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
+        errorMessage = errorData.message || errorData.error || errorMessage;
       } catch {
         errorMessage = response.statusText || errorMessage;
       }
@@ -56,40 +55,35 @@ const handleApiRequest = async <T>(
   }
 };
 
-// Hemodialysis API functions
-export const createHemodialysisRecord = async (
-  patientId: string,
-  record: any
-): Promise<any> => {
-  return handleApiRequest<any>(`${API_BASE_URL}/${patientId}`, {
-    method: 'POST',
-    body: JSON.stringify(record),
-  });
+// CAPD Summary API functions
+export const capdSummaryApi = {
+  async getByPatientId(patientId: string): Promise<any> {
+    return handleApiRequest<any>(`${API_BASE_URL}/${patientId}`);
+  },
+
+  async save(
+    patientId: string,
+    data: {
+      counsellingDate?: string;
+      catheterInsertionDate?: string;
+      insertionDoneBy?: string;
+      insertionPlace?: string;
+      technique?: string;
+      designation?: string;
+      firstFlushing?: string;
+      secondFlushing?: string;
+      thirdFlushing?: string;
+      initiationDate?: string;
+      petResults?: any;
+      adequacyResults?: any;
+    }
+  ): Promise<any> {
+    return handleApiRequest<any>(`${API_BASE_URL}/${patientId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
-export const getHemodialysisRecordsByPatientId = async (
-  patientId: string
-): Promise<any[]> => {
-  return handleApiRequest<any[]>(`${API_BASE_URL}/${patientId}`);
-};
-
-export const getHemodialysisRecordById = async (id: number): Promise<any> => {
-  return handleApiRequest<any>(`${API_BASE_URL}/record/${id}`);
-};
-
-export const updateHemodialysisRecord = async (
-  id: number,
-  record: any
-): Promise<any> => {
-  return handleApiRequest<any>(`${API_BASE_URL}/record/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(record),
-  });
-};
-
-export const deleteHemodialysisRecord = async (id: number): Promise<void> => {
-  return handleApiRequest<void>(`${API_BASE_URL}/record/${id}`, {
-    method: 'DELETE',
-  });
-};
+export default capdSummaryApi;
 

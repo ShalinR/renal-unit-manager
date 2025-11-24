@@ -15,7 +15,7 @@ const DonorAssessmentTabs: React.FC = () => {
   const { donors, fetchAllDonors, removeDonor } = useDonorContext();
 
   useEffect(() => {
-    console.log("Donors in DonorAssessmentTabs:", donors);
+    console.debug(`DonorAssessmentTabs: donors count = ${donors.length}`);
   }, [donors]);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ const DonorAssessmentTabs: React.FC = () => {
   }, [fetchAllDonors]);
 
   const convertDonorToFormData = (donor: Donor): DonorAssessmentForm => {
-    console.log("🔄 Converting donor to form data:", donor);
+    console.debug("DonorAssessmentTabs: converting donor to form data (redacted)");
 
     return {
       // Basic information
@@ -420,9 +420,8 @@ const DonorAssessmentTabs: React.FC = () => {
   };
 
   const handleViewDonor = (donor: Donor) => {
-    console.log("👁️ View button clicked for donor:", donor);
+    console.debug("DonorAssessmentTabs: view donor requested (redacted)");
     const donorDetails = convertDonorToFormData(donor);
-    console.log("📋 Converted form data:", donorDetails);
     setSelectedDonor(donorDetails);
     setShowDonorModal(true);
   };
@@ -434,7 +433,7 @@ const DonorAssessmentTabs: React.FC = () => {
       try {
         setDeletingDonorId(donorId);
         await removeDonor(donorId);
-        console.log(`✅ Donor ${donorName} deleted successfully`);
+        console.debug(`Donor deleted successfully (id redacted)`);
       } catch (error) {
         console.error(`❌ Error deleting donor ${donorName}:`, error);
         alert(

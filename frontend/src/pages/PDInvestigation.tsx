@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Droplets, ArrowLeft, Plus, Trash2, Save, Eye, FileText, Loader2, Download } from "lucide-react";
@@ -10,6 +11,7 @@ import { formatDateToDDMMYYYY, formatDateTimeDisplay } from '@/lib/dateUtils';
 import { usePatientContext } from "@/context/PatientContext";
 import { useToast } from "@/hooks/use-toast";
 import { exportInvestigationData, flattenPDInvestigationData } from '@/lib/exportUtils';
+import { pdInvestigationApi } from "@/services/pdInvestigationApi";
 
 interface InvestigationParameter {
   id: string;
@@ -24,6 +26,7 @@ interface InvestigationData {
   dates: string[]; // Array of dates for columns
   values: Record<string, Record<string, string>>; // [parameterId][date] = value
   filledBy?: string;
+  doctorsNote?: string;
 }
 
 interface SavedInvestigationSummary {
@@ -33,6 +36,7 @@ interface SavedInvestigationSummary {
   dates: string[];
   values: Record<string, Record<string, string>>;
   filledBy?: string;
+  doctorsNote?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -75,6 +79,7 @@ const PDInvestigation = () => {
   const [dates, setDates] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, Record<string, string>>>({});
   const [filledBy, setFilledBy] = useState("");
+  const [doctorsNote, setDoctorsNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [savedSummaries, setSavedSummaries] = useState<SavedInvestigationSummary[]>([]);
@@ -140,15 +145,15 @@ const PDInvestigation = () => {
     
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8081/api/pd-investigation/${patientId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSavedSummaries(data);
-      } else {
-        console.error("Failed to fetch investigation summaries");
-      }
+      const data = await pdInvestigationApi.getSummariesByPatientId(patientId);
+      setSavedSummaries(data);
     } catch (error) {
       console.error("Error fetching investigation summaries:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch investigation summaries. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -202,36 +207,28 @@ const PDInvestigation = () => {
         dates,
         values,
         filledBy,
+        doctorsNote,
       };
 
-      const response = await fetch(`http://localhost:8081/api/pd-investigation/${patientId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      await pdInvestigationApi.createSummary(patientId, formData);
+      
+      toast({
+        title: 'Success',
+        description: 'Investigation summary saved successfully.',
       });
-
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Investigation summary saved successfully.',
-        });
-        // Reset form
-        setDates([]);
-        setValues({});
-        setFilledBy("");
-        // Refresh saved summaries
-        await fetchSavedSummaries();
-        setViewMode("list");
-      } else {
-        throw new Error('Failed to save investigation summary');
-      }
+      // Reset form
+      setDates([]);
+      setValues({});
+      setFilledBy("");
+      setDoctorsNote("");
+      // Refresh saved summaries
+      await fetchSavedSummaries();
+      setViewMode("list");
     } catch (error) {
       console.error("Error saving investigation summary:", error);
       toast({
         title: 'Error',
-        description: 'Failed to save investigation summary. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to save investigation summary. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -248,6 +245,7 @@ const PDInvestigation = () => {
     setDates(summary.dates);
     setValues(summary.values);
     setFilledBy(summary.filledBy || "");
+    setDoctorsNote(summary.doctorsNote || "");
     setViewMode("form");
     toast({
       title: 'Loaded',
@@ -261,30 +259,24 @@ const PDInvestigation = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8081/api/pd-investigation/record/${summary.id}`, {
-        method: 'DELETE',
+      await pdInvestigationApi.deleteSummary(summary.id);
+      
+      toast({
+        title: 'Success',
+        description: 'Investigation summary deleted successfully.',
       });
-
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Investigation summary deleted successfully.',
-        });
-        // Refresh the list
-        await fetchSavedSummaries();
-        // If we're viewing the deleted summary, go back to list
-        if (selectedSummary?.id === summary.id) {
-          setViewMode("list");
-          setSelectedSummary(null);
-        }
-      } else {
-        throw new Error('Failed to delete investigation summary');
+      // Refresh the list
+      await fetchSavedSummaries();
+      // If we're viewing the deleted summary, go back to list
+      if (selectedSummary?.id === summary.id) {
+        setViewMode("list");
+        setSelectedSummary(null);
       }
     } catch (error) {
       console.error("Error deleting investigation summary:", error);
       toast({
         title: 'Error',
-        description: 'Failed to delete investigation summary. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to delete investigation summary. Please try again.',
         variant: 'destructive',
       });
     }
@@ -328,6 +320,7 @@ const PDInvestigation = () => {
                     <p>Patient: {summary.patientName} (PHN: {summary.patientId})</p>
                     <p>Created: {formatDateTimeDisplay(summary.createdAt)}</p>
                     {summary.filledBy && <p>Filled by: {summary.filledBy}</p>}
+                    {summary.doctorsNote && <p className="mt-2 italic">Doctor's Note: {summary.doctorsNote}</p>}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -408,6 +401,7 @@ const PDInvestigation = () => {
               Patient: {selectedSummary.patientName} (PHN: {selectedSummary.patientId})
             </p>
             <p className="text-sm text-muted-foreground">Created: {formatDateTimeDisplay(selectedSummary.createdAt)}</p>
+            {selectedSummary.filledBy && <p className="text-sm text-muted-foreground">Filled by: {selectedSummary.filledBy}</p>}
           </div>
           <div className="flex gap-2">
             <Button
@@ -477,6 +471,18 @@ const PDInvestigation = () => {
             </TableBody>
           </Table>
         </div>
+
+        {/* Doctor's Note Display */}
+        {selectedSummary.doctorsNote && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Doctor's Note</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap text-sm">{selectedSummary.doctorsNote}</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   };
@@ -518,6 +524,19 @@ const PDInvestigation = () => {
                 onChange={(e) => setFilledBy(e.target.value)}
                 placeholder="Enter name of person who filled this form"
                 required
+              />
+            </div>
+
+            {/* Doctors Note Input */}
+            <div className="space-y-2">
+              <Label htmlFor="doctorsNote">Doctor's Note</Label>
+              <Textarea
+                id="doctorsNote"
+                value={doctorsNote}
+                onChange={(e) => setDoctorsNote(e.target.value)}
+                placeholder="Enter doctor's notes or comments"
+                rows={4}
+                className="resize-none"
               />
             </div>
 
@@ -620,6 +639,7 @@ const PDInvestigation = () => {
                   setDates([]);
                   setValues({});
                   setFilledBy("");
+                  setDoctorsNote("");
                 }}
               >
                 Cancel
@@ -682,6 +702,7 @@ const PDInvestigation = () => {
               setDates([]);
               setValues({});
               setFilledBy("");
+              setDoctorsNote("");
             }}
             disabled={!patientId}
           >

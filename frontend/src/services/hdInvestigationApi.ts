@@ -47,8 +47,7 @@ const handleApiRequest = async <T>(
 
     return await response.json();
   } catch (error) {
-    console.error('API request failed:', error);
-    console.log('Request URL:', url);
+    console.error('API request failed');
 
     if (error instanceof Error) {
       throw error;
@@ -57,7 +56,39 @@ const handleApiRequest = async <T>(
   }
 };
 
-// Hemodialysis Investigation API functions
+// Hemodialysis Investigation API functions (Summary structure like PD)
+export const hdInvestigationApi = {
+  async getSummariesByPatientId(patientId: string): Promise<any[]> {
+    // For now, we'll need to create a summary endpoint in the backend
+    // This is a placeholder that will need backend support
+    return handleApiRequest<any[]>(`${API_BASE_URL}/summary/${patientId}`);
+  },
+
+  async createSummary(
+    patientId: string,
+    data: {
+      patientId: string;
+      patientName: string;
+      dates: string[];
+      values: Record<string, Record<string, string>>;
+      filledBy?: string;
+      doctorsNote?: string;
+    }
+  ): Promise<any> {
+    return handleApiRequest<any>(`${API_BASE_URL}/summary/${patientId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteSummary(id: number): Promise<void> {
+    return handleApiRequest<void>(`${API_BASE_URL}/summary/record/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Legacy functions for backward compatibility
 export const getHemodialysisInvestigations = async (
   patientId: string
 ): Promise<any[]> => {
@@ -100,3 +131,5 @@ export const deleteHemodialysisInvestigation = async (
     method: 'DELETE',
   });
 };
+
+export default hdInvestigationApi;

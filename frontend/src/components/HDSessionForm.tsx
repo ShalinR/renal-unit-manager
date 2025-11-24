@@ -420,7 +420,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({
   const loadSession = async (sessionId: number) => {
     try {
       const record = await getHemodialysisRecordById(sessionId);
-      console.log("Fetched record:", record); // DEBUG
+      console.debug("Fetched hemodialysis record (redacted) for sessionId", sessionId);
       if (!record) {
         toast({
           title: "Error",
@@ -430,7 +430,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({
         return;
       }
 
-      console.log("Vascular Access from API:", record.vascularAccess); // DEBUG
+      console.debug("Vascular access data loaded (redacted)");
 
       // Parse saved data back into form shape
       const loadedForm: HemodialysisForm = {
@@ -449,7 +449,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({
         },
       };
 
-      console.log("Loaded form:", loadedForm); // DEBUG
+      console.debug("Loaded form (redacted) and applied to editor");
       setForm(loadedForm);
       setShowSavedSessions(false);
       setStep(0);
@@ -567,7 +567,7 @@ const HDSessionForm: React.FC<HDSessionFormProps> = ({
         onBack();
       } catch (e) {
         // backend not available or error — save draft locally
-        console.warn("Backend save failed, saving draft locally", e);
+        console.warn("Backend save failed, saving draft locally (error redacted)");
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         toast({
           title: "Saved locally",

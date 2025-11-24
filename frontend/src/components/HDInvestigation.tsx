@@ -110,15 +110,15 @@ const HDInvestigation: React.FC<HDInvestigationProps> = ({ onBack, monthlyReview
       const loadMonthlyReviewDetails = async () => {
         try {
           const details = await hdMonthlyReviewApi.get(phn, monthlyReviewId);
-          console.log('Monthly review details loaded:', details);
+          console.debug('Monthly review details loaded (redacted)', { id: details?.id ?? null });
           setMonthlyReviewDetails(details);
           // Auto-set investigation date to the monthly review date
           if (details?.reviewDate) {
-            console.log('Setting investigation date to:', details.reviewDate);
+            console.debug('Setting investigation date to monthly review date', details.reviewDate);
             setInvestigationDate(details.reviewDate);
           }
-        } catch (e) {
-          console.error('Error loading monthly review details', e);
+          } catch (e) {
+            console.error('Error loading monthly review details (redacted)', { message: e instanceof Error ? e.message : String(e) });
         }
       };
       loadMonthlyReviewDetails();
@@ -132,7 +132,7 @@ const HDInvestigation: React.FC<HDInvestigationProps> = ({ onBack, monthlyReview
   // Additional effect to ensure date is set when monthlyReviewDetails changes
   useEffect(() => {
     if (isMonthlyReviewMode && monthlyReviewDetails?.reviewDate && !editingId) {
-      console.log('Syncing investigation date to monthly review date:', monthlyReviewDetails.reviewDate);
+      console.debug('Syncing investigation date to monthly review date', monthlyReviewDetails.reviewDate);
       setInvestigationDate(monthlyReviewDetails.reviewDate);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,7 +151,7 @@ const HDInvestigation: React.FC<HDInvestigationProps> = ({ onBack, monthlyReview
       }
       setSaved(data || []);
     } catch (e) {
-      console.error('Error loading HD investigations', e);
+      console.error('Error loading HD investigations (redacted)', { message: e instanceof Error ? e.message : String(e) });
       toast({ title: 'Load failed', description: 'Could not load investigations', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -283,7 +283,7 @@ const HDInvestigation: React.FC<HDInvestigationProps> = ({ onBack, monthlyReview
       await loadInvestigations();
       clearForm();
     } catch (e) {
-      console.error('Save failed', e);
+      console.error('Save failed (redacted)', { message: e instanceof Error ? e.message : String(e) });
       toast({ title: 'Save failed', description: 'Could not save investigation', variant: 'destructive' });
     } finally {
       setSaving(false);
@@ -301,7 +301,7 @@ const HDInvestigation: React.FC<HDInvestigationProps> = ({ onBack, monthlyReview
       await loadInvestigations();
       toast({ title: 'Deleted', description: 'Investigation deleted', variant: 'default' });
     } catch (e) {
-      console.error('Delete failed', e);
+      console.error('Delete failed (redacted)', { message: e instanceof Error ? e.message : String(e) });
       toast({ title: 'Delete failed', description: 'Could not delete investigation', variant: 'destructive' });
     }
   };

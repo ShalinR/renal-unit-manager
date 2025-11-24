@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Calendar as CalendarIcon } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,20 +17,23 @@ interface PatientRegistrationProps {
 }
 
 type FormData = {
+  // Personal Info
+  fullName: string;
+  age: string;
+  gender: string;
+  dateOfBirth: string;
+  nicNumber: string;
+  phoneNumber: string;
+  occupation: string;
   
+  // PD Registration Details
   Technique: string;
   Designation: string;
-
- 
   counsellingDate: string;        
   initiationDate: string;         
-
-  
   catheterInsertionDate: string;  
   insertionDoneBy: string;
   insertionPlace: string;
-
-  
   firstFlushing: string;          
   secondFlushing: string;         
   thirdFlushing: string;          
@@ -44,20 +48,23 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
   const { patient } = usePatientContext();
 
   const [formData, setFormData] = useState<FormData>({
-    // existing
+    // Personal Info
+    fullName: "",
+    age: "",
+    gender: "",
+    dateOfBirth: "",
+    nicNumber: "",
+    phoneNumber: "",
+    occupation: "",
+    
+    // PD Registration Details
     Technique: "",
     Designation: "",
-
-    // basic info
     counsellingDate: "",
     initiationDate: "",
-
-    // catheter info
     catheterInsertionDate: "",
     insertionDoneBy: "",
     insertionPlace: "",
-
-    // flushing
     firstFlushing: "",
     secondFlushing: "",
     thirdFlushing: "",
@@ -73,6 +80,13 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
       if (!phn) {
         // Reset form if no patient selected
         setFormData({
+          fullName: "",
+          age: "",
+          gender: "",
+          dateOfBirth: "",
+          nicNumber: "",
+          phoneNumber: "",
+          occupation: "",
           Technique: "",
           Designation: "",
           counsellingDate: "",
@@ -88,25 +102,86 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
       }
 
       try {
-        const API_URL = `http://localhost:8081/api/patient-registration/${phn}`;
-        const response = await fetch(API_URL);
-        if (response.ok) {
-          const data = await response.json();
-          setFormData({
-            Technique: data.technique || "",
-            Designation: data.designation || "",
-            counsellingDate: data.counsellingDate || "",
-            initiationDate: data.initiationDate || "",
-            catheterInsertionDate: data.catheterInsertionDate || "",
-            insertionDoneBy: data.insertionDoneBy || "",
-            insertionPlace: data.insertionPlace || "",
-            firstFlushing: data.firstFlushing || "",
-            secondFlushing: data.secondFlushing || "",
-            thirdFlushing: data.thirdFlushing || "",
-          });
+        // Fetch patient data from the patient table
+        const PATIENT_API_URL = `http://localhost:8081/api/patient/${encodeURIComponent(phn)}`;
+        const REGISTRATION_API_URL = `http://localhost:8081/api/patient-registration/${phn}`;
+
+        const [patientResponse, registrationResponse] = await Promise.all([
+          fetch(PATIENT_API_URL),
+          fetch(REGISTRATION_API_URL).catch(() => ({ ok: false } as Response)),
+        ]);
+
+        // Load patient data from patient table
+        if (patientResponse.ok) {
+          const patientData = await patientResponse.json();
+          console.log("Patient data from backend:", patientData);
+          
+          // Format date of birth if it exists
+          let formattedDateOfBirth = "";
+          if (patientData.dateOfBirth) {
+            try {
+              // Handle LocalDate format from backend (YYYY-MM-DD)
+              formattedDateOfBirth = patientData.dateOfBirth;
+            } catch (error) {
+              console.warn("Failed to format date of birth:", error);
+            }
+          }
+
+          // Populate personal info from patient table
+          setFormData(prev => ({
+            ...prev,
+            fullName: patientData.name || "",
+            age: patientData.age?.toString() || "",
+            gender: patientData.gender || "",
+            dateOfBirth: formattedDateOfBirth,
+            nicNumber: patientData.nicNo || "",
+            phoneNumber: patientData.contactDetails || "",
+            occupation: patientData.occupation || "",
+          }));
+        } else {
+          // If patient not found, try to use patient context data
+          setFormData(prev => ({
+            ...prev,
+            fullName: patient?.name || prev.fullName,
+            age: patient?.age?.toString() || prev.age,
+            gender: patient?.gender || prev.gender,
+            dateOfBirth: patient?.dateOfBirth || patient?.dob || prev.dateOfBirth,
+            nicNumber: patient?.nic || prev.nicNumber,
+            phoneNumber: patient?.contact || prev.phoneNumber,
+            occupation: patient?.occupation || prev.occupation,
+          }));
+        }
+
+        // Load PD registration data if available
+        if (registrationResponse.ok) {
+          const registrationData = await registrationResponse.json();
+          setFormData(prev => ({
+            ...prev,
+            Technique: registrationData.technique || "",
+            Designation: registrationData.designation || "",
+            counsellingDate: registrationData.counsellingDate || "",
+            initiationDate: registrationData.initiationDate || "",
+            catheterInsertionDate: registrationData.catheterInsertionDate || "",
+            insertionDoneBy: registrationData.insertionDoneBy || "",
+            insertionPlace: registrationData.insertionPlace || "",
+            firstFlushing: registrationData.firstFlushing || "",
+            secondFlushing: registrationData.secondFlushing || "",
+            thirdFlushing: registrationData.thirdFlushing || "",
+          }));
         }
       } catch (error) {
-        console.error("Error loading patient registration data:", error);
+        console.error("Error loading patient data:", error);
+        // Fallback to patient context data if fetch fails
+        setFormData(prev => ({
+          ...prev,
+          fullName: patient?.name || prev.fullName,
+          age: patient?.age?.toString() || prev.age,
+          gender: patient?.gender || prev.gender,
+          dateOfBirth: patient?.dateOfBirth || patient?.dob || prev.dateOfBirth,
+          nicNumber: patient?.nic || prev.nicNumber,
+          phoneNumber: patient?.contact || prev.phoneNumber,
+          occupation: patient?.occupation || prev.occupation,
+        }));
       }
     };
 
@@ -250,6 +325,15 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
     try {
       // Prepare patient registration data
       const registrationData = {
+        // Personal Info
+        fullName: formData.fullName,
+        age: formData.age,
+        gender: formData.gender,
+        dateOfBirth: formData.dateOfBirth,
+        nicNumber: formData.nicNumber,
+        phoneNumber: formData.phoneNumber,
+        occupation: formData.occupation,
+        // PD Registration Details
         counsellingDate: formData.counsellingDate,
         catheterInsertionDate: formData.catheterInsertionDate,
         insertionDoneBy: formData.insertionDoneBy,
@@ -301,266 +385,363 @@ const PatientRegistration = ({ onComplete }: PatientRegistrationProps) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* BASIC INFO */}
+        {/* BASIC INFO WITH TABS */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5 text-primary" />
+              <User className="w-5 h-5 text-primary" />
               Basic Information
             </CardTitle>
-            <CardDescription>Initial counselling and PD initiation dates</CardDescription>
+            <CardDescription>Patient personal information and PD registration details</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="counsellingDate">Counselling Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.counsellingDate ? formatDateToDDMMYYYY(formData.counsellingDate) : 'Select date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={isoStringToDate(formData.counsellingDate)}
-                      onSelect={(date) => { if (date) updateFormData("counsellingDate", toLocalISO(date)); }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {getError("counsellingDate") && (
-                  <p className="text-sm text-red-500">{getError("counsellingDate")}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="initiationDate">Initiation Date <span className="text-red-500">*</span></Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.initiationDate ? formatDateToDDMMYYYY(formData.initiationDate) : 'Select date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={isoStringToDate(formData.initiationDate)}
-                      onSelect={(date) => { if (date) updateFormData("initiationDate", toLocalISO(date)); }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {getError("initiationDate") && (
-                  <p className="text-sm text-red-500">{getError("initiationDate")}</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <CardContent>
+            <Tabs defaultValue="personal-info" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
+                <TabsTrigger value="pd-details">PD Registration Details</TabsTrigger>
+              </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Catheter Information & Staff</CardTitle>
-            <CardDescription>Who did the insertion, where, and the technique used</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2 md:col-span-1">
-                <Label htmlFor="catheterInsertionDate">Insertion Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.catheterInsertionDate ? formatDateToDDMMYYYY(formData.catheterInsertionDate) : 'Select date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={isoStringToDate(formData.catheterInsertionDate)}
-                      onSelect={(date) => { if (date) updateFormData("catheterInsertionDate", toLocalISO(date)); }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
+              {/* Personal Info Tab */}
+              <TabsContent value="personal-info" className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      placeholder="Enter full name"
+                      value={formData.fullName}
+                      onChange={(e) => updateFormData("fullName", e.target.value)}
                     />
-                  </PopoverContent>
-                </Popover>
-                {getError("catheterInsertionDate") && (
-                  <p className="text-sm text-red-500">{getError("catheterInsertionDate")}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="insertionDoneBy">Insertion Done By <span className="text-red-500">*</span></Label>
-                <Input
-                  id="insertionDoneBy"
-                  placeholder="Name of the person"
-                  value={formData.insertionDoneBy}
-                  onChange={(e) => updateFormData("insertionDoneBy", e.target.value)}
-                  onBlur={() => handleBlur("insertionDoneBy")}
-                  className={getError("insertionDoneBy") ? "border-red-500" : ""}
-                />
-                {getError("insertionDoneBy") && (
-                  <p className="text-sm text-red-500">{getError("insertionDoneBy")}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="insertionPlace">Insertion Place</Label>
-                <Select
-                  value={formData.insertionPlace}
-                  onValueChange={(value) => updateFormData("insertionPlace", value)}
-                >
-                  <SelectTrigger id="insertionPlace">
-                    <SelectValue placeholder="Select insertionPlace" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="teaching-hospital">Teaching Hospital Peradeniya</SelectItem>
-                    <SelectItem value="kandy">Kandy Hostpital</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="Designation">Designation <span className="text-red-500">*</span></Label>
-                <Select
-                  value={formData.Designation}
-                  onValueChange={(value) => updateFormData("Designation", value)}
-                >
-                  <SelectTrigger 
-                    id="Designation"
-                    className={getError("Designation") ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select designation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="consultant">Consultant</SelectItem>
-                    <SelectItem value="senior-registrar">Senior Registrar</SelectItem>
-                    <SelectItem value="registrar">Registrar</SelectItem>
-                    <SelectItem value="medical-officer">Medical Officer</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                {getError("Designation") && (
-                  <p className="text-sm text-red-500">{getError("Designation")}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="Technique">Technique</Label>
-                <Select
-                  value={formData.Technique}
-                  onValueChange={(value) => updateFormData("Technique", value)}
-                >
-                  <SelectTrigger id="Technique">
-                    <SelectValue placeholder="Select technique" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percutaneous">Percutaneous</SelectItem>
-                    <SelectItem value="laparoscopic">Laparoscopic</SelectItem>
-                    <SelectItem value="fluoroscopic">Fluoroscopic</SelectItem>
-                    <SelectItem value="open-surgery">Open Surgery</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* FLUSHING DATES */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Flushing Dates</CardTitle>
-            <CardDescription>Record the 1st, 2nd, and 3rd flushing dates</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstFlushing">1st Flushing</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.firstFlushing ? formatDateToDDMMYYYY(formData.firstFlushing) : 'Select date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={isoStringToDate(formData.firstFlushing)}
-                      onSelect={(date) => { if (date) updateFormData("firstFlushing", toLocalISO(date)); }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      placeholder="Enter age"
+                      value={formData.age}
+                      onChange={(e) => updateFormData("age", e.target.value)}
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="secondFlushing">2nd Flushing</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select
+                      value={formData.gender}
+                      onValueChange={(value) => updateFormData("gender", value)}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.secondFlushing ? formatDateToDDMMYYYY(formData.secondFlushing) : 'Select date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={isoStringToDate(formData.secondFlushing)}
-                      onSelect={(date) => { if (date) updateFormData("secondFlushing", toLocalISO(date)); }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
+                      <SelectTrigger id="gender">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.dateOfBirth ? formatDateToDDMMYYYY(formData.dateOfBirth) : 'Select date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={isoStringToDate(formData.dateOfBirth)}
+                          onSelect={(date) => { if (date) updateFormData("dateOfBirth", toLocalISO(date)); }}
+                          disabled={(date) => date > new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nicNumber">NIC Number</Label>
+                    <Input
+                      id="nicNumber"
+                      placeholder="Enter NIC number"
+                      value={formData.nicNumber}
+                      onChange={(e) => updateFormData("nicNumber", e.target.value)}
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="thirdFlushing">3rd Flushing</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.thirdFlushing ? formatDateToDDMMYYYY(formData.thirdFlushing) : 'Select date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={isoStringToDate(formData.thirdFlushing)}
-                      onSelect={(date) => { if (date) updateFormData("thirdFlushing", toLocalISO(date)); }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      placeholder="Enter phone number"
+                      value={formData.phoneNumber}
+                      onChange={(e) => updateFormData("phoneNumber", e.target.value)}
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="occupation">Occupation</Label>
+                    <Input
+                      id="occupation"
+                      placeholder="Enter occupation"
+                      value={formData.occupation}
+                      onChange={(e) => updateFormData("occupation", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* PD Registration Details Tab */}
+              <TabsContent value="pd-details" className="space-y-6 mt-4">
+                {/* Basic Dates */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Initial Dates</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="counsellingDate">Counselling Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.counsellingDate ? formatDateToDDMMYYYY(formData.counsellingDate) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(formData.counsellingDate)}
+                            onSelect={(date) => { if (date) updateFormData("counsellingDate", toLocalISO(date)); }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {getError("counsellingDate") && (
+                        <p className="text-sm text-red-500">{getError("counsellingDate")}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="initiationDate">Initiation Date <span className="text-red-500">*</span></Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.initiationDate ? formatDateToDDMMYYYY(formData.initiationDate) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(formData.initiationDate)}
+                            onSelect={(date) => { if (date) updateFormData("initiationDate", toLocalISO(date)); }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {getError("initiationDate") && (
+                        <p className="text-sm text-red-500">{getError("initiationDate")}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Catheter Information & Staff */}
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-lg font-semibold">Catheter Information & Staff</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2 md:col-span-1">
+                      <Label htmlFor="catheterInsertionDate">Insertion Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.catheterInsertionDate ? formatDateToDDMMYYYY(formData.catheterInsertionDate) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(formData.catheterInsertionDate)}
+                            onSelect={(date) => { if (date) updateFormData("catheterInsertionDate", toLocalISO(date)); }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {getError("catheterInsertionDate") && (
+                        <p className="text-sm text-red-500">{getError("catheterInsertionDate")}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="insertionDoneBy">Insertion Done By <span className="text-red-500">*</span></Label>
+                      <Input
+                        id="insertionDoneBy"
+                        placeholder="Name of the person"
+                        value={formData.insertionDoneBy}
+                        onChange={(e) => updateFormData("insertionDoneBy", e.target.value)}
+                        onBlur={() => handleBlur("insertionDoneBy")}
+                        className={getError("insertionDoneBy") ? "border-red-500" : ""}
+                      />
+                      {getError("insertionDoneBy") && (
+                        <p className="text-sm text-red-500">{getError("insertionDoneBy")}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="insertionPlace">Insertion Place</Label>
+                      <Select
+                        value={formData.insertionPlace}
+                        onValueChange={(value) => updateFormData("insertionPlace", value)}
+                      >
+                        <SelectTrigger id="insertionPlace">
+                          <SelectValue placeholder="Select insertionPlace" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="teaching-hospital">Teaching Hospital Peradeniya</SelectItem>
+                          <SelectItem value="kandy">Kandy Hostpital</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="Designation">Designation <span className="text-red-500">*</span></Label>
+                      <Select
+                        value={formData.Designation}
+                        onValueChange={(value) => updateFormData("Designation", value)}
+                      >
+                        <SelectTrigger 
+                          id="Designation"
+                          className={getError("Designation") ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select designation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="consultant">Consultant</SelectItem>
+                          <SelectItem value="senior-registrar">Senior Registrar</SelectItem>
+                          <SelectItem value="registrar">Registrar</SelectItem>
+                          <SelectItem value="medical-officer">Medical Officer</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {getError("Designation") && (
+                        <p className="text-sm text-red-500">{getError("Designation")}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="Technique">Technique</Label>
+                      <Select
+                        value={formData.Technique}
+                        onValueChange={(value) => updateFormData("Technique", value)}
+                      >
+                        <SelectTrigger id="Technique">
+                          <SelectValue placeholder="Select technique" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percutaneous">Percutaneous</SelectItem>
+                          <SelectItem value="laparoscopic">Laparoscopic</SelectItem>
+                          <SelectItem value="fluoroscopic">Fluoroscopic</SelectItem>
+                          <SelectItem value="open-surgery">Open Surgery</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Flushing Dates */}
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-lg font-semibold">Flushing Dates</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstFlushing">1st Flushing</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.firstFlushing ? formatDateToDDMMYYYY(formData.firstFlushing) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(formData.firstFlushing)}
+                            onSelect={(date) => { if (date) updateFormData("firstFlushing", toLocalISO(date)); }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="secondFlushing">2nd Flushing</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.secondFlushing ? formatDateToDDMMYYYY(formData.secondFlushing) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(formData.secondFlushing)}
+                            onSelect={(date) => { if (date) updateFormData("secondFlushing", toLocalISO(date)); }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="thirdFlushing">3rd Flushing</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.thirdFlushing ? formatDateToDDMMYYYY(formData.thirdFlushing) : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={isoStringToDate(formData.thirdFlushing)}
+                            onSelect={(date) => { if (date) updateFormData("thirdFlushing", toLocalISO(date)); }}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

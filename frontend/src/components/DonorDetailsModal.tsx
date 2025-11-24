@@ -37,16 +37,13 @@ export const DonorDetailsModal: React.FC<DonorDetailsModalProps> = ({
 }) => {
   React.useEffect(() => {
     if (isOpen && donorData) {
-      console.log("🔍 DonorDetailsModal received data:", donorData);
-      console.log("📋 Name:", donorData.name);
-      console.log("📋 Age:", donorData.age);
-      console.log("📋 Examination data:", donorData.examination);
-      console.log("📋 Immunological details:", donorData.immunologicalDetails);
+      // DonorDetailsModal opened. PHI is intentionally not logged.
+      console.debug("DonorDetailsModal opened");
     }
   }, [isOpen, donorData]);
 
   if (!donorData) {
-    console.log("❌ DonorDetailsModal: No donorData provided");
+    // No donor data to display — avoid logging PHI.
     return null;
   }
 

@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { usePatientContext } from "@/context/PatientContext";
 import { exportInvestigationData, flattenPeritonealData } from '@/lib/exportUtils';
 import { formatDateToDDMMYYYY } from '@/lib/dateUtils';
+import { capdSummaryApi } from '@/services/capdSummaryApi';
 
 interface CAPDData {
   counsellingDate: string;
@@ -45,7 +46,6 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
   
   // Use PHN from patient context
   const phn = patient?.phn;
-  const CAPD_API_URL = phn ? `http://localhost:8081/api/capd-summary/${phn}` : null;
   const REGISTRATION_API_URL = phn ? `http://localhost:8081/api/patient-registration/${phn}` : null;
   const INFECTION_API_URL = phn ? `http://localhost:8081/api/infection-tracking/${phn}` : null;
 
@@ -64,14 +64,14 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
       setIsLoading(true);
       try {
         // Fetch patient registration, CAPD summary, and infection tracking
-        const [registrationResponse, capdResponse, infectionResponse] = await Promise.all([
+        const [registrationResponse, capdData, infectionResponse] = await Promise.all([
           REGISTRATION_API_URL ? fetch(REGISTRATION_API_URL) : Promise.resolve({ ok: false } as Response),
-          CAPD_API_URL ? fetch(CAPD_API_URL) : Promise.resolve({ ok: false } as Response),
+          phn ? capdSummaryApi.getByPatientId(phn).catch(() => null) : Promise.resolve(null),
           INFECTION_API_URL ? fetch(INFECTION_API_URL) : Promise.resolve({ ok: false } as Response),
         ]);
 
         const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
-        const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
+        const capdSummaryData = capdData;
         const infectionData = infectionResponse.ok ? await infectionResponse.json() : null;
 
         // Combine all datasets - basic info from registration, test results from CAPD summary, infections from infection tracking
@@ -101,7 +101,7 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
             tunnelInfections: infectionData?.tunnelInfections || capdSummaryData?.tunnelInfections || [],
           };
           setCapdData(combinedData);
-          console.log("DataPreview: Loaded data from backend for PHN:", phn, combinedData);
+          console.debug("DataPreview: Loaded data (PHN redacted)");
           // Force refresh of infection tracking section
           setRefreshKey(prev => prev + 1);
         } else if (propCapdData) {
@@ -323,6 +323,9 @@ const DataPreview = ({ capdData: propCapdData, onBack }: DataPreviewProps) => {
                   <div>
                     <p className="text-sm font-semibold text-primary capitalize mb-1">{key} PET Test</p>
                     <p className="text-xs text-muted-foreground">Date: {testEntry.date ? formatDateToDDMMYYYY(testEntry.date) : "Not specified"}</p>
+                    {petData?.insertionDoneBy && (
+                      <p className="text-xs text-muted-foreground">Insertion Done by: {petData.insertionDoneBy}</p>
+                    )}
                   </div>
                  <div>
                    <Button variant="ghost" onClick={() => scrollToTest(key)} className="text-xs">Scroll to</Button>
@@ -552,9 +555,9 @@ const InfectionTrackingSection = ({ patientId, refreshKey }: { patientId: string
   const fetchInfections = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      console.log("🔍 Fetching infections from:", INFECTION_API_URL);
-      console.log("🔑 Patient ID:", patientId);
+      try {
+      console.debug("Fetching infections (redacted)");
+      console.debug("Patient ID redacted");
       
       const response = await fetch(INFECTION_API_URL, {
         method: "GET",
@@ -564,23 +567,19 @@ const InfectionTrackingSection = ({ patientId, refreshKey }: { patientId: string
         cache: "no-cache", // Ensure we get fresh data
       });
       
-      console.log("📡 Response status:", response.status, response.statusText);
+      console.debug("Response status (redacted)");
       
       if (response.ok) {
         const data = await response.json();
-        console.log("✅ Fetched infections data:", data);
-        console.log("📊 Number of infections:", Array.isArray(data) ? data.length : 0);
+        console.debug("Fetched infections data (redacted)");
+        console.debug("Number of infections returned (redacted)");
         
         if (Array.isArray(data)) {
-          console.log("📋 Infection types found:", data.map(inf => ({
-            type: inf?.infectionType,
-            id: inf?.id,
-            date: inf?.episodeDate
-          })));
+          console.debug("Infection types parsed (redacted)");
           
           setInfections(data);
         } else {
-          console.warn("⚠️ Response is not an array:", data);
+          console.warn("Response is not an array (redacted)");
           setInfections([]);
         }
       } else if (response.status === 404) {
@@ -605,11 +604,8 @@ const InfectionTrackingSection = ({ patientId, refreshKey }: { patientId: string
 
   useEffect(() => {
     // Always fetch when component mounts, refreshKey changes, or patientId changes
-    console.log("🔄 InfectionTrackingSection: Fetching infections", {
-      refreshKey,
-      patientId,
-      url: INFECTION_API_URL
-    });
+    console.debug("InfectionTrackingSection fetch triggered (redacted)");
+    
     fetchInfections();
   }, [fetchInfections, refreshKey, patientId]);
 
@@ -683,13 +679,7 @@ const InfectionTrackingSection = ({ patientId, refreshKey }: { patientId: string
 
   // Debug logging
   useEffect(() => {
-    console.log("🔍 Infection Tracking Debug:", {
-      totalInfections: infections.length,
-      peritonitisCount: peritonitisEpisodes.length,
-      exitSiteCount: exitSiteEpisodes.length,
-      tunnelCount: tunnelEpisodes.length,
-      infectionTypes: infections.map(inf => inf?.infectionType),
-    });
+    console.debug("Infection Tracking Debug (redacted)");
   }, [infections, peritonitisEpisodes.length, exitSiteEpisodes.length, tunnelEpisodes.length]);
 
   if (loading && infections.length === 0) {

@@ -339,7 +339,7 @@ const formReducer = (state: any, action: { type: string; payload: any }) => {
 
       // Safety check
       if (!state[form]) {
-        console.warn(`Form ${form} does not exist in state`);
+        console.warn("Form missing in state (redacted)");
         return state;
       }
 
@@ -418,8 +418,8 @@ const KidneyTransplant = () => {
         if (!response.ok) {
           if (response.status === 404) {
             // This is normal for new patients - no profile exists yet
-            console.log(
-              "No transplant profile found (this is normal for new patients)"
+            console.debug(
+              "No transplant profile found (normal for new patients)"
             );
             return null;
           }
@@ -518,8 +518,8 @@ const KidneyTransplant = () => {
       );
 
       if (response.ok) {
-        const result = await response.json();
-        console.log("Donor form submitted successfully:", result);
+      const result = await response.json();
+      console.debug("Donor form submitted successfully (redacted)");
 
         // Update PatientContext with Donor Assessment data
         if (setPatientData) {
@@ -542,8 +542,8 @@ const KidneyTransplant = () => {
       } else {
         throw new Error("Failed to submit donor form");
       }
-    } catch (error) {
-      console.error("Error submitting donor form:", error);
+      } catch (error) {
+      console.error("Error submitting donor form");
       alert("Error submitting donor assessment. Please try again.");
     }
   };
@@ -590,7 +590,7 @@ const KidneyTransplant = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Recipient form submitted successfully:", result);
+        console.debug("Recipient form submitted successfully (redacted)");
 
         // Update PatientContext with Recipient Assessment data
         if (setPatientData) {
@@ -614,7 +614,7 @@ const KidneyTransplant = () => {
         throw new Error("Failed to submit recipient form");
       }
     } catch (error) {
-      console.error("Error submitting recipient form:", error);
+      console.error("Error submitting recipient form");
       alert("Error submitting recipient assessment. Please try again.");
     }
   };

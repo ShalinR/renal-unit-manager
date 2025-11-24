@@ -8,6 +8,8 @@ import CAPDSummary from "@/components/CAPDSummary";
 import MonthlyAssessment from "@/components/MonthlyAssessment";
 import InfectionTracking, { PeritonitisEpisode, ExitSiteEpisode, TunnelEpisode } from "@/components/InfectionTracking";
 import { usePatientContext } from "@/context/PatientContext";
+import { capdSummaryApi } from "@/services/capdSummaryApi";
+import { infectionTrackingApi } from "@/services/infectionTrackingApi";
 
 type ActiveView =
   | "dashboard"
@@ -59,15 +61,14 @@ const Peritoneal = () => {
 
       try {
         // Fetch all data for this patient
-        const [registrationResponse, capdResponse, infectionResponse] = await Promise.all([
+        const [registrationResponse, capdData, infectionData] = await Promise.all([
           fetch(`http://localhost:8081/api/patient-registration/${phn}`),
-          fetch(`http://localhost:8081/api/capd-summary/${phn}`),
-          fetch(`http://localhost:8081/api/infection-tracking/${phn}`),
+          capdSummaryApi.getByPatientId(phn).catch(() => null),
+          infectionTrackingApi.getByPatientId(phn).catch(() => null),
         ]);
 
         const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
-        const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
-        const infectionData = infectionResponse.ok ? await infectionResponse.json() : null;
+        const capdSummaryData = capdData;
 
         // Combine all data
         if (registrationData || capdSummaryData || infectionData) {
@@ -121,15 +122,14 @@ const Peritoneal = () => {
     const phn = patient?.phn;
     if (phn) {
       try {
-        const [registrationResponse, capdResponse, infectionResponse] = await Promise.all([
+        const [registrationResponse, capdData, infectionData] = await Promise.all([
           fetch(`http://localhost:8081/api/patient-registration/${phn}`),
-          fetch(`http://localhost:8081/api/capd-summary/${phn}`),
-          fetch(`http://localhost:8081/api/infection-tracking/${phn}`),
+          capdSummaryApi.getByPatientId(phn).catch(() => null),
+          infectionTrackingApi.getByPatientId(phn).catch(() => null),
         ]);
 
         const registrationData = registrationResponse.ok ? await registrationResponse.json() : null;
-        const capdSummaryData = capdResponse.ok ? await capdResponse.json() : null;
-        const infectionData = infectionResponse.ok ? await infectionResponse.json() : null;
+        const capdSummaryData = capdData;
 
         if (registrationData || capdSummaryData || infectionData) {
           const combinedData: CAPDData = {
@@ -185,13 +185,10 @@ const Peritoneal = () => {
 
       const loadInfectionData = async () => {
         try {
-          const response = await fetch(`http://localhost:8081/api/infection-tracking/${phn}`);
-          if (response.ok) {
-            const data = await response.json();
-            setPeritonitis(data.peritonitisHistory || []);
-            setExitSite(data.exitSiteInfections || []);
-            setTunnel(data.tunnelInfections || []);
-          }
+          const data = await infectionTrackingApi.getByPatientId(phn);
+          setPeritonitis(data?.peritonitisHistory || []);
+          setExitSite(data?.exitSiteInfections || []);
+          setTunnel(data?.tunnelInfections || []);
         } catch (error) {
           console.error("Failed to load infection data:", error);
         }

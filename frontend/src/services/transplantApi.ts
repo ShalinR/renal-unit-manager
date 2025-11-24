@@ -59,8 +59,7 @@ const handleApiRequest = async <T>(
     // Parse JSON response
     return await response.json();
   } catch (error) {
-    console.error('API request failed:', error);
-    console.log('Request URL:', url);
+    console.error('API request failed');
     
     // Re-throw the error for the caller to handle
     if (error instanceof Error) {
@@ -79,15 +78,12 @@ export const transplantApi = {
    * Create a new KT surgery record
    */
   async createKTSurgery(patientPhn: string, ktData: KTFormData): Promise<KTFormData> {
-    console.log(`💾 Creating KT Surgery for PHN: ${patientPhn}`);
-    console.log(`📍 API URL: ${API_BASE_URL}/kt-surgery/${patientPhn}`);
-    console.log(`📦 Payload being sent:`, ktData);
+    console.debug('transplantApi: createKTSurgery called (PHI redacted)');
     const result = await handleApiRequest<KTFormData>(`${API_BASE_URL}/kt-surgery/${patientPhn}`, {
       method: 'POST',
       body: JSON.stringify(ktData),
     });
-    console.log(`✅ Successfully created KT Surgery:`, result);
-    console.log(`📊 Returned fields: ${Object.keys(result || {}).join(', ')}`);
+    console.debug('transplantApi: createKTSurgery successful (result redacted)');
     return result;
   },
 
@@ -96,25 +92,20 @@ export const transplantApi = {
    */
   async getKTSurgeryByPatientPhn(patientPhn: string): Promise<KTFormData | null> {
     try {
-      console.log(`🔍 Fetching KT Surgery for PHN: ${patientPhn}`);
-      console.log(`📍 API URL: ${API_BASE_URL}/kt-surgery/${patientPhn}`);
+      console.debug('transplantApi: getKTSurgeryByPatientPhn called (PHI redacted)');
       const result = await handleApiRequest<KTFormData>(`${API_BASE_URL}/kt-surgery/${patientPhn}`);
-      console.log(`✅ Successfully fetched KT Surgery data:`, result);
-      console.log(`📊 Retrieved fields: ${Object.keys(result || {}).join(', ')}`);
-      console.log(`🔢 Number of medications: ${(result as any)?.medications?.length || 0}`);
-      console.log(`💾 Result is null/undefined? ${result === null || result === undefined}`);
-      console.log(`💾 Result type: ${typeof result}`);
+      console.debug('transplantApi: getKTSurgeryByPatientPhn returned (result redacted)');
       if (!result) {
-        console.log("⚠️ Result is falsy!");
+        console.debug("transplantApi: getKTSurgeryByPatientPhn result is falsy");
         return null;
       }
-      console.log("✅ Returning result from getKTSurgeryByPatientPhn");
+      console.debug("transplantApi: returning KT surgery result (redacted)");
       return result;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.log(`⚠️ Error fetching KT Surgery (expected if no data exists):`, errorMsg);
+      console.debug('transplantApi: error fetching KT surgery (redacted)');
       if (error instanceof Error && (errorMsg.includes('404') || errorMsg.includes('not found'))) {
-        console.log(`ℹ️ No KT Surgery record found for PHN: ${patientPhn}`);
+        console.debug('transplantApi: no KT surgery record found (redacted)');
         return null;
       }
       throw error;
@@ -168,7 +159,7 @@ export const useTransplantApi = () => {
     try {
       return await transplantApi.createKTSurgery(patientPhn, ktData);
     } catch (error) {
-      console.error('Error creating KT surgery:', error);
+      console.error('Error creating KT surgery');
       throw error;
     }
   };
@@ -177,7 +168,7 @@ export const useTransplantApi = () => {
     try {
       return await transplantApi.getKTSurgeryByPatientPhn(patientPhn);
     } catch (error) {
-      console.error('Error fetching KT surgery:', error);
+      console.error('Error fetching KT surgery');
       throw error;
     }
   };
@@ -186,7 +177,7 @@ export const useTransplantApi = () => {
     try {
       return await transplantApi.updateKTSurgery(patientPhn, ktData);
     } catch (error) {
-      console.error('Error updating KT surgery:', error);
+      console.error('Error updating KT surgery');
       throw error;
     }
   };
@@ -195,7 +186,7 @@ export const useTransplantApi = () => {
     try {
       return await transplantApi.checkKTSurgeryExists(patientPhn);
     } catch (error) {
-      console.error('Error checking KT surgery existence:', error);
+      console.error('Error checking KT surgery existence');
       throw error;
     }
   };
@@ -204,7 +195,7 @@ export const useTransplantApi = () => {
     try {
       return await transplantApi.getLatestKTSurgery(patientPhn);
     } catch (error) {
-      console.error('Error fetching latest KT surgery:', error);
+      console.error('Error fetching latest KT surgery');
       throw error;
     }
   };
@@ -213,7 +204,7 @@ export const useTransplantApi = () => {
     try {
       return await transplantApi.getAllKTSurgeriesByPatientPhn(patientPhn);
     } catch (error) {
-      console.error('Error fetching all KT surgeries:', error);
+      console.error('Error fetching all KT surgeries');
       throw error;
     }
   };

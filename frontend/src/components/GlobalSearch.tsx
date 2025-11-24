@@ -14,18 +14,18 @@ const GlobalSearch: React.FC = () => {
   const navigate = useNavigate(); // Initialize navigate - NEW
 
   const handleSearch = async () => {
-    if (searchPhn.trim()) {
-      console.log("GlobalSearch: click search", searchPhn);
+      if (searchPhn.trim()) {
+      console.debug("GlobalSearch: search initiated (PHI redacted)");
       setLocalSearching(true);
       try {
         await searchPatientByPhn(searchPhn.trim());
-        console.log("GlobalSearch: searchPatientByPhn returned");
+        console.debug("GlobalSearch: search completed (redacted)");
 
         // Redirect to the ward-management page with the PHN as a query parameter
         navigate(`/ward-management?phn=${searchPhn.trim()}`);
       } catch (error) {
         // Error is already handled in the context
-        console.log("GlobalSearch: search completed with error", error);
+        console.error("GlobalSearch: search error");
       } finally {
         setLocalSearching(false);
       }

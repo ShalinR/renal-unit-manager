@@ -239,12 +239,12 @@ const InfectionTracking = ({
       }
 
       const savedData = await response.json();
-      console.log("✅ Peritonitis episodes saved successfully:", savedData);
-      alert(`✅ Peritonitis history saved successfully! ${savedData.length} episode(s) have been saved to the database.`);
+      console.debug("✅ Peritonitis episodes saved successfully (redacted)", { count: Array.isArray(savedData) ? savedData.length : null });
+      alert(`✅ Peritonitis history saved successfully! ${Array.isArray(savedData) ? savedData.length : 0} episode(s) have been saved to the database.`);
     } catch (error) {
-      console.error("❌ Error saving peritonitis history:", error);
+      console.error("❌ Error saving peritonitis history (redacted)", { message: error instanceof Error ? error.message : String(error) });
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      alert(`❌ Failed to save peritonitis history: ${errorMessage}\n\nPlease check the console for more details and try again.`);
+      alert(`❌ Failed to save peritonitis history: ${errorMessage}\n\nPlease try again.`);
     }
   };
 
@@ -344,12 +344,12 @@ const InfectionTracking = ({
       }
 
       const savedData = await response.json();
-      console.log("✅ Exit site infection episodes saved successfully:", savedData);
-      alert(`✅ Exit site infection episodes saved successfully! ${savedData.length} episode(s) have been saved to the database.`);
+      console.debug("✅ Exit site infection episodes saved successfully (redacted)", { count: Array.isArray(savedData) ? savedData.length : null });
+      alert(`✅ Exit site infection episodes saved successfully! ${Array.isArray(savedData) ? savedData.length : 0} episode(s) have been saved to the database.`);
     } catch (error) {
-      console.error("❌ Error saving exit site infection episodes:", error);
+      console.error("❌ Error saving exit site infection episodes (redacted)", { message: error instanceof Error ? error.message : String(error) });
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      alert(`❌ Failed to save exit site infection episodes: ${errorMessage}\n\nPlease check the console for more details and try again.`);
+      alert(`❌ Failed to save exit site infection episodes: ${errorMessage}\n\nPlease try again.`);
     }
   };
 
@@ -534,12 +534,12 @@ const InfectionTracking = ({
       }
 
       const savedData = await response.json();
-      console.log("✅ Tunnel infection episodes saved successfully:", savedData);
-      alert(`✅ Tunnel infection episodes saved successfully! ${savedData.length} episode(s) have been saved to the database.`);
+      console.debug("✅ Tunnel infection episodes saved successfully (redacted)", { count: Array.isArray(savedData) ? savedData.length : null });
+      alert(`✅ Tunnel infection episodes saved successfully! ${Array.isArray(savedData) ? savedData.length : 0} episode(s) have been saved to the database.`);
     } catch (error) {
-      console.error("❌ Error saving tunnel infection episodes:", error);
+      console.error("❌ Error saving tunnel infection episodes (redacted)", { message: error instanceof Error ? error.message : String(error) });
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      alert(`❌ Failed to save tunnel infection episodes: ${errorMessage}\n\nPlease check the console for more details and try again.`);
+      alert(`❌ Failed to save tunnel infection episodes: ${errorMessage}\n\nPlease try again.`);
     }
   };
 

@@ -63,7 +63,7 @@ const RegisterPatient = () => {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    console.log("Patient registered:", formData);
+    console.debug("Patient registered (PHI redacted)");
     
     // Reset form
     setFormData({

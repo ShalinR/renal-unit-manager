@@ -1,186 +1,682 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Activity, ArrowLeft, Download, CheckCircle, Loader } from "lucide-react";
-import { exportInvestigationData, flattenHDInvestigationData } from '@/lib/exportUtils';
-import { useToast } from "@/hooks/use-toast";
-import * as hdMonthlyReviewInvestigationApi from "@/services/hdMonthlyReviewInvestigationApi";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Activity, ArrowLeft, Plus, Trash2, Save, Eye, FileText, Loader2, Download } from "lucide-react";
+import { formatDateToDDMMYYYY, formatDateTimeDisplay } from '@/lib/dateUtils';
 import { usePatientContext } from "@/context/PatientContext";
-import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
+import { useToast } from "@/hooks/use-toast";
+import { exportInvestigationData, flattenHDInvestigationData } from '@/lib/exportUtils';
+import { hdInvestigationApi } from "@/services/hdInvestigationApi";
+
+interface InvestigationParameter {
+  id: string;
+  name: string;
+  unit: string;
+  dataType: 'number' | 'text';
+}
 
 interface InvestigationData {
   patientId: string;
-  date: string;
-  creatinine: string;
-  eGFR: string;
-  seNa: string;
-  seK: string;
-  sCa: string;
-  sPO4: string;
-  seHb: string;
-  sAlbumin: string;
-  ktV: string;
-  notes: string;
+  patientName: string;
+  dates: string[]; // Array of dates for columns
+  values: Record<string, Record<string, string>>; // [parameterId][date] = value
+  filledBy?: string;
+  doctorsNote?: string;
 }
+
+interface SavedInvestigationSummary {
+  id: number;
+  patientId: string;
+  patientName: string;
+  dates: string[];
+  values: Record<string, Record<string, string>>;
+  filledBy?: string;
+  doctorsNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const INVESTIGATION_PARAMETERS: InvestigationParameter[] = [
+  { id: 'hemoglobin', name: 'Haemoglobin', unit: 'g/dL', dataType: 'number' },
+  { id: 'platelets', name: 'Platelets', unit: '×10³/µL', dataType: 'number' },
+  { id: 'sCreatininePreHD', name: 'S. Creatinine – pre HD', unit: 'µmol/L', dataType: 'number' },
+  { id: 'sCreatininePostHD', name: 'S. Creatinine – post HD', unit: 'µmol/L', dataType: 'number' },
+  { id: 'buPreHD', name: 'BU – pre HD', unit: 'mmol/L', dataType: 'number' },
+  { id: 'buPostHD', name: 'BU – post HD', unit: 'mmol/L', dataType: 'number' },
+  { id: 'urr', name: 'URR', unit: '%', dataType: 'number' },
+  { id: 'serumSodiumPreHD', name: 'Serum sodium – pre HD', unit: 'mmol/L', dataType: 'number' },
+  { id: 'serumSodiumPostHD', name: 'Serum sodium – post HD', unit: 'mmol/L', dataType: 'number' },
+  { id: 'serumPotassiumPreHD', name: 'Serum potassium – pre HD', unit: 'mmol/L', dataType: 'number' },
+  { id: 'serumPotassiumPostHD', name: 'Serum potassium – post HD', unit: 'mmol/L', dataType: 'number' },
+  { id: 'sCorrectedCa', name: 'S. corrected Ca', unit: 'mmol/L', dataType: 'number' },
+  { id: 'sPhosphate', name: 'S. Phosphate', unit: 'mmol/L', dataType: 'number' },
+  { id: 'sUricAcid', name: 'S. Uric acid', unit: 'mg/dL', dataType: 'number' },
+  { id: 'sBicarbonate', name: 'S. Bicarbonate', unit: 'mmol/L', dataType: 'number' },
+  { id: 'sAlbumin', name: 'S. Albumin', unit: 'g/L', dataType: 'number' },
+  { id: 'fbs', name: 'FBS', unit: 'mg/dL', dataType: 'number' },
+  { id: 'hba1c', name: 'HbA1C', unit: '%', dataType: 'number' },
+  { id: 'serumFe', name: 'Serum Fe', unit: 'µg/dL', dataType: 'number' },
+  { id: 'serumFerritin', name: 'Serum Ferritin', unit: 'ng/mL', dataType: 'number' },
+  { id: 'tsat', name: 'TSAT', unit: '%', dataType: 'number' },
+  { id: 'vitaminD', name: 'Vitamin D', unit: 'ng/mL', dataType: 'number' },
+  { id: 'pth', name: 'PTH', unit: 'pg/mL', dataType: 'number' },
+  { id: 'bloodPicture', name: 'Blood picture', unit: '', dataType: 'text' },
+  { id: 'hepBsAg', name: 'Hep BsAg', unit: '', dataType: 'text' },
+  { id: 'hepCAb', name: 'Hep C Ab', unit: '', dataType: 'text' },
+  { id: 'hivAb', name: 'HIV Ab', unit: '', dataType: 'text' },
+  { id: 'lipidProfile', name: 'Lipid profile', unit: '', dataType: 'text' },
+  { id: 'twoDEcho', name: '2D Echo', unit: '', dataType: 'text' },
+];
 
 const HDInvestigation = () => {
   const navigate = useNavigate();
+  const { patient, globalPatient } = usePatientContext();
   const { toast } = useToast();
-  const { monthlyReviewId } = useParams<{ monthlyReviewId: string }>();
-  const location = useLocation();
-  const { patient } = usePatientContext();
-  const phn = patient?.phn;
-
-  const [formData, setFormData] = useState<InvestigationData>({
-    patientId: "",
-    date: "",
-    creatinine: "",
-    eGFR: "",
-    seNa: "",
-    seK: "",
-    sCa: "",
-    sPO4: "",
-    seHb: "",
-    sAlbumin: "",
-    ktV: "",
-    notes: "",
-  });
-
-  const [isMonthlyReviewMode, setIsMonthlyReviewMode] = useState(false);
+  
+  const patientId = patient?.phn || globalPatient?.phn || "";
+  const patientName = patient?.name || globalPatient?.name || "";
+  
+  const [dates, setDates] = useState<string[]>([]);
+  const [values, setValues] = useState<Record<string, Record<string, string>>>({});
+  const [filledBy, setFilledBy] = useState("");
+  const [doctorsNote, setDoctorsNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [recordedInvestigations, setRecordedInvestigations] = useState<any[]>([]);
+  const [savedSummaries, setSavedSummaries] = useState<SavedInvestigationSummary[]>([]);
+  const [viewMode, setViewMode] = useState<"form" | "list" | "view">("list");
+  const [selectedSummary, setSelectedSummary] = useState<SavedInvestigationSummary | null>(null);
 
-  // Load recorded investigations if in monthly review mode
-  useEffect(() => {
-    if (monthlyReviewId && phn) {
-      setIsMonthlyReviewMode(true);
-      loadInvestigations();
-    }
-  }, [monthlyReviewId, phn]);
+  const addDateColumn = () => {
+    const newDate = new Date().toISOString().split('T')[0];
+    setDates([...dates, newDate]);
+  };
 
-  const loadInvestigations = async () => {
-    if (!monthlyReviewId) return;
+  const removeDateColumn = (index: number) => {
+    const newDates = dates.filter((_, i) => i !== index);
+    setDates(newDates);
+    
+    // Remove values for this date
+    const newValues = { ...values };
+    Object.keys(newValues).forEach(paramId => {
+      const dateKey = dates[index];
+      if (newValues[paramId][dateKey]) {
+        delete newValues[paramId][dateKey];
+      }
+    });
+    setValues(newValues);
+  };
+
+  const updateDate = (index: number, newDate: string) => {
+    const oldDate = dates[index];
+    const newDates = [...dates];
+    newDates[index] = newDate;
+    setDates(newDates);
+
+    // Update values with new date key
+    const newValues = { ...values };
+    Object.keys(newValues).forEach(paramId => {
+      if (newValues[paramId][oldDate]) {
+        newValues[paramId] = {
+          ...newValues[paramId],
+          [newDate]: newValues[paramId][oldDate],
+        };
+        delete newValues[paramId][oldDate];
+      }
+    });
+    setValues(newValues);
+  };
+
+  const updateValue = (paramId: string, date: string, value: string) => {
+    setValues(prev => ({
+      ...prev,
+      [paramId]: {
+        ...prev[paramId],
+        [date]: value,
+      },
+    }));
+  };
+
+  const getValue = (paramId: string, date: string): string => {
+    return values[paramId]?.[date] || '';
+  };
+
+  const fetchSavedSummaries = async () => {
+    if (!patientId) return;
+    
     setIsLoading(true);
     try {
-      const investigations = await hdMonthlyReviewInvestigationApi.getInvestigationsByMonthlyReview(
-        parseInt(monthlyReviewId)
-      );
-      setRecordedInvestigations(investigations || []);
-      console.log("Loaded investigations:", investigations);
+      // For now, we'll need to adapt this to work with the existing API or create a new summary endpoint
+      // This is a placeholder - we may need to create a new HDInvestigationSummary backend model
+      const data = await hdInvestigationApi.getSummariesByPatientId(patientId);
+      setSavedSummaries(data);
     } catch (error) {
-      console.error("Error loading investigations:", error);
+      console.error("Error fetching investigation summaries:", error);
       toast({
-        title: "Error",
-        description: "Failed to load investigations",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch investigation summaries. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Fetch saved summaries
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const patientParam = params.get('patient');
-    if (patientParam) {
-      setFormData((prev) => ({ ...prev, patientId: patientParam }));
-    } else if (phn && !isMonthlyReviewMode) {
-      setFormData((prev) => ({ ...prev, patientId: phn }));
+    if (patientId) {
+      fetchSavedSummaries();
+    } else {
+      setSavedSummaries([]);
     }
-  }, [location.search, phn, isMonthlyReviewMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId]);
 
-  const loadInvestigationData = (investigation: any) => {
-    setFormData({
-      patientId: investigation.patientId || phn || "",
-      date: investigation.investigationDate ? investigation.investigationDate.split('T')[0] : "",
-      creatinine: investigation.creatinine?.toString() || "",
-      eGFR: investigation.eGFR?.toString() || "",
-      seNa: investigation.sodium?.toString() || "",
-      seK: investigation.potassium?.toString() || "",
-      sCa: investigation.calcium?.toString() || "",
-      sPO4: investigation.phosphate?.toString() || "",
-      seHb: investigation.hemoglobin?.toString() || "",
-      sAlbumin: investigation.albumin?.toString() || "",
-      ktV: investigation.ktV?.toString() || "",
-      notes: investigation.clinicalNotes || "",
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!patientId) {
+      toast({
+        title: 'Patient Not Selected',
+        description: 'Please search for a patient by PHN first before saving investigation summary.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (dates.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'Please add at least one date column before saving.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!filledBy.trim()) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please enter who filled out this form.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const formData: InvestigationData = {
+        patientId,
+        patientName,
+        dates,
+        values,
+        filledBy,
+        doctorsNote,
+      };
+
+      await hdInvestigationApi.createSummary(patientId, formData);
+      
+      toast({
+        title: 'Success',
+        description: 'Investigation summary saved successfully.',
+      });
+      // Reset form
+      setDates([]);
+      setValues({});
+      setFilledBy("");
+      setDoctorsNote("");
+      // Refresh saved summaries
+      await fetchSavedSummaries();
+      setViewMode("list");
+    } catch (error) {
+      console.error("Error saving investigation summary:", error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save investigation summary. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleViewSummary = (summary: SavedInvestigationSummary) => {
+    setSelectedSummary(summary);
+    setViewMode("view");
+  };
+
+  const handleLoadSummary = (summary: SavedInvestigationSummary) => {
+    setDates(summary.dates);
+    setValues(summary.values);
+    setFilledBy(summary.filledBy || "");
+    setDoctorsNote(summary.doctorsNote || "");
+    setViewMode("form");
+    toast({
+      title: 'Loaded',
+      description: 'Investigation summary loaded. You can edit and save as a new record.',
     });
   };
 
-  const handleChange = (field: keyof InvestigationData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const handleDeleteSummary = async (summary: SavedInvestigationSummary) => {
+    if (!window.confirm(`Are you sure you want to delete Investigation Summary #${summary.id}?\n\nThis action cannot be undone.`)) {
+      return;
+    }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Map frontend field names to backend DTO field names
-    const dto = {
-      patientId: formData.patientId,
-      investigationDate: formData.date,
-      monthlyReviewId: monthlyReviewId ? parseInt(monthlyReviewId) : null,
-      creatinine: formData.creatinine ? parseFloat(formData.creatinine) : null,
-      sodium: formData.seNa ? parseFloat(formData.seNa) : null,
-      potassium: formData.seK ? parseFloat(formData.seK) : null,
-      calcium: formData.sCa ? parseFloat(formData.sCa) : null,
-      phosphate: formData.sPO4 ? parseFloat(formData.sPO4) : null,
-      hemoglobin: formData.seHb ? parseFloat(formData.seHb) : null,
-      albumin: formData.sAlbumin ? parseFloat(formData.sAlbumin) : null,
-      ktV: formData.ktV ? parseFloat(formData.ktV) : null,
-      clinicalNotes: formData.notes,
-    };
-
-    console.log("Submitting investigation data:", dto);
-    
-    // Submit based on mode
-    if (isMonthlyReviewMode && monthlyReviewId) {
-      hdMonthlyReviewInvestigationApi.createInvestigationForMonthlyReview(parseInt(monthlyReviewId), dto)
-        .then(() => {
-          toast({
-            title: "Success!",
-            description: `HD investigation for patient ${formData.patientId} submitted successfully.`,
-            className: "bg-green-50 border-green-200",
-          });
-          setTimeout(() => {
-            loadInvestigations(); // Reload to show the new investigation
-          }, 1500);
-        })
-        .catch((error) => {
-          console.error("Error submitting investigation:", error);
-          toast({
-            title: "Error",
-            description: "Failed to submit investigation. Please try again.",
-            variant: "destructive",
-          });
-        });
-    } else {
-      hdMonthlyReviewInvestigationApi.createInvestigationForMonthlyReview(parseInt(monthlyReviewId || "0"), dto)
-        .then(() => {
-          toast({
-            title: "Success!",
-            description: `HD investigation for patient ${formData.patientId} submitted successfully.`,
-            className: "bg-green-50 border-green-200",
-          });
-          setTimeout(() => {
-            navigate("/investigation");
-          }, 1500);
-        })
-        .catch((error) => {
-          console.error("Error submitting investigation:", error);
-          toast({
-            title: "Error",
-            description: "Failed to submit investigation. Please try again.",
-            variant: "destructive",
-          });
-        });
+    try {
+      await hdInvestigationApi.deleteSummary(summary.id);
+      
+      toast({
+        title: 'Success',
+        description: 'Investigation summary deleted successfully.',
+      });
+      // Refresh the list
+      await fetchSavedSummaries();
+      // If we're viewing the deleted summary, go back to list
+      if (selectedSummary?.id === summary.id) {
+        setViewMode("list");
+        setSelectedSummary(null);
+      }
+    } catch (error) {
+      console.error("Error deleting investigation summary:", error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete investigation summary. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
+  // Render saved summaries list
+  const renderSavedSummariesList = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="ml-2">Loading saved summaries...</span>
+        </div>
+      );
+    }
+
+    if (savedSummaries.length === 0) {
+      return (
+        <div className="text-center py-12 text-muted-foreground">
+          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>No saved investigation summaries found for this patient.</p>
+          <p className="text-sm mt-2">Click "New Investigation Summary" to create one.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {savedSummaries.map((summary) => (
+          <Card key={summary.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold">Investigation Summary #{summary.id}</h3>
+                    <span className="text-sm text-muted-foreground">
+                      ({summary.dates.length} date{summary.dates.length !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>Patient: {summary.patientName} (PHN: {summary.patientId})</p>
+                    <p>Created: {formatDateTimeDisplay(summary.createdAt)}</p>
+                    {summary.filledBy && <p>Filled by: {summary.filledBy}</p>}
+                    {summary.doctorsNote && <p className="mt-2 italic">Doctor's Note: {summary.doctorsNote}</p>}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewSummary(summary)}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleLoadSummary(summary)}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Load
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExportSummary(summary, 'excel')}
+                    className="flex items-center gap-2"
+                    title="Export to Excel"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteSummary(summary)}
+                    className="flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  const handleExportSummary = (summary: SavedInvestigationSummary, format: 'csv' | 'excel' = 'excel') => {
+    const flatData = flattenHDInvestigationData(summary, INVESTIGATION_PARAMETERS);
+    if (flatData.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'No data available to export.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const filename = `HD_Investigation_${summary.patientId}_${summary.id}_${new Date().toISOString().split('T')[0]}`;
+    exportInvestigationData(flatData, filename, format);
+    toast({
+      title: 'Export Successful',
+      description: `Data exported as ${format.toUpperCase()}`,
+    });
+  };
+
+  // Render view mode for selected summary
+  const renderViewSummary = () => {
+    if (!selectedSummary) return null;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Investigation Summary #{selectedSummary.id}</h2>
+            <p className="text-muted-foreground">
+              Patient: {selectedSummary.patientName} (PHN: {selectedSummary.patientId})
+            </p>
+            <p className="text-sm text-muted-foreground">Created: {formatDateTimeDisplay(selectedSummary.createdAt)}</p>
+            {selectedSummary.filledBy && <p className="text-sm text-muted-foreground">Filled by: {selectedSummary.filledBy}</p>}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleExportSummary(selectedSummary, 'excel')}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export Excel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleExportSummary(selectedSummary, 'csv')}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleDeleteSummary(selectedSummary)}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setViewMode("list")}
+            >
+              Back to List
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 bg-background z-10 min-w-[200px] font-semibold">
+                  Investigation
+                </TableHead>
+                <TableHead className="min-w-[100px] font-semibold">Unit</TableHead>
+                {selectedSummary.dates.map((date) => (
+                  <TableHead key={date} className="min-w-[150px]">
+                      {formatDateToDDMMYYYY(date)}
+                    </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {INVESTIGATION_PARAMETERS.map((param) => (
+                <TableRow key={param.id}>
+                  <TableCell className="sticky left-0 bg-background z-10 font-medium">
+                    {param.name}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {param.unit || '-'}
+                  </TableCell>
+                  {selectedSummary.dates.map((date) => (
+                    <TableCell key={date}>
+                      {selectedSummary.values[param.id]?.[date] || '-'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Doctor's Note Display */}
+        {selectedSummary.doctorsNote && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Doctor's Note</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap text-sm">{selectedSummary.doctorsNote}</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
+  // Render form mode
+  const renderForm = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Enter Investigation Results</CardTitle>
+          <CardDescription>
+            Fill in the monthly investigation summary for Hemodialysis patients
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Patient Info Display */}
+            {patientId ? (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                  <span className="font-semibold">Patient:</span>
+                  <span>{patientName} (PHN: {patientId})</span>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <p className="text-amber-700 dark:text-amber-300">
+                  ⚠️ Please search for a patient by PHN using the global search bar to begin.
+                </p>
+              </div>
+            )}
+
+            {/* Filled By Input */}
+            <div className="space-y-2 max-w-md">
+              <Label htmlFor="filledBy">Filled By</Label>
+              <Input
+                id="filledBy"
+                value={filledBy}
+                onChange={(e) => setFilledBy(e.target.value)}
+                placeholder="Enter name of person who filled this form"
+                required
+              />
+            </div>
+
+            {/* Doctors Note Input */}
+            <div className="space-y-2">
+              <Label htmlFor="doctorsNote">Doctor's Note</Label>
+              <Textarea
+                id="doctorsNote"
+                value={doctorsNote}
+                onChange={(e) => setDoctorsNote(e.target.value)}
+                placeholder="Enter doctor's notes or comments"
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Date Columns Management */}
+            <div className="flex items-center gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addDateColumn}
+                className="flex items-center gap-2"
+                disabled={!patientId}
+              >
+                <Plus className="h-4 w-4" />
+                Add Date Column
+              </Button>
+              {dates.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {dates.length} date column{dates.length !== 1 ? 's' : ''} added
+                </span>
+              )}
+            </div>
+
+            {/* Investigation Summary Table */}
+            {dates.length > 0 && (
+              <div className="overflow-x-auto border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 bg-background z-10 min-w-[200px] font-semibold">
+                        Investigation
+                      </TableHead>
+                      <TableHead className="min-w-[100px] font-semibold">Unit</TableHead>
+                      {dates.map((date, index) => (
+                        <TableHead key={index} className="min-w-[180px]">
+                          <div className="flex flex-col gap-2">
+                            <Input
+                              type="date"
+                              value={date}
+                              onChange={(e) => updateDate(index, e.target.value)}
+                              className="h-8 text-xs"
+                              required
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeDateColumn(index)}
+                              className="h-6 text-xs text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Remove
+                            </Button>
+                          </div>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {INVESTIGATION_PARAMETERS.map((param) => (
+                      <TableRow key={param.id}>
+                        <TableCell className="sticky left-0 bg-background z-10 font-medium">
+                          {param.name}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {param.unit || '-'}
+                        </TableCell>
+                        {dates.map((date) => (
+                          <TableCell key={date}>
+                            <Input
+                              type={param.dataType === 'number' ? 'number' : 'text'}
+                              value={getValue(param.id, date)}
+                              onChange={(e) => updateValue(param.id, date, e.target.value)}
+                              placeholder={param.unit ? `Enter ${param.unit}` : 'Enter value'}
+                              className="h-9 w-full"
+                              step={param.dataType === 'number' ? 'any' : undefined}
+                            />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {dates.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Click "Add Date Column" to start entering investigation results</p>
+              </div>
+            )}
+
+            {/* Submit Buttons */}
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setViewMode("list");
+                  setDates([]);
+                  setValues({});
+                  setFilledBy("");
+                  setDoctorsNote("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1 flex items-center gap-2"
+                disabled={dates.length === 0 || !patientId || isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Investigation Summary
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-[95vw] mx-auto">
       <div className="flex items-center gap-4">
         <Button
           variant="outline"
@@ -192,234 +688,58 @@ const HDInvestigation = () => {
         </Button>
         <div className="flex items-center gap-2">
           <Activity className="h-6 w-6 text-primary" />
-          <h1 className="text-3xl font-bold">Hemodialysis Investigation</h1>
+          <h1 className="text-3xl font-bold">Monthly Investigation Summary - Hemodialysis</h1>
         </div>
       </div>
 
-      {isMonthlyReviewMode && recordedInvestigations.length > 0 && (
+      {/* Mode Toggle */}
+      {viewMode !== "view" && (
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === "list" ? "default" : "outline"}
+            onClick={() => setViewMode("list")}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Saved Summaries
+          </Button>
+          <Button
+            variant={viewMode === "form" ? "default" : "outline"}
+            onClick={() => {
+              setViewMode("form");
+              setDates([]);
+              setValues({});
+              setFilledBy("");
+              setDoctorsNote("");
+            }}
+            disabled={!patientId}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Investigation Summary
+          </Button>
+        </div>
+      )}
+
+      {/* Content based on mode */}
+      {viewMode === "list" && (
         <Card>
           <CardHeader>
-            <CardTitle>Recorded Investigations</CardTitle>
+            <CardTitle>Saved Investigation Summaries</CardTitle>
             <CardDescription>
-              Click on an investigation to view or edit its details
+              {patientId 
+                ? `View and manage investigation summaries for ${patientName} (PHN: ${patientId})`
+                : "Please search for a patient by PHN to view their investigation summaries"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader className="h-4 w-4 animate-spin" />
-                <span>Loading investigations...</span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {recordedInvestigations.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition"
-                    onClick={() => loadInvestigationData(inv)}
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {inv.investigationDate ? formatDateToDDMMYYYY(inv.investigationDate) : "No date"}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Created: {inv.createdAt ? formatDateToDDMMYYYY(inv.createdAt) : "N/A"}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        loadInvestigationData(inv);
-                      }}
-                    >
-                      Load
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+            {renderSavedSummariesList()}
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Enter Investigation Results</CardTitle>
-          <CardDescription>
-            Fill in the investigation results for Hemodialysis patients
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="patient">Patient ID</Label>
-              <Input
-                id="patient"
-                value={formData.patientId}
-                onChange={(e) => handleChange("patientId", e.target.value)}
-                placeholder="Enter patient ID"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleChange("date", e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="creatinine">Creatinine (mg/dL)</Label>
-                <Input
-                  id="creatinine"
-                  value={formData.creatinine}
-                  onChange={(e) => handleChange("creatinine", e.target.value)}
-                  placeholder="mg/dL"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="egfr">eGFR (mL/min/1.73m²)</Label>
-                <Input
-                  id="egfr"
-                  value={formData.eGFR}
-                  onChange={(e) => handleChange("eGFR", e.target.value)}
-                  placeholder="mL/min/1.73m²"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="na">Serum Na (mEq/L)</Label>
-                <Input
-                  id="na"
-                  value={formData.seNa}
-                  onChange={(e) => handleChange("seNa", e.target.value)}
-                  placeholder="mEq/L"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="k">Serum K (mEq/L)</Label>
-                <Input
-                  id="k"
-                  value={formData.seK}
-                  onChange={(e) => handleChange("seK", e.target.value)}
-                  placeholder="mEq/L"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ca">Serum Ca (mg/dL)</Label>
-                <Input
-                  id="ca"
-                  value={formData.sCa}
-                  onChange={(e) => handleChange("sCa", e.target.value)}
-                  placeholder="mg/dL"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="po4">Serum PO4 (mg/dL)</Label>
-                <Input
-                  id="po4"
-                  value={formData.sPO4}
-                  onChange={(e) => handleChange("sPO4", e.target.value)}
-                  placeholder="mg/dL"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="hb">Hemoglobin (g/dL)</Label>
-                <Input
-                  id="hb"
-                  value={formData.seHb}
-                  onChange={(e) => handleChange("seHb", e.target.value)}
-                  placeholder="g/dL"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ktv">Kt/V</Label>
-                <Input
-                  id="ktv"
-                  value={formData.ktV}
-                  onChange={(e) => handleChange("ktV", e.target.value)}
-                  placeholder="Kt/V ratio"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="albumin">Albumin (g/dL)</Label>
-              <Input
-                id="albumin"
-                value={formData.sAlbumin}
-                onChange={(e) => handleChange("sAlbumin", e.target.value)}
-                placeholder="g/dL"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Additional notes..."
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => navigate("/investigation")}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  const flatData = flattenHDInvestigationData(formData);
-                  const filename = `HD_Investigation_${formData.patientId || 'unknown'}_${formData.date || new Date().toISOString().split('T')[0]}`;
-                  exportInvestigationData(flatData, filename, 'excel');
-                }}
-                disabled={!formData.patientId || !formData.date}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Export Excel
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  const flatData = flattenHDInvestigationData(formData);
-                  const filename = `HD_Investigation_${formData.patientId || 'unknown'}_${formData.date || new Date().toISOString().split('T')[0]}`;
-                  exportInvestigationData(flatData, filename, 'csv');
-                }}
-                disabled={!formData.patientId || !formData.date}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Export CSV
-              </Button>
-              <Button type="submit" className="flex-1">
-                Submit Investigation
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      {viewMode === "view" && renderViewSummary()}
+      {viewMode === "form" && renderForm()}
     </div>
   );
 };
 
 export default HDInvestigation;
-

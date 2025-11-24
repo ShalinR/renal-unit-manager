@@ -24,6 +24,7 @@ export const ExampleHDSessionFormIntegration = () => {
   const { 
     history, 
     saveDraft, 
+    markAsSubmitted,
     markAsSynced, 
     deleteEntry,
     getLatestDraft 
@@ -48,15 +49,34 @@ export const ExampleHDSessionFormIntegration = () => {
     const autoSaveTimer = setTimeout(() => {
       setIsSaving(true);
       const entry = saveDraft(formData, sessionDate);
-      if (entry) {
+        if (entry) {
         setLastSavedTime(new Date());
-        console.log('Draft auto-saved:', entry.id);
+        console.debug('Draft auto-saved (id redacted)');
       }
       setIsSaving(false);
     }, 2000);
 
     return () => clearTimeout(autoSaveTimer);
   }, [formData, sessionDate, patient?.phn, saveDraft]);
+
+  // ==============================================================================
+  // PART 8: Optional - Load latest draft on component mount
+  // ==============================================================================
+
+  // Use this effect to restore the latest draft when user returns to the form
+  useEffect(() => {
+    if (!patient?.phn || formData) return; // Skip if already has data
+
+    const latestDraft = getLatestDraft(sessionDate);
+    if (latestDraft) {
+      setFormData(latestDraft.data);
+      setSessionDate(latestDraft.sessionDate);
+      toast({
+        title: 'Draft Restored',
+        description: 'Previous draft has been loaded',
+      });
+    }
+  }, [patient?.phn, sessionDate, getLatestDraft, toast]); // Only run when patient or date changes
 
   // ==============================================================================
   // PART 3: Handle form changes
@@ -92,6 +112,9 @@ export const ExampleHDSessionFormIntegration = () => {
         throw new Error('Failed to save draft locally');
       }
 
+      // Mark as submitted before sending to backend
+      markAsSubmitted(draftEntry.id);
+
       // Then submit to backend
       await submitSessionToBackend(
         draftEntry,
@@ -106,6 +129,7 @@ export const ExampleHDSessionFormIntegration = () => {
 
           // Clear form and redirect
           setFormData(null);
+          setSessionDate(new Date().toISOString().split('T')[0]);
           // Navigate to dashboard or next page
         },
         (error) => {
@@ -141,7 +165,7 @@ export const ExampleHDSessionFormIntegration = () => {
 
   const handleViewSessionDetails = (entry: any) => {
     // Open a modal or preview page showing the entry's data
-    console.log('View details for:', entry);
+    console.debug('View details (redacted)');
     // You can show a modal here with the entry.data
   };
 
@@ -212,24 +236,6 @@ export const ExampleHDSessionFormIntegration = () => {
     </div>
   );
 };
-
-// ==============================================================================
-// PART 8: Optional - Load latest draft on component mount
-// ==============================================================================
-
-// Use this effect to restore the latest draft when user returns to the form
-useEffect(() => {
-  if (!patient?.phn || formData) return; // Skip if already has data
-
-  const latestDraft = getLatestDraft(sessionDate);
-  if (latestDraft) {
-    setFormData(latestDraft.data);
-    toast({
-      title: 'Draft Restored',
-      description: 'Previous draft has been loaded',
-    });
-  }
-}, [patient?.phn, sessionDate]);
 
 // ==============================================================================
 // BENEFITS OF THIS APPROACH:

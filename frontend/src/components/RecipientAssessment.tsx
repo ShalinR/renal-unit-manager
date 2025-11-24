@@ -165,12 +165,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
 
   // Build recipient summary sections
   const handleSelectDonor = async (donor: Donor) => {
-    console.log("🔗 Selecting donor:", {
-      id: donor.id,
-      patientPhn: donor.patientPhn,
-      name: donor.name,
-      bloodGroup: donor.bloodGroup,
-    });
+    console.debug("🔗 Selecting donor (redacted)", { id: donor.id });
 
     handleRecipientFormChange("donorId", donor.id);
     handleRecipientFormChange("donorPhn", donor.patientPhn || ""); // ✅ FIXED
@@ -207,54 +202,31 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         assignedRecipientPhn: donor.assignedRecipientPhn || "",
         assignedRecipientName: donor.assignedRecipientName || "",
       });
-      console.log(
-        "🔄 Donor relationship updated in context for donor:",
-        donor.id
-      );
+      console.debug("🔄 Donor relationship updated in context (donorId)", { donorId: donor.id });
 
       // Persist assignment immediately on select (user requested "Persist on select")
-      if (patient?.phn) {
+          if (patient?.phn) {
         try {
-          console.log(
-            `🔗 Persisting donor ${donor.id} assignment to recipient ${patient.phn}`
-          );
-          await assignDonorToRecipient(
-            donor.id,
-            patient.phn,
-            patient?.name || ""
-          );
-          // Refresh donor list from backend to ensure latest state
-          await fetchAllDonors();
-          console.log(
-            `✅ Donor ${donor.id} persisted as assigned to ${patient.phn}`
-          );
+            console.debug("🔗 Persisting donor assignment (redacted)", { donorId: donor.id });
+            await assignDonorToRecipient(donor.id, patient.phn, patient?.name || "");
+            // Refresh donor list from backend to ensure latest state
+            await fetchAllDonors();
+            console.debug("✅ Donor persisted (redacted)", { donorId: donor.id });
         } catch (assignErr) {
-          console.error(
-            "❌ Failed to persist donor assignment on select:",
-            assignErr
-          );
+            console.error("❌ Failed to persist donor assignment on select (redacted)", { message: assignErr instanceof Error ? assignErr.message : String(assignErr) });
         }
       }
     } catch (err) {
       console.error("❌ Failed to update donor relationship in context:", err);
     }
-    console.log("✅ Updated form with donor:", {
-      donorId: recipientForm.donorId,
-      donorPhn: recipientForm.donorPhn,
-      donorName: recipientForm.donorName,
-      donorBloodGroup: recipientForm.donorBloodGroup,
-      relationToRecipient: recipientForm.relationToRecipient,
-      relationType: recipientForm.relationType,
-    });
+    console.debug("✅ Updated form with donor (redacted)", { donorId: recipientForm.donorId });
   };
   // ✅ NEW API service using the proper service
   const apiService = {
     // Search donor by PHN - This should use your donor assessment endpoint
     searchDonorByPhn: async (phn: string) => {
       try {
-        const response = await fetch(
-          `http://localhost:8081/api/donor-assessment/patient/${phn}`
-        );
+        const response = await fetch(`http://localhost:8081/api/donor-assessment/patient/${phn}`);
         if (!response.ok) {
           if (response.status === 404) return null;
           throw new Error("Failed to search donor");
@@ -263,7 +235,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         // Return the first assessment if available
         return assessments.length > 0 ? assessments[0] : null;
       } catch (error) {
-        console.error("Error searching donor:", error);
+        console.error("Error searching donor (redacted)", { message: error instanceof Error ? error.message : String(error) });
         return null;
       }
     },
@@ -386,7 +358,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         return;
       }
 
-      console.log("🔄 Loading assessment for PHN:", patient.phn);
+      console.debug("🔄 Loading assessment (PHN redacted)");
       hasLoaded = true;
 
       try {
@@ -408,7 +380,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
 
         // ✅ NEW: Automatically fetch available donors when patient is loaded
         await fetchAllDonors();
-        console.log("✅ Available donors loaded automatically");
+        console.debug("✅ Available donors loaded automatically");
 
         // Load existing assessment
         const existingAssessment = await fetchLatestRecipientAssessment(
@@ -416,8 +388,8 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         );
 
         if (isMounted) {
-          if (existingAssessment) {
-            console.log("✅ Found existing assessment:", existingAssessment);
+            if (existingAssessment) {
+            console.debug("✅ Found existing assessment (redacted)", { id: (existingAssessment as any)?.id });
 
             // IMPORTANT: Set the entire form with the existing assessment data
             setRecipientForm(existingAssessment);
@@ -425,12 +397,8 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
             setViewMode(true);
 
             // Set donor search results if donor is assigned
-            if (existingAssessment.donorId) {
-              console.log("🔗 Found assigned donor:", {
-                donorId: existingAssessment.donorId,
-                donorName: existingAssessment.donorName,
-                donorPhn: existingAssessment.donorPhn,
-              });
+              if (existingAssessment.donorId) {
+              console.debug("🔗 Found assigned donor (redacted)", { donorId: existingAssessment.donorId });
 
               // Set donor search results to show the selected donor
               setDonorSearchResults({
@@ -446,14 +414,14 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
             } else {
               setTransfusions([{ date: "", indication: "", volume: "" }]);
             }
-          } else {
+            } else {
             setIsEditing(false);
             setViewMode(false);
-            console.log("📝 No existing assessment found, creating new one");
+            console.debug("📝 No existing assessment found, creating new one");
           }
         }
       } catch (error) {
-        console.error("❌ Error loading patient assessment data:", error);
+        console.error("❌ Error loading patient assessment data (redacted)", { message: error instanceof Error ? error.message : String(error) });
         if (isMounted) {
           setIsEditing(false);
           setViewMode(false);
@@ -501,15 +469,15 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
 
     // Debug visibility: ensure patient object is arriving
     // and try to set the phn input value directly as a fallback.
-    try {
-      console.log("RecipientAssessment: patient selected:", patient);
+      try {
+        console.debug("Recipient selected (PHN redacted)");
       const phnInput = document.getElementById(
         "phn"
       ) as HTMLInputElement | null;
       if (phnInput) {
         phnInput.value = patient.phn || "";
       }
-    } catch (e) {
+      } catch (e) {
       // ignore
     }
   }, [
@@ -539,7 +507,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
     setErrors((prev) => ({ ...prev, donorSearch: "" }));
 
     try {
-      console.log("🔍 Searching for donor with PHN:", donorSearchPhn);
+      console.debug("🔍 Searching for donor (PHN redacted)");
 
       // ✅ CORRECT: Search for donor by THEIR OWN PHN
       const response = await fetch(
@@ -566,7 +534,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
       }
 
       const donorAssessments = await response.json();
-      console.log("📋 Donor search results:", donorAssessments);
+      console.debug("📋 Donor search results received (redacted)", { count: donorAssessments?.length ?? 0 });
 
       if (donorAssessments && donorAssessments.length > 0) {
         const donorData = donorAssessments[0];
@@ -612,7 +580,7 @@ const RecipientAssessment: React.FC<RecipientAssessmentProps> = ({
         setDonorSearchResults(null);
       }
     } catch (error) {
-      console.error("❌ Error searching donor:", error);
+      console.error("❌ Error searching donor (redacted)", { message: error instanceof Error ? error.message : String(error) });
       setErrors((prev) => ({
         ...prev,
         donorSearch: "Failed to search for donor. Please try again.",

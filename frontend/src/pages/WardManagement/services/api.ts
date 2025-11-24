@@ -7,15 +7,14 @@ export const apiGetPatient = async (phn: string): Promise<Patient | null> => {
   const cleanPhn = phn.replace(/[^0-9]/g, "");
   const url = `${API}/api/patient?phn=${cleanPhn}`;
   
-  console.log("🔍 [API] Searching for patient with PHN:", cleanPhn);
-  console.log("🔍 [API] Calling URL:", url);
+  console.debug("Ward API: searching for patient (PHI redacted)");
   
   try {
     const res = await fetch(url);
-    console.log("🔍 [API] Response status:", res.status, res.statusText);
+    console.debug("Ward API: patient fetch response status", res.status);
     
     if (res.status === 404) {
-      console.log("🔍 [API] Patient not found (404)");
+      console.debug("Ward API: patient not found (404)");
       return null;
     }
     
@@ -37,7 +36,7 @@ export const apiGetPatient = async (phn: string): Promise<Patient | null> => {
     }
     
     const patientData = await res.json();
-    console.log("✅ [API] Patient data received:", patientData);
+    console.debug("Ward API: patient data received (redacted)");
     
     // Map backend fields to frontend fields with fallbacks
     const mappedPatient: Patient = {
@@ -74,7 +73,7 @@ export const apiGetPatient = async (phn: string): Promise<Patient | null> => {
       examHeartRate: patientData.examHeartRate || patientData.exam_heart_rate || patientData.heartRate,
     };
     
-    console.log("✅ [API] Mapped patient data:", mappedPatient);
+    console.debug("Ward API: mapped patient data (redacted)");
     return mappedPatient;
     
   } catch (error) {
@@ -87,31 +86,26 @@ export const apiGetAdmissions = async (phn: string): Promise<Admission[]> => {
   const cleanPhn = phn.replace(/[^0-9]/g, "");
   const url = `${API}/api/patients/${cleanPhn}/admissions`;
   
-  console.log("📥 [API] Loading admissions for PHN:", cleanPhn);
-  console.log("📥 [API] Calling URL:", url);
+  console.debug("Ward API: loading admissions (PHI redacted)");
   
   try {
     const res = await fetch(url);
-    console.log("📥 [API] Response status:", res.status, res.statusText);
+    console.debug("Ward API: admissions response status", res.status);
     
     if (res.status === 404) {
-      console.log("📥 [API] No admissions found (404)");
+      console.debug("Ward API: no admissions found (404)");
       return [];
     }
     
     if (!res.ok) {
       // For 400 errors, return empty array instead of throwing
       if (res.status === 400) {
-        console.log("📥 [API] Bad request - no admissions (400)");
+        console.debug("Ward API: bad request for admissions (400)");
         return [];
       }
       
       const errorText = await res.text().catch(() => "");
-      console.error("❌ [API] Admissions API Error:", {
-        status: res.status,
-        statusText: res.statusText,
-        responseText: errorText
-      });
+      console.error("Ward API: admissions API error");
       throw new Error(`Failed to load admissions: ${res.status}`);
     }
     
@@ -123,11 +117,11 @@ export const apiGetAdmissions = async (phn: string): Promise<Admission[]> => {
     }
     
     const raw = await res.json();
-    console.log("✅ [API] Admissions data received:", raw);
+    console.debug("Ward API: admissions data received (redacted)");
     
     // Handle case where backend might return empty array or null
     if (!raw || !Array.isArray(raw)) {
-      console.log("📥 [API] No admissions data or invalid format, returning empty array");
+      console.debug("Ward API: no admissions data or invalid format");
       return [];
     }
     
@@ -157,8 +151,7 @@ export const apiGetAdmissions = async (phn: string): Promise<Admission[]> => {
       examHeartRate: a.examHeartRate || a.exam_heart_rate || a.heartRate,
     }));
     
-    console.log("✅ [API] Mapped admissions:", admissions);
-    console.log("✅ [API] Mapped admissions:", admissions.admissionTime);
+    console.debug("Ward API: mapped admissions (redacted)");
     return admissions;
     
   } catch (error) {
@@ -169,7 +162,7 @@ export const apiGetAdmissions = async (phn: string): Promise<Admission[]> => {
 };
 
 export const apiCreatePatient = async (payload: PatientCreatePayload): Promise<Patient> => {
-  console.log("➕ [API] Creating patient with payload:", payload);
+  console.debug("Ward API: creating patient (PHI redacted)");
   
   // Clean the payload - remove any undefined values and format properly
   const cleanPayload = JSON.parse(JSON.stringify({
@@ -201,7 +194,7 @@ export const apiCreatePatient = async (payload: PatientCreatePayload): Promise<P
     allergyProblems: payload.allergyProblems || []
   }));
 
-  console.log("➕ [API] Sending cleaned payload:", cleanPayload);
+  console.debug("Ward API: sending cleaned payload (redacted)");
 
   try {
     const res = await fetch(`${API}/api/patient`, {
@@ -212,7 +205,7 @@ export const apiCreatePatient = async (payload: PatientCreatePayload): Promise<P
       body: JSON.stringify(cleanPayload),
     });
 
-    console.log("➕ [API] Create patient response status:", res.status, res.statusText);
+    console.debug("Ward API: create patient response status", res.status);
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -221,7 +214,7 @@ export const apiCreatePatient = async (payload: PatientCreatePayload): Promise<P
     }
 
     const newPatient = await res.json();
-    console.log("✅ [API] Patient created successfully:", newPatient);
+    console.debug("Ward API: patient created successfully (redacted)");
     return newPatient;
     
   } catch (error) {
@@ -238,9 +231,7 @@ export const apiAddProgressNote = async (
   const cleanPhn = phn.replace(/[^0-9]/g, "");
   const url = `${API}/api/patients/${cleanPhn}/admissions/${admId}/progress-notes`;
   
-  console.log("📝 [API] Adding progress note for PHN:", cleanPhn, "Admission:", admId);
-  console.log("📝 [API] Payload:", payload);
-  console.log("📝 [API] Calling URL:", url);
+  console.debug("Ward API: adding progress note (PHI redacted)");
 
   try {
     const res = await fetch(url, {
@@ -251,7 +242,7 @@ export const apiAddProgressNote = async (
       body: JSON.stringify(payload),
     });
 
-    console.log("📝 [API] Progress note response status:", res.status, res.statusText);
+    console.debug("Ward API: progress note response status", res.status);
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -260,7 +251,7 @@ export const apiAddProgressNote = async (
     }
 
     const newNote = await res.json();
-    console.log("✅ [API] Progress note added successfully:", newNote);
+    console.debug("Ward API: progress note added successfully (redacted)");
     return newNote;
     
   } catch (error) {
@@ -276,13 +267,11 @@ export const apiGetProgressNote = async (
   const cleanPhn = phn.replace(/[^0-9]/g, "");
   const url = `${API}/api/patients/${cleanPhn}/admissions/${admId}/progress-notes`;
   
-  console.log("📄 [API] Loading progress notes for PHN:", cleanPhn, "Admission:", admId);
-  console.log("📄 [API] Calling URL:", 
-    url);
+  console.debug("Ward API: loading progress notes (PHI redacted)");
 
   try {
     const res = await fetch(url);
-    console.log("📄 [API] Progress notes response status:", res.status, res.statusText);
+    console.debug("Ward API: progress notes response status", res.status);
     if (res.status === 404) {
       console.log("📄 [API] No progress notes found (404)");
       return [];
@@ -293,7 +282,7 @@ export const apiGetProgressNote = async (
       throw new Error(`Failed to load progress notes. Status ${res.status}: ${text}`);
     }
     const notes = await res.json();
-    console.log("✅ [API] Progress notes loaded successfully:", notes);
+    console.debug("Ward API: progress notes loaded (redacted)");
     return notes;
   } catch (error) {
     console.error("❌ [API] Load progress notes error:", error);
@@ -317,9 +306,7 @@ export const apiCreateDischargeSummary = async (
   const cleanPhn = phn.replace(/[^0-9]/g, "");
   const url = `${API}/patient/${cleanPhn}/admissions/${admId}/discharge-summary`;
   
-  console.log("📄 [API] Creating discharge summary for PHN:", cleanPhn, "Admission:", admId);
-  console.log("📄 [API] Payload:", payload);
-  console.log("📄 [API] Calling URL:", url);
+  console.debug("Ward API: creating discharge summary (PHI redacted)");
 
   // Fix: Handle null dischargeDate properly
   const cleanPayload = {
@@ -336,7 +323,7 @@ export const apiCreateDischargeSummary = async (
       body: JSON.stringify(cleanPayload),
     });
 
-    console.log("📄 [API] Discharge summary response status:", res.status, res.statusText);
+    console.debug("Ward API: discharge summary response status", res.status);
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -345,7 +332,7 @@ export const apiCreateDischargeSummary = async (
     }
 
     const result = await res.json();
-    console.log("✅ [API] Discharge summary created successfully:", result);
+    console.debug("Ward API: discharge summary created (redacted)");
     return result;
     
   } catch (error) {
@@ -361,8 +348,7 @@ export const apiDownloadDischargeSummaryPDF = async (
   const cleanPhn = phn.replace(/[^0-9]/g, "");
   const url = `${API}/patient/${cleanPhn}/admissions/${admId}/discharge-summary/pdf`;
   
-  console.log("📥 [API] Downloading discharge summary PDF for PHN:", cleanPhn, "Admission:", admId);
-  console.log("📥 [API] Calling URL:", url);
+  console.debug("Ward API: downloading discharge summary PDF (PHI redacted)");
 
   try {
     const response = await fetch(url, {
@@ -372,15 +358,15 @@ export const apiDownloadDischargeSummaryPDF = async (
       },
     });
     
-    console.log("📥 [API] PDF download response status:", response.status, response.statusText);
+    console.debug("Ward API: PDF download response status", response.status);
 
     if (response.ok) {
       const blob = await response.blob();
-      console.log("✅ [API] PDF downloaded successfully, size:", blob.size);
+      console.debug("Ward API: PDF downloaded successfully (size redacted)");
       return blob;
     } else {
       const errorText = await response.text().catch(() => "");
-      console.error("❌ [API] PDF download failed:", response.status, errorText);
+      console.error("Ward API: PDF download failed");
       throw new Error(`Failed to download PDF. Status ${response.status}: ${errorText}`);
     }
   } catch (error) {
@@ -412,13 +398,13 @@ export const apiCheckDischargeSummary = async (
   const cleanPhn = phn.replace(/[^0-9]/g, "");
   const url = `${API}/patient/${cleanPhn}/admissions/${admId}/discharge-summary`;
   
-  console.log("🔍 [API] Checking discharge summary for PHN:", cleanPhn, "Admission:", admId);
+  console.debug("Ward API: checking discharge summary (PHI redacted)");
 
   try {
     const response = await fetch(url);
     return response.ok;
   } catch (error) {
-    console.error("❌ [API] Check discharge summary error:", error);
+    console.error("Ward API: check discharge summary error");
     return false;
   }
 };

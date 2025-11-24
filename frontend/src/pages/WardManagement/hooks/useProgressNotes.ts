@@ -27,13 +27,13 @@ export const useProgressNotes = (patient: Patient | null, admissions: Admission[
 
     setIsLoadingNotes(true);
     try {
-      console.log("📄 Fetching progress notes...");
+      console.debug("Ward: fetching progress notes (redacted)");
       const notes = await apiGetProgressNote(patient.phn, activeAdmission.id);
 
-      console.log("📄 Result:", notes);
+      console.debug("Ward: progress notes fetched (redacted)");
       setProgressNotes(notes || []);
     } catch (error) {
-      console.error("❌ Failed to load progress notes:", error);
+      console.error("Ward: failed to load progress notes");
     } finally {
       setIsLoadingNotes(false);
     }

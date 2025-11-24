@@ -1,7 +1,9 @@
 package com.peradeniya.renal.controller;
 
 import com.peradeniya.renal.dto.HemodialysisInvestigationDto;
+import com.peradeniya.renal.dto.HDInvestigationSummaryDto;
 import com.peradeniya.renal.service.HemodialysisInvestigationService;
+import com.peradeniya.renal.services.HDInvestigationSummaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,9 @@ public class HemodialysisInvestigationController {
 
     @Autowired
     private HemodialysisInvestigationService hemodialysisInvestigationService;
+
+    @Autowired
+    private HDInvestigationSummaryService hdInvestigationSummaryService;
 
     // Monthly Review endpoints (must come before generic patient endpoints to avoid route conflicts)
     @GetMapping("/monthly-review/{monthlyReviewId}")
@@ -107,5 +112,44 @@ public class HemodialysisInvestigationController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Summary endpoints (similar to PD investigation)
+    @PostMapping("/summary/{patientId}")
+    public ResponseEntity<HDInvestigationSummaryDto> createSummary(
+            @PathVariable String patientId,
+            @RequestBody HDInvestigationSummaryDto dto) {
+        HDInvestigationSummaryDto savedSummary = hdInvestigationSummaryService.createSummary(patientId, dto);
+        return ResponseEntity.ok(savedSummary);
+    }
+
+    @GetMapping("/summary/{patientId}")
+    public ResponseEntity<List<HDInvestigationSummaryDto>> getSummariesByPatientId(
+            @PathVariable String patientId) {
+        List<HDInvestigationSummaryDto> summaries = hdInvestigationSummaryService.getSummariesByPatientId(patientId);
+        return ResponseEntity.ok(summaries);
+    }
+
+    @GetMapping("/summary/record/{id}")
+    public ResponseEntity<HDInvestigationSummaryDto> getSummaryById(@PathVariable Long id) {
+        HDInvestigationSummaryDto summary = hdInvestigationSummaryService.getSummaryById(id);
+        if (summary != null) {
+            return ResponseEntity.ok(summary);
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @PutMapping("/summary/record/{id}")
+    public ResponseEntity<HDInvestigationSummaryDto> updateSummary(
+            @PathVariable Long id,
+            @RequestBody HDInvestigationSummaryDto dto) {
+        HDInvestigationSummaryDto updatedSummary = hdInvestigationSummaryService.updateSummary(id, dto);
+        return ResponseEntity.ok(updatedSummary);
+    }
+
+    @DeleteMapping("/summary/record/{id}")
+    public ResponseEntity<Void> deleteSummary(@PathVariable Long id) {
+        hdInvestigationSummaryService.deleteSummary(id);
+        return ResponseEntity.ok().build();
     }
 }

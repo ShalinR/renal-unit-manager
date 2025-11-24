@@ -253,7 +253,7 @@ const AddPatientModal: React.FC<AddPatientModalProps> = ({
       allergyProblems: [],
     };
 
-    console.log("Submitting payload:", payload);
+    console.debug("Ward: submitting patient payload (PHI redacted)");
     onCreate(payload);
   };
 

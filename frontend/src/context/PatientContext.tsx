@@ -102,15 +102,15 @@ export const PatientProvider = ({
   const [isSearching, setIsSearching] = useState(false);
 
   const searchPatientByPhn = async (phn: string) => {
-    console.log("🔍 Searching for patient with PHN:", phn);
+    console.debug("Searching for patient (PHN redacted)");
     setIsSearching(true);
 
     try {
       const url = `${API_BASE_URL}/patient/${encodeURIComponent(phn)}`;
-      console.log("📡 Fetching from URL:", url);
+      console.debug("Fetching patient data (request URL redacted)");
 
       const res = await fetch(url);
-      console.log("📊 Response status:", res.status, res.statusText);
+      console.debug("API response status received (redacted)");
 
       if (!res.ok) {
         if (res.status === 404) {
@@ -123,7 +123,7 @@ export const PatientProvider = ({
       }
 
       const patientData = await res.json();
-      console.log("✅ API response data:", patientData);
+      console.debug("API response data loaded (redacted)");
 
       // Map the patient data from the new DTO structure
       const mappedPatient = {
@@ -139,7 +139,7 @@ export const PatientProvider = ({
         email: patientData.emailAddress || "",
       };
 
-      console.log("👤 Mapped patient data:", mappedPatient);
+      console.debug("Mapped patient data (redacted)");
 
       setPatient(mappedPatient);
       setGlobalPatient(mappedPatient);

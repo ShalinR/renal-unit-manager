@@ -61,7 +61,7 @@ export const useDischargeSummary = (
       drugsFreeHand: dischargeSummaryState.freeDrugs,
     };
 
-    console.log("Creating discharge summary with payload:", dsPayload);
+    console.debug("Ward: creating discharge summary (payload redacted)");
 
     try {
       // 1. First create the discharge summary
@@ -97,8 +97,8 @@ export const useDischargeSummary = (
       });
       
     } catch (error) {
-      console.error("Error creating discharge summary:", error);
-      alert("Failed to create discharge summary: " + error.message);
+      console.error("Ward: error creating discharge summary");
+      alert("Failed to create discharge summary: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setCreatingSummary(false);
     }

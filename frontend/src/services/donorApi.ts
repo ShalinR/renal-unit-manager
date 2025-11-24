@@ -8,7 +8,7 @@ import {
 // For Vite, use import.meta.env instead of process.env
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/donor-assessment';
 
-console.log('🔧 Donor API Base URL:', API_BASE_URL);
+console.debug('Donor API initialized');
 
 // Common headers for API requests
 const getHeaders = (): HeadersInit => {
@@ -65,8 +65,7 @@ const handleApiRequest = async <T>(url: string, options: RequestInit = {}): Prom
       return (text as unknown) as T;
     }
   } catch (error) {
-    console.error('API request failed:', error);
-    console.log('Request URL:', url);
+    console.error('API request failed');
     throw error;
   }
 };
@@ -74,10 +73,9 @@ const handleApiRequest = async <T>(url: string, options: RequestInit = {}): Prom
 // Donor API functions - UPDATED TO MATCH BACKEND ENDPOINTS
 export const fetchAllDonors = async (): Promise<DonorAssessmentResponseDTO[]> => {
   const url = `${API_BASE_URL}`;
-  console.log('📡 Fetching all donors from:', url);
   try {
     const result = await handleApiRequest<DonorAssessmentResponseDTO[]>(url);
-    console.log('✅ Donors fetched successfully:', result);
+    console.debug(`fetchAllDonors: fetched ${Array.isArray(result) ? result.length : 0} donors`);
     return result;
   } catch (error) {
     console.error('❌ Error fetching donors:', error);

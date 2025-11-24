@@ -59,7 +59,6 @@ const menuItems = [
   { title: "HaemoDialysis", url: "/haemodialysis", icon: Heart },
   { title: "Kidney Transplant", url: "/kidney-transplant", icon: Stethoscope },
   { title: "Investigation", url: "/investigation", icon: Search },
-  { title: "Medications", url: "/medications", icon: Pill },
 ];
 
 const adminMenuItems = [

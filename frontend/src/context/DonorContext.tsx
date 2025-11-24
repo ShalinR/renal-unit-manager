@@ -286,13 +286,13 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({
 
   // ✅ Function that always fetches ALL donors (for donor assessment)
   const fetchAllDonors = useCallback(async () => {
-    console.log("🔄 [DonorContext] fetchAllDonors called");
+    console.debug("DonorContext: fetchAllDonors called");
     setIsLoading(true);
     setError(null);
     try {
-      console.log("📡 [DonorContext] Calling apiFetchAllDonors...");
+      console.debug("DonorContext: calling apiFetchAllDonors");
       const donorsData = await apiFetchAllDonors();
-      console.log("📦 [DonorContext] Raw API response:", donorsData);
+      console.debug(`DonorContext: received ${Array.isArray(donorsData) ? donorsData.length : 0} donor records from API`);
 
       if (!donorsData || donorsData.length === 0) {
         console.warn("⚠️ [DonorContext] No donors returned from API");
@@ -306,9 +306,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({
       );
 
       setDonors(transformedDonors);
-      console.log(
-        `✅ [DonorContext] Fetched and transformed ${transformedDonors.length} donors`
-      );
+      console.debug(`DonorContext: fetched and transformed ${transformedDonors.length} donors`);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch donors";
@@ -327,10 +325,10 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({
       let donorsData: DonorAssessmentResponseDTO[];
       if (patientPhn) {
         donorsData = await fetchDonorsByPatient(patientPhn);
-        console.log(`🔍 Fetched donors for patient: ${patientPhn}`);
+        console.debug("DonorContext: fetched donors for patient (redacted)");
       } else {
         donorsData = await apiFetchAllDonors();
-        console.log(`📋 Fetched all donors (no patient filter)`);
+        console.debug("DonorContext: fetched all donors (no patient filter)");
       }
 
       // Transform backend data to frontend Donor format using safe function
@@ -421,10 +419,10 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoading(true);
     setError(null);
     try {
-      console.log("🔍 Searching donors with criteria:", criteria);
+      console.debug("DonorContext: searching donors (criteria redacted)");
 
       const results = await apiSearchDonors(criteria);
-      console.log("📋 Search results:", results);
+      console.debug(`DonorContext: search returned ${Array.isArray(results) ? results.length : 0} results`);
 
       return results;
     } catch (err) {
@@ -488,7 +486,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({
         )
       );
 
-      console.log(`Donor ${donorId} assigned to recipient ${recipientName}`);
+      console.debug(`Donor ${donorId} assignment updated`);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to assign donor";
@@ -521,7 +519,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({
         )
       );
 
-      console.log(`Donor ${donorId} unassigned`);
+      console.debug(`Donor ${donorId} unassigned`);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to unassign donor";
@@ -561,14 +559,14 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({
 
   // ✅ FIXED: Get available donors
   const getAvailableDonors = useCallback(() => {
-    console.log("📋 All donors:", donors);
+    console.debug(`DonorContext: all donors count = ${donors.length}`);
 
     // ✅ CORRECT: Available donors are those not assigned to any recipient
     const availableDonors = donors.filter(
       (donor) => donor.status === "available" && !donor.assignedRecipientPhn
     );
 
-    console.log("✅ Available donors:", availableDonors);
+    console.debug(`DonorContext: available donors count = ${availableDonors.length}`);
     return availableDonors;
   }, [donors]);
 

@@ -28,22 +28,22 @@ export interface PatientProfile {
  */
 export const getPatientProfile = async (phn: string): Promise<PatientProfile | null> => {
   try {
-    console.log(`🔍 patientProfileApi: Fetching complete profile for PHN: ${phn}`);
+    console.debug('patientProfileApi: fetching patient profile (PHI redacted)');
     const url = `${API_BASE_URL}/${phn}`;
     const response = await apiFetch(url, {
       method: "GET",
     });
 
     if (!response.ok) {
-      console.warn(`⚠️ patientProfileApi: Failed to fetch profile - Status ${response.status}`);
+      console.warn("patientProfileApi: Failed to fetch profile (status redacted)");
       return null;
     }
 
     const data: PatientProfile = await response.json();
-    console.log(`✅ patientProfileApi: Successfully fetched profile for PHN: ${phn}`, data);
+    console.debug('patientProfileApi: fetched patient profile (result redacted)');
     return data;
   } catch (error) {
-    console.error(`❌ patientProfileApi: Error fetching patient profile:`, error);
+    console.error('patientProfileApi: error fetching patient profile');
     throw error;
   }
 };

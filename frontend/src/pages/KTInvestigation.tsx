@@ -732,12 +732,10 @@ const KTInvestigation = () => {
               Back To Dashboard
             </Button>
 
-            <Button
+              <Button
               variant="outline"
               onClick={() => {
-                console.log("KTInvestigation: Follow Ups clicked", {
-                  patient: (globalPatient || patient)?.phn,
-                });
+                console.debug("KTInvestigation: Follow Ups clicked (patient PHN redacted)");
                 navigate("/kidney-transplant", {
                   state: { open: "follow-up" },
                 });

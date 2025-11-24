@@ -47,8 +47,7 @@ const handleApiRequest = async <T>(
 
     return await response.json();
   } catch (error) {
-    console.error('API request failed:', error);
-    console.log('Request URL:', url);
+    console.error('API request failed');
 
     if (error instanceof Error) {
       throw error;

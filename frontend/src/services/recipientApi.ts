@@ -75,8 +75,7 @@ const handleApiRequest = async <T>(
     // Parse JSON response
     return await response.json();
   } catch (error) {
-    console.error('API request failed:', error);
-    console.log('Request URL:', url);
+    console.error('API request failed');
     
     // Re-throw the error for the caller to handle
     if (error instanceof Error) {
@@ -346,7 +345,7 @@ export const searchDonorByPhn = async (phn: string): Promise<any> => {
     const assessments = await response.json();
     return assessments.length > 0 ? assessments[0] : null;
   } catch (error) {
-    console.error('Error searching donor:', error);
+    console.error('Error searching donor (redacted)');
     return null;
   }
 };
@@ -408,7 +407,7 @@ export const recipientApiService = {
         return await createRecipient(data);
       }
     } catch (error) {
-      console.error('Error saving recipient assessment:', error);
+      console.error('Error saving recipient assessment');
       throw error;
     }
   },
