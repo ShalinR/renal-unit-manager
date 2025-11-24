@@ -8,6 +8,7 @@ import com.peradeniya.renal.repository.PatientRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +28,10 @@ public class PatientService {
     private final DonorAssessmentService donorAssessmentService;
     private final KTSurgeryService ktSurgeryService;
     private final FollowUpService followUpService;
+    
+    // Optional HIPAA audit service (won't break if not available)
+    @Autowired(required = false)
+    private HipaaAuditService hipaaAuditService;
 
     // THIS CAUSES AN ISSUE WITH LOMBOK AND @REQUIREDARGSCONSTRUCTOR
     
@@ -47,24 +52,47 @@ public class PatientService {
     // }
 
     public Patient save(Patient patient) {
-        return repository.save(patient);
+        Patient saved = repository.save(patient);
+        // HIPAA: Log patient creation
+        if (hipaaAuditService != null && saved.getPhn() != null) {
+            hipaaAuditService.logPatientAccess("CREATE", saved.getPhn(), "Created new patient");
+        }
+        return saved;
     }
 
     public List<Patient> getAll() {
-        return repository.findAll();
+        List<Patient> patients = repository.findAll();
+        // HIPAA: Log bulk patient access
+        if (hipaaAuditService != null && !patients.isEmpty()) {
+            hipaaAuditService.logPatientAccess("VIEW", "ALL", "Viewed all patients list");
+        }
+        return patients;
     }
 
     public Optional<Patient> getByPhn(String phn) {
-        return repository.findByPhn(phn);
+        Optional<Patient> patient = repository.findByPhn(phn);
+        // HIPAA: Log patient access
+        if (hipaaAuditService != null && patient.isPresent()) {
+            hipaaAuditService.logPatientAccess("VIEW", phn, "Viewed patient by PHN");
+        }
+        return patient;
     }
 
     public Optional<PatientBasicDTO> getBasicByPhn(String phn) {
         Optional<Patient> patientOpt = repository.findByPhn(phn);
+        // HIPAA: Log patient access
+        if (hipaaAuditService != null && patientOpt.isPresent()) {
+            hipaaAuditService.logPatientAccess("VIEW", phn, "Viewed patient basic info");
+        }
         return patientOpt.map(this::convertToBasicDTO);
     }
 
     public Optional<PatientProfileDTO> getPatientProfile(String phn) {
         Optional<Patient> patientOpt = repository.findByPhn(phn);
+        // HIPAA: Log patient profile access
+        if (hipaaAuditService != null && patientOpt.isPresent()) {
+            hipaaAuditService.logPatientAccess("VIEW", phn, "Viewed full patient profile");
+        }
         return patientOpt.map(this::convertToProfileDTO);
     }
 
@@ -75,12 +103,22 @@ public class PatientService {
     }
 
     public void deleteById(Long id) {
+        // HIPAA: Log patient deletion
+        Optional<Patient> patientOpt = repository.findById(id);
+        if (patientOpt.isPresent() && hipaaAuditService != null) {
+            hipaaAuditService.logPatientAccess("DELETE", patientOpt.get().getPhn(), "Deleted patient");
+        }
         repository.deleteById(id);
     }
 
     public Patient updatePatient(Long id, Patient patientDetails) {
         Patient patient = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Patient not found with id: " + id));
+
+        // HIPAA: Log patient update
+        if (hipaaAuditService != null && patient.getPhn() != null) {
+            hipaaAuditService.logPatientAccess("UPDATE", patient.getPhn(), "Updated patient information");
+        }
 
         // Update fields
         patient.setName(patientDetails.getName());
@@ -218,6 +256,11 @@ public class PatientService {
 
         Patient savedPatient = repository.save(patient);
 
+        // HIPAA: Log patient creation
+        if (hipaaAuditService != null && savedPatient.getPhn() != null) {
+            hipaaAuditService.logPatientAccess("CREATE", savedPatient.getPhn(), "Created new patient via registration");
+        }
+
         // Create admission
         Admission admission = admissionService.createAdmission(savedPatient, request);
         System.out.println("✅ Created admission: " + admission.getId() + " for patient: " + savedPatient.getPhn());
@@ -266,6 +309,12 @@ public class PatientService {
     
     if (patientOpt.isPresent()) {
         Patient patient = patientOpt.get();
+        
+        // HIPAA: Log patient access
+        if (hipaaAuditService != null) {
+            hipaaAuditService.logPatientAccess("VIEW", cleanPhn, "Retrieved patient by PHN");
+        }
+        
         System.out.println("✅ PATIENT SERVICE: Found patient - ID: " + patient.getId() + ", Name: " + patient.getName());
         System.out.println("✅ PATIENT SERVICE: Patient status: " + patient.getStatus());
         System.out.println("✅ PATIENT SERVICE: Total admissions: " + patient.getAdmissions().size());
