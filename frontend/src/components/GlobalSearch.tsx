@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Search, UserCheck, Loader2 } from "lucide-react";
 import { usePatientContext } from "@/context/PatientContext";
 
-import { useNavigate } from "react-router-dom"; // Import useNavigate - NEW
+// Navigation removed: keep global search on current page
 
 const GlobalSearch: React.FC = () => {
   const { searchPatientByPhn, patient, isSearching } = usePatientContext();
   const [searchPhn, setSearchPhn] = useState("");
   const [localSearching, setLocalSearching] = useState(false);
 
-  const navigate = useNavigate(); // Initialize navigate - NEW
+  // navigation disabled to keep user on current page
 
   const handleSearch = async () => {
       if (searchPhn.trim()) {
@@ -21,8 +21,7 @@ const GlobalSearch: React.FC = () => {
         await searchPatientByPhn(searchPhn.trim());
         console.debug("GlobalSearch: search completed (redacted)");
 
-        // Redirect to the ward-management page with the PHN as a query parameter
-        navigate(`/ward-management?phn=${searchPhn.trim()}`);
+        // Do not navigate — keep user on current page after search
       } catch (error) {
         // Error is already handled in the context
         console.error("GlobalSearch: search error");

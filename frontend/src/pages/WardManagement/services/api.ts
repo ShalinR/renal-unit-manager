@@ -43,7 +43,7 @@ export const apiGetPatient = async (phn: string): Promise<Patient | null> => {
       id: patientData.id,
       phn: patientData.phn,
       name: patientData.name,
-      dob: patientData.dob || patientData.dateOfBirth,
+      dateOfBirth: patientData.dob || patientData.dateOfBirth || patientData.date_of_birth,
       sex: patientData.sex || patientData.gender,
       address: patientData.address,
       phone: patientData.phone || patientData.contactDetails,
@@ -171,7 +171,7 @@ export const apiCreatePatient = async (payload: PatientCreatePayload): Promise<P
     phn: payload.phn.replace(/[^0-9]/g, ""),
     // Handle optional fields
     address: payload.address || null,
-    phone: payload.phone || null,
+    phone: (payload as any).phone || null,
     nic: payload.nic || null,
     mohArea: payload.mohArea || null,
     ethnicGroup: payload.ethnicGroup || null,
