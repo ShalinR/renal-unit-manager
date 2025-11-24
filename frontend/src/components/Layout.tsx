@@ -42,6 +42,7 @@ import {
   Moon,
   Laptop,
   MessageSquare,
+  FileText,
 } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 import UserSettings from "./UserSettings";
@@ -63,6 +64,7 @@ const menuItems = [
 
 const adminMenuItems = [
   { title: "Feedback Management", url: "/admin/feedback", icon: MessageSquare },
+  { title: "Logs", url: "/admin/logs", icon: FileText },
 ];
 
 interface LayoutProps {

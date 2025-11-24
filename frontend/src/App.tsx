@@ -20,6 +20,7 @@ const KTInvestigation = lazy(() => import("./pages/KTInvestigation"));
 const HDInvestigation = lazy(() => import("./pages/HDInvestigation"));
 const Medications = lazy(() => import("./pages/Medications"));
 const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
+const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -130,6 +131,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Layout><AdminFeedback /></Layout>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/logs" 
+                    element={
+                      <ProtectedRoute>
+                        <Layout><AuditLogs /></Layout>
                       </ProtectedRoute>
                     } 
                   />
