@@ -25,12 +25,12 @@ const PatientDetailsTab: React.FC<PatientDetailsTabProps> = ({ patient, activeAd
         />
 
         <ReadField label="Patient Address" value={patient.address} />
-        <ReadField label="Telephone Number" value={patient.phone} />
-        <ReadField label="NIC No" value={patient.nic} />
+        <ReadField label="Telephone Number" value={patient.contactDetails} />
+        <ReadField label="NIC No" value={patient.nicNo} />
 
-        <ReadField label="Date of Birth" value={patient.dob} />
-        <ReadField label="Age" value={formatAge(patient.dob)} />
-        <ReadField label="Sex" value={patient.sex as string} />
+        <ReadField label="Date of Birth" value={patient.dateOfBirth} />
+        <ReadField label="Age" value={formatAge(patient.dateOfBirth)} />
+        <ReadField label="Sex" value={patient.gender as string} />
 
         <ReadField label="MOH Area" value={patient.mohArea} />
         <ReadField label="Ethnic Group" value={patient.ethnicGroup} />
