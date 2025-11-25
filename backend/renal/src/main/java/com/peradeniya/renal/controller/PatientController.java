@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,33 +29,48 @@ public class PatientController {
 
     private final PatientService service;
 
-    // OLD CODE
-    // public PatientController(PatientService service) {
-    //     this.service = service;
-    // }
+    /**
+     * Get current authenticated user's username
+     */
+    private String getCurrentUsername() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("🔍 DEBUG: Auth object = " + auth);
+        if (auth != null) {
+            System.out.println("🔍 DEBUG: Auth principal = " + auth.getPrincipal());
+            System.out.println("🔍 DEBUG: Auth name = " + auth.getName());
+            System.out.println("🔍 DEBUG: Auth authenticated = " + auth.isAuthenticated());
+        }
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            return auth.getName();
+        }
+        return "SYSTEM";
+    }
 
-    // @PostMapping
-    // public ResponseEntity<Patient> createPatient(@RequestBody Patient patient) {
-    //     Patient savedPatient = service.save(patient);
-    //     return ResponseEntity.ok(savedPatient);
-    // }
-
-    // @GetMapping
-    // public ResponseEntity<List<Patient>> getAllPatients() {
-    //     List<Patient> patients = service.getAll();
-    //     return ResponseEntity.ok(patients);
-    // }
+    /**
+     * Get current authenticated user's role
+     */
+    private String getCurrentUserRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName()) && !auth.getAuthorities().isEmpty()) {
+            return auth.getAuthorities().iterator().next().getAuthority();
+        }
+        return "SYSTEM";
+    }
 
     @PostMapping
     public ResponseEntity<Patient> createPatient(@RequestBody PatientCreateRequest request) {
-        Patient patient = service.createPatient(request);
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        Patient patient = service.createPatientWithAudit(request, username, userRole);
         return ResponseEntity.ok(patient);
     }
 
     @GetMapping
     public ResponseEntity<PatientResponse> getPatientByPhn(@RequestParam("phn") String phn) {
         String cleanPhn = phn.replaceAll("[^0-9]", "");
-        Patient patient = service.getPatientByPhn(cleanPhn);
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        Patient patient = service.getPatientByPhnWithAudit(cleanPhn, username, userRole);
 
         Admission active = service.getActiveAdmission(patient).orElse(null);
 
@@ -69,7 +86,9 @@ public class PatientController {
             @RequestBody StatusUpdateRequest request) {
 
         String cleanPhn = phn.replaceAll("[^0-9]", "");
-        Patient patient = service.updatePatientStatus(cleanPhn, request.getStatus());
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        Patient patient = service.updatePatientStatusWithAudit(cleanPhn, request.getStatus(), username, userRole);
         return ResponseEntity.ok(patient);
     }
 
@@ -102,6 +121,12 @@ public class PatientController {
     // For global search - returns basic info only
     @GetMapping("/{phn}")
     public ResponseEntity<PatientBasicDTO> getByPhn(@PathVariable String phn) {
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        // Log audit with explicit user info
+        if (service.getHipaaAuditService() != null) {
+            service.getHipaaAuditService().logPatientAccessWithUser(username, userRole, "VIEW", phn, "Viewed patient basic info via search");
+        }
         Optional<PatientBasicDTO> patient = service.getBasicByPhn(phn);
         return patient.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -110,6 +135,12 @@ public class PatientController {
     // For complete patient profile
     @GetMapping("/{phn}/profile")
     public ResponseEntity<PatientProfileDTO> getProfileByPhn(@PathVariable String phn) {
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        // Log audit with explicit user info
+        if (service.getHipaaAuditService() != null) {
+            service.getHipaaAuditService().logPatientAccessWithUser(username, userRole, "VIEW", phn, "Viewed full patient profile");
+        }
         Optional<PatientProfileDTO> profile = service.getPatientProfile(phn);
         return profile.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -118,7 +149,9 @@ public class PatientController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
-        service.deleteById(id);
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        service.deleteByIdWithAudit(id, username, userRole);
         return ResponseEntity.ok().build();
     }
 

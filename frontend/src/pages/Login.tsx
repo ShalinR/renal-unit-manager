@@ -44,24 +44,33 @@ const Login: React.FC = () => {
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
 
         {/* Left Hero Section */}
-        <div className="hidden md:flex relative items-center justify-center bg-gradient-to-br from-blue-800 to-cyan-600 p-12 overflow-hidden">
+        <div 
+          className="hidden md:flex relative items-center justify-center p-12 overflow-hidden bg-cover bg-center"
+          style={{
+            backgroundImage: 'url(/kidney.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/40" />
           {/* Decorative gradient circles */}
-          <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-cyan-300/10 rounded-full blur-3xl" />
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-cyan-300/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-lg text-white space-y-8">
 
             {/* Logo and heading */}
-            <div className="text-center">
+            <div className="text-center bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-2xl">
               <img
                 src="/renal.jpeg"
                 alt="Renal Unit Logo"
-                className="mx-auto w-40 h-40 rounded-full object-cover shadow-2xl border border-white/30 transform transition-all duration-700 hover:scale-105"
+                className="mx-auto w-32 h-32 rounded-full object-cover shadow-2xl border-4 border-white/50 transform transition-all duration-700 hover:scale-105"
               />
-              <h2 className="text-4xl font-extrabold tracking-tight mt-6 drop-shadow-lg">
+              <h2 className="text-3xl font-extrabold tracking-tight mt-4 drop-shadow-lg text-white">
                 Renal Unit Manager
               </h2>
-              <p className="text-white/90 mt-3 text-lg leading-relaxed">
+              <p className="text-white mt-2 text-sm leading-relaxed font-medium">
                 Integrated patient management platform for renal care, transplant services, and dialysis operations at the Teaching Hospital Peradeniya
               </p>
             </div>
@@ -84,10 +93,10 @@ const Login: React.FC = () => {
               ].map((feature, idx) => (
                 <div
                   key={idx}
-                  className="bg-white/10 p-5 rounded-xl backdrop-blur-sm shadow-lg border border-white/10 transition-all duration-500 hover:scale-105"
+                  className="bg-white/15 backdrop-blur-xl p-5 rounded-xl shadow-2xl border border-white/30 transition-all duration-500 hover:bg-white/25 hover:shadow-3xl hover:border-white/40 hover:scale-105"
                 >
-                  <h4 className="font-semibold text-lg">{feature.title}</h4>
-                  <p className="text-white/85 text-sm mt-1 leading-relaxed">{feature.desc}</p>
+                  <h4 className="font-bold text-base text-white drop-shadow-md">{feature.title}</h4>
+                  <p className="text-white text-xs mt-1 leading-relaxed font-medium drop-shadow-sm">{feature.desc}</p>
                 </div>
               ))}
             </div>

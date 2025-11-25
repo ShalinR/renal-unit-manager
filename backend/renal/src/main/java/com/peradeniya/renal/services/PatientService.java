@@ -33,6 +33,11 @@ public class PatientService {
     @Autowired(required = false)
     private HipaaAuditService hipaaAuditService;
 
+    // Getter for audit service
+    public HipaaAuditService getHipaaAuditService() {
+        return hipaaAuditService;
+    }
+
     // THIS CAUSES AN ISSUE WITH LOMBOK AND @REQUIREDARGSCONSTRUCTOR
     
     // public PatientService(PatientRepository repository,
@@ -53,46 +58,31 @@ public class PatientService {
 
     public Patient save(Patient patient) {
         Patient saved = repository.save(patient);
-        // HIPAA: Log patient creation
-        if (hipaaAuditService != null && saved.getPhn() != null) {
-            hipaaAuditService.logPatientAccess("CREATE", saved.getPhn(), "Created new patient");
-        }
+        // Audit removed - call createPatientWithAudit from controller instead
         return saved;
     }
 
     public List<Patient> getAll() {
         List<Patient> patients = repository.findAll();
-        // HIPAA: Log bulk patient access
-        if (hipaaAuditService != null && !patients.isEmpty()) {
-            hipaaAuditService.logPatientAccess("VIEW", "ALL", "Viewed all patients list");
-        }
+        // Audit removed - no direct controller call, used by service methods
         return patients;
     }
 
     public Optional<Patient> getByPhn(String phn) {
         Optional<Patient> patient = repository.findByPhn(phn);
-        // HIPAA: Log patient access
-        if (hipaaAuditService != null && patient.isPresent()) {
-            hipaaAuditService.logPatientAccess("VIEW", phn, "Viewed patient by PHN");
-        }
+        // Audit removed - call getPatientByPhnWithAudit from controller
         return patient;
     }
 
     public Optional<PatientBasicDTO> getBasicByPhn(String phn) {
         Optional<Patient> patientOpt = repository.findByPhn(phn);
-        // HIPAA: Log patient access
-        if (hipaaAuditService != null && patientOpt.isPresent()) {
-            hipaaAuditService.logPatientAccess("VIEW", phn, "Viewed patient basic info");
-        }
+        // Audit removed - handled by GET /{phn} endpoint
         return patientOpt.map(this::convertToBasicDTO);
     }
 
     public Optional<PatientProfileDTO> getPatientProfile(String phn) {
         Optional<Patient> patientOpt = repository.findByPhn(phn);
-        // HIPAA: Log patient profile access
-        if (hipaaAuditService != null && patientOpt.isPresent()) {
-            hipaaAuditService.logPatientAccess("VIEW", phn, "Viewed full patient profile");
-        }
+        // Audit removed - handled by GET /{phn}/profile endpoint
         return patientOpt.map(this::convertToProfileDTO);
     }
 
@@ -103,22 +93,18 @@ public class PatientService {
     }
 
     public void deleteById(Long id) {
-        // HIPAA: Log patient deletion
+        // Audit removed - call deleteByIdWithAudit from controller
         Optional<Patient> patientOpt = repository.findById(id);
-        if (patientOpt.isPresent() && hipaaAuditService != null) {
-            hipaaAuditService.logPatientAccess("DELETE", patientOpt.get().getPhn(), "Deleted patient");
+        if (patientOpt.isPresent()) {
+            repository.deleteById(id);
         }
-        repository.deleteById(id);
     }
 
     public Patient updatePatient(Long id, Patient patientDetails) {
         Patient patient = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Patient not found with id: " + id));
 
-        // HIPAA: Log patient update
-        if (hipaaAuditService != null && patient.getPhn() != null) {
-            hipaaAuditService.logPatientAccess("UPDATE", patient.getPhn(), "Updated patient information");
-        }
+        // Audit removed - call updatePatientStatusWithAudit from controller
 
         // Update fields
         patient.setName(patientDetails.getName());
@@ -256,10 +242,7 @@ public class PatientService {
 
         Patient savedPatient = repository.save(patient);
 
-        // HIPAA: Log patient creation
-        if (hipaaAuditService != null && savedPatient.getPhn() != null) {
-            hipaaAuditService.logPatientAccess("CREATE", savedPatient.getPhn(), "Created new patient via registration");
-        }
+        // Audit removed - call createPatientWithAudit from controller instead
 
         // Create admission
         Admission admission = admissionService.createAdmission(savedPatient, request);
@@ -310,10 +293,7 @@ public class PatientService {
     if (patientOpt.isPresent()) {
         Patient patient = patientOpt.get();
         
-        // HIPAA: Log patient access
-        if (hipaaAuditService != null) {
-            hipaaAuditService.logPatientAccess("VIEW", cleanPhn, "Retrieved patient by PHN");
-        }
+        // Audit removed - call getPatientByPhnWithAudit from controller instead
         
         System.out.println("✅ PATIENT SERVICE: Found patient - ID: " + patient.getId() + ", Name: " + patient.getName());
         System.out.println("✅ PATIENT SERVICE: Patient status: " + patient.getStatus());
@@ -330,4 +310,60 @@ public class PatientService {
         throw new RuntimeException("Patient not found with PHN: " + cleanPhn);
     }
 }
+
+// ========== AUDIT-AWARE METHODS (Called from Controller with user info) ==========
+
+    /**
+     * Create patient with explicit user audit information
+     */
+    public Patient createPatientWithAudit(PatientCreateRequest request, String username, String userRole) {
+        // Log audit FIRST
+        if (hipaaAuditService != null) {
+            hipaaAuditService.logPatientAccessWithUser(username, userRole, "CREATE", request.getPhn(), "Created new patient");
+        }
+        // Then create the patient
+        return createPatient(request);
+    }
+
+    /**
+     * Get patient by PHN with explicit user audit information
+     */
+    public Patient getPatientByPhnWithAudit(String phn, String username, String userRole) {
+        String cleanPhn = phn.replaceAll("[^0-9]", "");
+        // Log audit FIRST
+        if (hipaaAuditService != null) {
+            hipaaAuditService.logPatientAccessWithUser(username, userRole, "VIEW", cleanPhn, "Retrieved patient by PHN");
+        }
+        // Then get the patient
+        return getPatientByPhn(cleanPhn);
+    }
+
+    /**
+     * Update patient status with explicit user audit information
+     */
+    public Patient updatePatientStatusWithAudit(String phn, String status, String username, String userRole) {
+        String cleanPhn = phn.replaceAll("[^0-9]", "");
+        // Log audit FIRST
+        if (hipaaAuditService != null) {
+            hipaaAuditService.logPatientAccessWithUser(username, userRole, "UPDATE", cleanPhn, "Updated patient status to: " + status);
+        }
+        // Then update the patient
+        return updatePatientStatus(cleanPhn, status);
+    }
+
+    /**
+     * Delete patient by ID with explicit user audit information
+     */
+    public void deleteByIdWithAudit(Long id, String username, String userRole) {
+        // Get patient PHN first
+        Optional<Patient> patientOpt = repository.findById(id);
+        String phn = patientOpt.map(Patient::getPhn).orElse("UNKNOWN");
+        
+        // Log audit FIRST
+        if (hipaaAuditService != null) {
+            hipaaAuditService.logPatientAccessWithUser(username, userRole, "DELETE", phn, "Deleted patient");
+        }
+        // Then delete the patient
+        deleteById(id);
+    }
 }
