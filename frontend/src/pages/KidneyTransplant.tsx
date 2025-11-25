@@ -21,6 +21,7 @@ import {
   ClipboardList,
   FileText,
 } from "lucide-react";
+import PageHeader from '@/components/ui/PageHeader';
 import DonorAssessment from "../components/DonorAssessment";
 import RecipientAssessment from "../components/RecipientAssessment";
 import FollowUpForm from "../components/FollowUp";
@@ -670,14 +671,27 @@ const KidneyTransplant = () => {
       {/* Summary views removed — Kidney Transplant Summary disabled in app */}
       {activeView === "dashboard" && (
         <div className="space-y-8">
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full mb-2">
-              <Stethoscope className="w-9 h-9 text-primary" />
+          <PageHeader
+            title="Kidney Transplant Management"
+            icon={<Stethoscope className="w-12 h-12 text-primary" />}
+            iconClassName="w-24 h-24"
+            titleClassName="text-5xl leading-relaxed"
+            className="space-y-6"
+          />
+
+          {patient?.phn ? (
+            <div className="flex justify-center">
+              <div className="inline-flex items-center justify-center gap-2 text-lg text-green-700 bg-green-50 px-4 py-2 rounded-full shadow-sm border border-green-100">
+                <span className="font-medium">Patient: {patient.name} (PHN: {patient.phn})</span>
+              </div>
             </div>
-            <h1 className="text-4xl font-bold text-foreground">
-              Kidney Transplant Management
-            </h1>
-          </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="inline-flex items-center justify-center gap-2 text-lg text-amber-600 bg-amber-50 px-4 py-2 rounded-full opacity-60">
+                <span className="sr-only">No patient selected</span>
+              </div>
+            </div>
+          )}
 
           <div className="max-w-7xl mx-auto px-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

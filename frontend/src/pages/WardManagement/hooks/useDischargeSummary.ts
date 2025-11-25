@@ -68,22 +68,22 @@ export const useDischargeSummary = (
       await apiCreateDischargeSummary(patient.phn, activeAdmission.id, dsPayload);
 
       // 2. Then update the admission status to inactive (discharged)
-      await apiUpdateAdmissionStatus(patient.phn, activeAdmission.id, false);
+      await apiUpdateAdmissionStatus(activeAdmission.id, false);
 
       // 3. Update frontend state to reflect both changes
-      setAdmissions((prev) =>
-        prev.map((a) =>
-          a.id === activeAdmission.id
-            ? { 
-                ...a, 
-                hasDischargeSummary: true, 
-                active: false 
-              }
-            : a
-        )
-      );
-
-      alert("Discharge summary created successfully and patient discharged!");
+            setAdmissions(
+              admissions.map((a) =>
+                a.id === activeAdmission.id
+                  ? {
+                      ...a,
+                      hasDischargeSummary: true,
+                      active: false,
+                    }
+                  : a
+              )
+            );
+      
+            alert("Discharge summary created successfully and patient discharged!");
       
       // Reset form
       setDischargeSummaryState({

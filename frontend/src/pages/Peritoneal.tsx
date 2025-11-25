@@ -3,6 +3,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, UserPlus, FileText, Clipboard, TrendingUp, AlertTriangle } from "lucide-react";
 import PatientRegistration from "@/components/PatientRegistration";
+import PageHeader from '@/components/ui/PageHeader';
 import DataPreview from "@/components/DataPreview";
 import CAPDSummary from "@/components/CAPDSummary";
 import MonthlyAssessment from "@/components/MonthlyAssessment";
@@ -254,17 +255,26 @@ const Peritoneal = () => {
       default:
         return (
           <div className="space-y-8">
-            <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-                <Activity className="w-8 h-8 text-primary " />
-              </div>
-              <h1 className="text-4xl font-bold text-foreground dark:text-slate-200">Peritoneal Dialysis</h1>
+            <div className="space-y-4">
+              <PageHeader
+                title="Peritoneal Dialysis"
+                icon={<Activity className="w-12 h-12 text-primary" />}
+                iconClassName="w-24 h-24"
+                titleClassName="text-5xl leading-relaxed"
+                className="space-y-6"
+              />
+
               {patient?.phn ? (
-                <div className="inline-flex items-center justify-center gap-2 text-lg text-green-600 bg-green-50 px-4 py-2 rounded-full">
-                  <span>Patient: {patient.name} (PHN: {patient.phn})</span>
+                <div className="flex justify-center">
+                  <div className="inline-flex items-center justify-center gap-2 text-lg text-green-700 bg-green-50 px-4 py-2 rounded-full shadow-sm border border-green-100">
+                    <span className="font-medium">Patient: {patient.name} (PHN: {patient.phn})</span>
+                  </div>
                 </div>
               ) : (
-                <div className="inline-flex items-center justify-center gap-2 text-lg text-amber-600 bg-amber-50 px-4 py-2 rounded-full">
+                <div className="flex justify-center">
+                  <div className="inline-flex items-center justify-center gap-2 text-lg text-amber-600 bg-amber-50 px-4 py-2 rounded-full opacity-60">
+                    <span className="sr-only">No patient selected</span>
+                  </div>
                 </div>
               )}
             </div>

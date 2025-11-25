@@ -9,6 +9,8 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import GlobalSearch from '@/components/GlobalSearch';
+import PageHeader from '@/components/ui/PageHeader';
+import { usePatientContext } from '@/context/PatientContext';
 import HDSessionForm, { HemodialysisForm } from '@/components/HDSessionForm';
 import HDMonthlyReview from '@/components/HDMonthlyReview';
 import HDScheduleAppointment from '@/components/HDScheduleAppointment';
@@ -35,6 +37,7 @@ const HaemoDialysisPage: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [form, setForm] = useState<HemodialysisForm>(initialForm);
   const [showFloating, setShowFloating] = useState(false);
+  const { patient } = usePatientContext();
 
   const handleBack = () => {
     setActiveView('dashboard');
@@ -64,19 +67,31 @@ const HaemoDialysisPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-6 py-10">
         {activeView === 'dashboard' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Dashboard Title */}
-            <div className="text-center space-y-4 mb-12">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full mb-2 mx-auto">
-                <Activity className="w-9 h-9 text-primary" />
+            <PageHeader
+              title="Hemodialysis Management"
+              icon={<Activity className="w-12 h-12 text-primary" />}
+              iconClassName="w-24 h-24"
+              titleClassName="text-5xl leading-relaxed"
+              className="space-y-6"
+            />
+
+            {patient?.phn ? (
+              <div className="flex justify-center">
+                <div className="inline-flex items-center justify-center gap-2 text-lg text-green-700 bg-green-50 px-4 py-2 rounded-full shadow-sm border border-green-100">
+                  <span className="font-medium">Patient: {patient.name} (PHN: {patient.phn})</span>
+                </div>
               </div>
-              <h1 className="text-4xl font-bold text-foreground">
-                Hemodialysis Management
-              </h1>
-             
-            </div>
+            ) : (
+              <div className="flex justify-center">
+                <div className="inline-flex items-center justify-center gap-2 text-lg text-amber-600 bg-amber-50 px-4 py-2 rounded-full opacity-60">
+                  <span className="sr-only">No patient selected</span>
+                </div>
+              </div>
+            )}
 
             {/* Dashboard Cards Grid */}
             <div className="max-w-7xl mx-auto">
