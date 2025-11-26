@@ -68,6 +68,8 @@ export interface Admission {
   examBMI?: number;
   examBloodPressure?: string;
   examHeartRate?: number;
+  medicalProblems?: string[];
+  allergies?: string[];
 }
 
 export interface ProgressNote {

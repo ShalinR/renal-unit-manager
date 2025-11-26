@@ -8,15 +8,23 @@ interface AdmittingNotesTabProps {
 }
 
 const AdmittingNotesTab: React.FC<AdmittingNotesTabProps> = ({ patient, activeAdmission }) => {
+  if (!activeAdmission) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm text-xs text-slate-600">
+          No active admission found.
+        </div>
+    );
+  }
+
   // Format admission time to display only time part
   const formatAdmissionTime = (dateTimeString?: string): string => {
     if (!dateTimeString) return "–";
     try {
       const date = new Date(dateTimeString);
-      return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
       });
     } catch {
       return "–";

@@ -4,7 +4,42 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cdf81b1d-e1c9-47ae-a5a9-74cef8a1d4d4" name="Changes" comment="" />
+    <list default="true" id="cdf81b1d-e1c9-47ae-a5a9-74cef8a1d4d4" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../WORK_BREAKDOWN_CHART.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/AllergyController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/MedicalProblemController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/AllergyService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/MedicalProblemService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PdfService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../frontend/frontend.zip" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/renal/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/DischargeSummaryController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/DischargeSummaryController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientController.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/controller/PatientController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PatientResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/dto/PatientResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/DischargeSummary.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/model/DischargeSummary.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/AllergyRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/AllergyRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/MedicalProblemRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/repository/MedicalProblemRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/DischargeSummaryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/DischargeSummaryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientService.java" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/java/com/peradeniya/renal/services/PatientService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renal/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/renal/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/HaemoDialysis.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/HaemoDialysis.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/KidneyTransplant.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/KidneyTransplant.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/Peritoneal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/Peritoneal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/PatientHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/PatientHeader.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/ProblemListTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/ProblemListTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/AdmittingNotesTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/AdmittingNotesTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/AllergicHistoryTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/AllergicHistoryTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/DischargeSummaryTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/DischargeSummaryTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/MedicalHistoryTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/MedicalHistoryTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/components/WardTabs/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/hooks/useDischargeSummary.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/hooks/useDischargeSummary.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/hooks/useWardManagement.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/hooks/useWardManagement.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/services/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/services/api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/types/wardManagement.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/pages/WardManagement/types/wardManagement.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -31,35 +66,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;Spring Boot.RenalApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;transplant&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/WW/Desktop/Final Project/renal-unit-manager/backend&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;onboarding.tips.debug.path&quot;: &quot;C:/Users/WW/Desktop/Final Project/renal-unit-manager/backend/renal/config/src/Main.java&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.annotationProcessors&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.1.3\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Spring Boot.RenalApplication.executor": "Run",
+    "git-widget-placeholder": "Merging transplant",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/WW/Desktop/Final Project/renal-unit-manager/backend",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "onboarding.tips.debug.path": "C:/Users/WW/Desktop/Final Project/renal-unit-manager/backend/renal/config/src/Main.java",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "reference.projectsettings.compiler.annotationProcessors",
+    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.1.3\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="RenalApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />

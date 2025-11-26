@@ -5,6 +5,8 @@ import com.peradeniya.renal.model.Patient;
 import lombok.Data;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class PatientResponse {
@@ -28,6 +30,9 @@ public class PatientResponse {
     // ⭐ FIX: THE FIELD FRONTEND EXPECTS
     private AdmissionResponse activeAdmission;
 
+    private List<String> medicalProblems;
+    private List<String> allergies;
+
     public static PatientResponse from(Patient p, Admission a) {
 
         AdmissionResponse admissionDto = null;
@@ -42,7 +47,7 @@ public class PatientResponse {
 
                     a.getAdmittedOn(),
                     a.getAdmissionTime() != null
-                            ? a.getAdmissionTime().format(DateTimeFormatter.ofPattern("HH:mm"))
+                            ? a.getAdmissionTime().toString()
                             : null,
 
                     a.getWard(),
@@ -84,6 +89,9 @@ public class PatientResponse {
         response.setMaritalStatus(p.getMaritalStatus());
 
         response.setActiveAdmission(admissionDto);
+
+        response.setMedicalProblems(p.getMedicalHistory().stream().map(mp -> mp.getProblem()).collect(Collectors.toList()));
+        response.setAllergies(p.getAllergies().stream().map(allergy -> allergy.getAllergy()).collect(Collectors.toList()));
 
         return response;
     }

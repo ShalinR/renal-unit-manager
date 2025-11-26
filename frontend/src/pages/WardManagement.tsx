@@ -26,7 +26,9 @@ const WardManagement: React.FC = () => {
     dischargeSummaryState,
     handleCreateDischargeSummary,
     creatingSummary,
-    handleCreatePatient
+    handleCreatePatient,
+    handleSaveMedicalProblems,
+    handleSaveAllergies
   } = useWardManagement();
 
   const activeAdmission = admissions.find(a => a.active);
@@ -63,6 +65,9 @@ const WardManagement: React.FC = () => {
                 dischargeSummaryState={dischargeSummaryState}
                 handleCreateDischargeSummary={handleCreateDischargeSummary}
                 creating={creatingSummary}
+                handleSaveMedicalProblems={handleSaveMedicalProblems}
+                handleSaveAllergies={handleSaveAllergies}
+
               />
             </section>
 

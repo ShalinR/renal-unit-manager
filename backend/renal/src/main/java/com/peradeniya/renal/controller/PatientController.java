@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -152,6 +153,32 @@ public class PatientController {
         String username = getCurrentUsername();
         String userRole = getCurrentUserRole();
         service.deleteByIdWithAudit(id, username, userRole);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{phn}/medical-problems")
+    public ResponseEntity<Void> updateMedicalProblems(@PathVariable String phn, @RequestBody List<String> problems) {
+        String cleanPhn = phn.replaceAll("[^0-9]", "");
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        // Log audit
+        if (service.getHipaaAuditService() != null) {
+            service.getHipaaAuditService().logPatientAccessWithUser(username, userRole, "UPDATE", cleanPhn, "Updated medical problems");
+        }
+        service.updateMedicalProblems(cleanPhn, problems);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{phn}/allergies")
+    public ResponseEntity<Void> updateAllergies(@PathVariable String phn, @RequestBody List<String> allergies) {
+        String cleanPhn = phn.replaceAll("[^0-9]", "");
+        String username = getCurrentUsername();
+        String userRole = getCurrentUserRole();
+        // Log audit
+        if (service.getHipaaAuditService() != null) {
+            service.getHipaaAuditService().logPatientAccessWithUser(username, userRole, "UPDATE", cleanPhn, "Updated allergies");
+        }
+        service.updateAllergies(cleanPhn, allergies);
         return ResponseEntity.ok().build();
     }
 

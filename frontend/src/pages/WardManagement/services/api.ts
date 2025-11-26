@@ -71,6 +71,8 @@ export const apiGetPatient = async (phn: string): Promise<Patient | null> => {
       examBMI: patientData.examBMI || patientData.exambmi || patientData.bmi,
       examBloodPressure: patientData.examBloodPressure || patientData.exam_blood_pressure || patientData.bloodPressure,
       examHeartRate: patientData.examHeartRate || patientData.exam_heart_rate || patientData.heartRate,
+      medicalProblems: patientData.medicalProblems || [],
+      allergies: patientData.allergies || [],
     };
     
     console.debug("Ward API: mapped patient data (redacted)");
@@ -130,8 +132,17 @@ export const apiGetAdmissions = async (phn: string): Promise<Admission[]> => {
       bhtNumber: a.bhtNumber || a.bht_number || `BHT-${a.number || a.id}`,
       number: a.number,
       admittedOn: a.admittedOn || a.admitted_on,
-      hasDischargeSummary: a.dischargeSummaryAvailable || a.discharge_summary_available || a.hasDischargeSummary || false,
-      active: a.active || false,
+      active:
+          a.active === true ||
+          a.active === 1 ||
+          a.active === "1",
+
+      hasDischargeSummary:
+          Boolean(a.dischargeSummary) ||   // ← backend DS object (after removing @JsonIgnore)
+          a.dischargeSummaryAvailable === true ||
+          a.dischargeSummaryAvailable === 1 ||
+          a.discharge_summary_available === true ||
+          a.discharge_summary_available === 1,
       ward: a.ward,
       wardNumber: a.wardNumber || a.ward_number,
       bedId: a.bedId || a.bed_id,
@@ -172,7 +183,7 @@ export const apiCreatePatient = async (payload: PatientCreatePayload): Promise<P
     // Handle optional fields
     address: payload.address || null,
     phone: (payload as any).phone || null,
-    nic: payload.nic || null,
+    nic: payload.nicNo || null,
     mohArea: payload.mohArea || null,
     ethnicGroup: payload.ethnicGroup || null,
     religion: payload.religion || null,
@@ -304,7 +315,7 @@ export const apiCreateDischargeSummary = async (
   }
 ): Promise<any> => {
   const cleanPhn = phn.replace(/[^0-9]/g, "");
-  const url = `${API}/patient/${cleanPhn}/admissions/${admId}/discharge-summary`;
+  const url = `${API}/api/patients/${cleanPhn}/admissions/${admId}/discharge-summary`;
   
   console.debug("Ward API: creating discharge summary (PHI redacted)");
 
@@ -346,7 +357,7 @@ export const apiDownloadDischargeSummaryPDF = async (
   admId: number
 ): Promise<Blob> => {
   const cleanPhn = phn.replace(/[^0-9]/g, "");
-  const url = `${API}/patient/${cleanPhn}/admissions/${admId}/discharge-summary/pdf`;
+  const url = `${API}/api/patients/${cleanPhn}/admissions/${admId}/discharge-summary/pdf`;
   
   console.debug("Ward API: downloading discharge summary PDF (PHI redacted)");
 
@@ -396,8 +407,8 @@ export const apiCheckDischargeSummary = async (
   admId: number
 ): Promise<boolean> => {
   const cleanPhn = phn.replace(/[^0-9]/g, "");
-  const url = `${API}/patient/${cleanPhn}/admissions/${admId}/discharge-summary`;
-  
+  const url = `${API}/api/patients/${cleanPhn}/admissions/${admId}/discharge-summary`;
+
   console.debug("Ward API: checking discharge summary (PHI redacted)");
 
   try {
@@ -406,5 +417,115 @@ export const apiCheckDischargeSummary = async (
   } catch (error) {
     console.error("Ward API: check discharge summary error");
     return false;
+  }
+};
+
+export const apiGetMedicalProblems = async (phn: string): Promise<string[]> => {
+  const cleanPhn = phn.replace(/[^0-9]/g, "");
+  const url = `${API}/api/patients/${cleanPhn}/medical-problems`;
+
+  console.debug("Ward API: loading medical problems (PHI redacted)");
+
+  try {
+    const res = await fetch(url);
+    console.debug("Ward API: medical problems response status", res.status);
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => "");
+      console.error("❌ [API] Medical problems API error:", errorText);
+      throw new Error(`Failed to load medical problems: ${res.status}`);
+    }
+
+    const problems = await res.json();
+    console.debug("Ward API: medical problems received (redacted)");
+    return problems;
+  } catch (error) {
+    console.error("❌ [API] Medical problems fetch error:", error);
+    return [];
+  }
+};
+
+export const apiUpdateMedicalProblems = async (phn: string, problems: string[]): Promise<void> => {
+  const cleanPhn = phn.replace(/[^0-9]/g, "");
+  const url = `${API}/api/patient/${cleanPhn}/medical-problems`;
+
+  console.debug("Ward API: updating medical problems (PHI redacted)");
+
+  try {
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(problems),
+    });
+
+    console.debug("Ward API: update medical problems response status", res.status);
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("❌ [API] Update medical problems failed:", text);
+      throw new Error(`Failed to update medical problems. Status ${res.status}: ${text}`);
+    }
+
+    console.debug("Ward API: medical problems updated successfully (redacted)");
+  } catch (error) {
+    console.error("❌ [API] Update medical problems error:", error);
+    throw error;
+  }
+};
+
+export const apiGetAllergies = async (phn: string): Promise<string[]> => {
+  const cleanPhn = phn.replace(/[^0-9]/g, "");
+  const url = `${API}/api/patients/${cleanPhn}/allergies`;
+
+  console.debug("Ward API: loading allergies (PHI redacted)");
+
+  try {
+    const res = await fetch(url);
+    console.debug("Ward API: allergies response status", res.status);
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => "");
+      console.error("❌ [API] Allergies API error:", errorText);
+      throw new Error(`Failed to load allergies: ${res.status}`);
+    }
+
+    const allergies = await res.json();
+    console.debug("Ward API: allergies received (redacted)");
+    return allergies;
+  } catch (error) {
+    console.error("❌ [API] Allergies fetch error:", error);
+    return [];
+  }
+};
+
+export const apiUpdateAllergies = async (phn: string, allergies: string[]): Promise<void> => {
+  const cleanPhn = phn.replace(/[^0-9]/g, "");
+  const url = `${API}/api/patient/${cleanPhn}/allergies`;
+
+  console.debug("Ward API: updating allergies (PHI redacted)");
+
+  try {
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(allergies),
+    });
+
+    console.debug("Ward API: update allergies response status", res.status);
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("❌ [API] Update allergies failed:", text);
+      throw new Error(`Failed to update allergies. Status ${res.status}: ${text}`);
+    }
+
+    console.debug("Ward API: allergies updated successfully (redacted)");
+  } catch (error) {
+    console.error("❌ [API] Update allergies error:", error);
+    throw error;
   }
 };

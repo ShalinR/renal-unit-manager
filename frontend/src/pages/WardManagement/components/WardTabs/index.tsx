@@ -24,6 +24,8 @@ interface WardTabsProps {
   setMedicalProblems: (problems: string[]) => void;
   allergyProblems: string[];
   setAllergyProblems: (problems: string[]) => void;
+  handleSaveMedicalProblems: (problems: string[]) => Promise<void>;
+  handleSaveAllergies: (allergies: string[]) => Promise<void>;
   dischargeSummaryState: any;
   handleCreateDischargeSummary: () => void;
   creating: boolean;
@@ -42,6 +44,8 @@ const WardTabs: React.FC<WardTabsProps> = ({
   setMedicalProblems,
   allergyProblems,
   setAllergyProblems,
+  handleSaveMedicalProblems,
+  handleSaveAllergies,
   dischargeSummaryState,
   handleCreateDischargeSummary,
   creating
@@ -83,12 +87,14 @@ const WardTabs: React.FC<WardTabsProps> = ({
           <MedicalHistoryTab
             problems={medicalProblems}
             setProblems={setMedicalProblems}
+            onSave={handleSaveMedicalProblems}
           />
         )}
         {tab === "allergic-history" && (
           <AllergicHistoryTab
             problems={allergyProblems}
             setProblems={setAllergyProblems}
+            onSave={handleSaveAllergies}
           />
         )}
         {tab === "investigations" && <InvestigationsTab />}

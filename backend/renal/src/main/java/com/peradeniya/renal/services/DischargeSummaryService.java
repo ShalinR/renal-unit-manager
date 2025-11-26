@@ -29,6 +29,7 @@ public class DischargeSummaryService {
 
         DischargeSummary ds = new DischargeSummary();
         ds.setAdmission(admission);
+        ds.setPatient(patient);
         
         // Parse discharge date
         LocalDate dischargeDate = req.getDischargeDateAsLocalDate();

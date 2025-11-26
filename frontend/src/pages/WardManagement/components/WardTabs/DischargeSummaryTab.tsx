@@ -47,14 +47,14 @@ const DischargeSummaryTab: React.FC<DischargeSummaryTabProps> = ({
         <SectionTitle>1. Patient Details</SectionTitle>
         <div className="grid grid-cols-1 gap-3 text-xs md:grid-cols-3">
           <ReadField label="Name" value={patient.name} />
-          <ReadField label="Age" value={formatAge(patient.dob)} />
-          <ReadField label="Sex" value={patient.sex as string} />
+          <ReadField label="Age" value={formatAge(patient.dateOfBirth)} />
+          <ReadField label="Sex" value={patient.gender as string} />
           <ReadField label="PHN" value={patient.phn} />
           <ReadField label="BHT Number" value={activeAdmission?.bhtNumber || "–"} />
           <ReadField label="Admitting Hospital" value="Teaching Hospital Peradeniya" />
           <ReadField
             label="Date of Admission"
-            value={patient.admissionDate || "–"}
+            value={activeAdmission?.admittedOn || "–"}
           />
           <InputField
             label="Date of Discharge *"
@@ -120,24 +120,24 @@ const DischargeSummaryTab: React.FC<DischargeSummaryTabProps> = ({
         <div className="grid grid-cols-1 gap-3 text-xs md:grid-cols-3">
           <ReadField
             label="Type of Admission"
-            value={patient.admissionType || "–"}
+            value={activeAdmission?.admissionType || "–"}
           />
           <ReadField
             label="Admitting Officer"
-            value={patient.admittingOfficer || "–"}
+            value={activeAdmission?.admittingOfficer || "–"}
           />
           <ReadField
             label="Ward / Bed"
-            value={`${patient.wardNumber || patient.ward} / ${patient.bedId || "-"}`}
+            value={`${activeAdmission?.wardNumber || activeAdmission?.ward} / ${activeAdmission?.bedId || "-"}`}
           />
-          <ReadField label="Referred From" value={patient.referredBy || "–"} />
+          <ReadField label="Referred From" value={activeAdmission?.referredBy || "–"} />
           <ReadField
             label="Presenting Complaints"
-            value={patient.presentingComplaints || "–"}
+            value={activeAdmission?.presentingComplaints || "–"}
           />
           <ReadField
             label="Date of Admission"
-            value={patient.admissionDate || "–"}
+            value={activeAdmission?.admittedOn || "–"}
           />
         </div>
 
@@ -146,27 +146,27 @@ const DischargeSummaryTab: React.FC<DischargeSummaryTabProps> = ({
         <div className="grid grid-cols-1 gap-3 text-xs md:grid-cols-3">
           <ReadField
             label="Temperature (°C)"
-            value={patient.examTempC?.toString() || "–"}
+            value={activeAdmission?.examTempC?.toString() || "–"}
           />
           <ReadField
             label="Height (cm)"
-            value={patient.examHeightCm?.toString() || "–"}
+            value={activeAdmission?.examHeightCm?.toString() || "–"}
           />
           <ReadField
             label="Weight (kg)"
-            value={patient.examWeightKg?.toString() || "–"}
+            value={activeAdmission?.examWeightKg?.toString() || "–"}
           />
           <ReadField
             label="BMI (kg/m²)"
-            value={patient.examBMI ? patient.examBMI.toFixed(1) : "–"}
+            value={activeAdmission?.examBMI ? activeAdmission.examBMI.toFixed(1) : "–"}
           />
           <ReadField
             label="Blood Pressure"
-            value={patient.examBloodPressure || "–"}
+            value={activeAdmission?.examBloodPressure || "–"}
           />
           <ReadField
             label="Heart Rate (bpm)"
-            value={patient.examHeartRate?.toString() || "–"}
+            value={activeAdmission?.examHeartRate?.toString() || "–"}
           />
         </div>
 

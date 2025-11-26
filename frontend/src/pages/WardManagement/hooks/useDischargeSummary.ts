@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Patient, Admission, DischargeSummaryState } from '../types/wardManagement';
 import { apiCreateDischargeSummary, apiUpdateAdmissionStatus } from '../services/api';
+import { useMemo } from "react";
 
 export const useDischargeSummary = (
-  patient: Patient | null, 
-  admissions: Admission[], 
+  patient: Patient | null,
+  admissions: Admission[],
   setAdmissions: (admissions: Admission[]) => void
 ) => {
   const [medicalProblems, setMedicalProblems] = useState<string[]>([""]);
   const [allergyProblems, setAllergyProblems] = useState<string[]>([""]);
   const [creatingSummary, setCreatingSummary] = useState(false);
-  
   const [dischargeSummaryState, setDischargeSummaryState] = useState<DischargeSummaryState>({
     icd10: "",
     diagnosis: "",
@@ -68,23 +68,20 @@ export const useDischargeSummary = (
       await apiCreateDischargeSummary(patient.phn, activeAdmission.id, dsPayload);
 
       // 2. Then update the admission status to inactive (discharged)
-      await apiUpdateAdmissionStatus(activeAdmission.id, false);
+      // await apiUpdateAdmissionStatus(activeAdmission.id, false);
 
       // 3. Update frontend state to reflect both changes
-            setAdmissions(
-              admissions.map((a) =>
-                a.id === activeAdmission.id
-                  ? {
-                      ...a,
-                      hasDischargeSummary: true,
-                      active: false,
-                    }
+
+      setAdmissions((prev) =>
+          prev.map((a) =>
+              a.id === activeAdmission.id
+                  ? { ...a, hasDischargeSummary: true, active: false }
                   : a
-              )
-            );
-      
-            alert("Discharge summary created successfully and patient discharged!");
-      
+          )
+      );
+
+      alert("Discharge summary created successfully and patient discharged!");
+
       // Reset form
       setDischargeSummaryState({
         icd10: "",
@@ -95,7 +92,6 @@ export const useDischargeSummary = (
         freeDrugs: "",
         dischargeDate: "",
       });
-      
     } catch (error) {
       console.error("Ward: error creating discharge summary");
       alert("Failed to create discharge summary: " + (error instanceof Error ? error.message : String(error)));
@@ -112,21 +108,28 @@ export const useDischargeSummary = (
   const setFreeDrugs = (value: string) => setDischargeSummaryState(prev => ({ ...prev, freeDrugs: value }));
   const setDischargeDate = (value: string) => setDischargeSummaryState(prev => ({ ...prev, dischargeDate: value }));
 
+
+  const mergedDischargeState = useMemo(
+      () => ({
+        ...dischargeSummaryState,
+        setIcd10,
+        setDiagnosis,
+        setProgress,
+        setManagement,
+        setDischargePlan,
+        setFreeDrugs,
+        setDischargeDate,
+      }),
+      [dischargeSummaryState]
+  );
+
+
   return {
     medicalProblems,
     setMedicalProblems,
     allergyProblems,
     setAllergyProblems,
-    dischargeSummaryState: {
-      ...dischargeSummaryState,
-      setIcd10,
-      setDiagnosis,
-      setProgress,
-      setManagement,
-      setDischargePlan,
-      setFreeDrugs,
-      setDischargeDate,
-    },
+    dischargeSummaryState: mergedDischargeState,
     handleCreateDischargeSummary,
     creatingSummary,
   };

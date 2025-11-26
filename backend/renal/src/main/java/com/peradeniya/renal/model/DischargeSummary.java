@@ -1,5 +1,6 @@
 package com.peradeniya.renal.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +25,7 @@ public class DischargeSummary {
 
     @OneToOne
     @JoinColumn(name = "admission_id")
+    @JsonIgnore
     private Admission admission;
 
     @ManyToOne

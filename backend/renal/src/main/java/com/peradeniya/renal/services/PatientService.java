@@ -3,6 +3,8 @@ package com.peradeniya.renal.services;
 import com.peradeniya.renal.dto.*;
 import com.peradeniya.renal.mapper.PatientMapper;
 import com.peradeniya.renal.model.Admission;
+import com.peradeniya.renal.model.Allergy;
+import com.peradeniya.renal.model.MedicalProblem;
 import com.peradeniya.renal.model.Patient;
 import com.peradeniya.renal.repository.PatientRepository;
 
@@ -365,5 +367,35 @@ public class PatientService {
         }
         // Then delete the patient
         deleteById(id);
+    }
+
+    public void updateMedicalProblems(String phn, List<String> problems) {
+        Patient patient = getPatientByPhn(phn);
+        patient.getMedicalHistory().clear();
+        for (String problem : problems) {
+            if (!problem.trim().isEmpty()) {
+                MedicalProblem mp = MedicalProblem.builder()
+                        .problem(problem.trim())
+                        .patient(patient)
+                        .build();
+                patient.getMedicalHistory().add(mp);
+            }
+        }
+        repository.save(patient);
+    }
+
+    public void updateAllergies(String phn, List<String> allergies) {
+        Patient patient = getPatientByPhn(phn);
+        patient.getAllergies().clear();
+        for (String allergy : allergies) {
+            if (!allergy.trim().isEmpty()) {
+                Allergy a = Allergy.builder()
+                        .allergy(allergy.trim())
+                        .patient(patient)
+                        .build();
+                patient.getAllergies().add(a);
+            }
+        }
+        repository.save(patient);
     }
 }
